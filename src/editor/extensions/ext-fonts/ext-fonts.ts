@@ -14,12 +14,13 @@
  * @license MIT
  */
 
+import { defineFeature } from '../defineFeature.ts'
+
 const name = 'fonts'
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const canv = svgEditor.svgCanvas
     const { $id } = canv
 
@@ -47,4 +48,4 @@ export default {
       }
     }
   }
-}
+})

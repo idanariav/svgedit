@@ -53,7 +53,7 @@ describe('ext-cutter', () => {
 
     mockCommands(svgEditor)
 
-    const extInstance = await extCutter.init.call(svgEditor)
+    const extInstance = await extCutter.init(svgEditor)
     extInstance.callback()
   })
 

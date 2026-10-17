@@ -396,9 +396,7 @@ class EditorStartup {
     )
     this.svgCanvas.bind('contextset', this.contextChanged.bind(this))
     this.svgCanvas.bind('extension_added', this.extAdded.bind(this))
-    this.svgCanvas.bind('elementRenamed', this.elementRenamed.bind(this))
 
-    this.svgCanvas.bind('beforeClear', this.beforeClear.bind(this))
     this.svgCanvas.bind('afterClear', this.afterClear.bind(this))
 
     this.svgCanvas.textActions.setInputElem(($id('text') as HTMLTextAreaElement))
@@ -1012,30 +1010,10 @@ class EditorStartup {
             if (!imported) throw new Error(`Unknown extension: ${extname}`)
             if (!imported.default) throw new Error(`Extension ${extname} has no default export`)
             const { name = extname, init: initfn } = imported.default
-            return this.addExtension(name, (initfn && initfn.bind(this)), { langParam: 'en' }) /** @todo  change to current lng */
+            return this.addExtension(name, initfn && (() => initfn(this)), { langParam: 'en' }) /** @todo  change to current lng */
           } catch (err) {
             // Todo: Add config to alert any errors
             logError('Extension failed to load: ' + extname + '; ', err, 'EditorStartup')
-            return undefined
-          }
-        })
-      )
-      // load user extensions (given as pathNames)
-      await Promise.all(
-        this.configObj.curConfig.userExtensions.map(async ({ pathName, config }: { pathName: string, config: unknown }) => {
-          /**
-           * @tutorial ExtensionDocs
-           * @property {string} [name] Name of the extension. Used internally; no need for i18n. Defaults to extension name without beginning "ext-" or ending ".js".
-           * @property {module:svgcanvas.ExtensionInitCallback} [init]
-           */
-          try {
-            const imported: any = await import(/* @vite-ignore */ encodeURI(pathName))
-            if (!imported.default) throw new Error(`Extension ${pathName} has no default export`)
-            const { name, init: initfn } = imported.default
-            return this.addExtension(name, (initfn && initfn.bind(this, config)), {})
-          } catch (err) {
-            // Todo: Add config to alert any errors
-            logError('Extension failed to load: ' + pathName + '; ', err, 'EditorStartup')
             return undefined
           }
         })

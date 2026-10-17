@@ -12,13 +12,13 @@
  */
 
 import { applyTheme } from '../../themeUtil.ts'
+import { defineFeature } from '../defineFeature.ts'
 
 const name = 'theme_toggle'
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id, $click } = svgCanvas
 
@@ -58,4 +58,4 @@ export default {
       }
     }
   }
-}
+})

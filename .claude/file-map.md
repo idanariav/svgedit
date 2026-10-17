@@ -328,6 +328,7 @@
 
 | File | What it is |
 |---|---|
+| `defineFeature.ts` | The typed shape of a built-in feature (`ext-*`): `defineFeature({ name, init(editor) })`, and the one-line locale loader every feature shares |
 | `extensionRegistry.ts` | ExtensionRegistry.ts |
 | `fx-filter.ts` | Shared per-element SVG filter composer for the editor's filter-based effects (outline halo, outer/inner glow and drop shadow) |
 

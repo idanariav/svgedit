@@ -22,6 +22,7 @@
 import { parseAnchors, anchorsToD } from '@svgedit/svgcanvas/core/anchor-path.ts'
 import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'smooth-tool'
 
@@ -35,27 +36,16 @@ const TOLERANCE_PREF = 'smooth_tolerance'
 /** The brush ring's ink; the overlay is never saved. */
 const RING_STROKE = '#2b7fff'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
 /** Can the tool rewrite this element's geometry? */
 export const isSmoothable = (el: Element | null): boolean =>
   Boolean(el) && (el as Element).tagName === 'path' && !LIVE_ATTRS.some((a) => (el as Element).hasAttribute(a))
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
     const numberPref = (key: string, fallback: number, min: number): number => {
       const v = parseFloat(svgEditor.configObj.pref(key))
@@ -199,4 +189,4 @@ export default {
       }
     }
   }
-}
+})

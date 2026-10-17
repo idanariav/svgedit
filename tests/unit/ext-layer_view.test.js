@@ -76,7 +76,7 @@ describe('ext-layer_view', () => {
 
     mockCommands(svgEditor)
 
-    extInstance = await extLayerView.init.call(svgEditor)
+    extInstance = await extLayerView.init(svgEditor)
     extInstance.callback()
   })
 

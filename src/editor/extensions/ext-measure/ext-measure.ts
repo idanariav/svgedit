@@ -12,20 +12,12 @@
  * @license Apache-2.0
  */
 import { measureSegment, constrainAngle, readoutLines } from '@svgedit/svgcanvas/core/measure.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'measure'
 const SVG = 'http://www.w3.org/2000/svg'
 /** The line's ink; the overlay is never saved or exported. */
 const INK = '#00a6c8'
-
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
 
 const el = (tag: string, attrs: Record<string, unknown>) => {
   const node = document.createElementNS(SVG, tag)
@@ -33,13 +25,12 @@ const el = (tag: string, attrs: Record<string, unknown>) => {
   return node
 }
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     /** The line being measured, or the last one (it stays until the next press). */
     let line: { a: { x: number, y: number }, b: { x: number, y: number } } | null = null
@@ -145,4 +136,4 @@ export default {
       }
     }
   }
-}
+})

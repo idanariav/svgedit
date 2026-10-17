@@ -41,7 +41,7 @@ describe('ext-curvature', () => {
       i18next: { t: (key) => key, addResourceBundle: vi.fn() }
     }
 
-    await extCurvature.init.call(svgEditor)
+    await extCurvature.init(svgEditor)
   })
 
   afterEach(() => {

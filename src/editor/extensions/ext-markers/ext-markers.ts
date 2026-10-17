@@ -1,5 +1,6 @@
 // ext-markers.ts — Arrow/marker decorators
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+import { defineFeature } from '../defineFeature.ts'
 /**
  * @file ext-markers.ts
  *
@@ -31,10 +32,9 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 const name = 'markers'
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { BatchCommand, RemoveElementCommand, InsertElementCommand } = svgCanvas.history
     const { $id, $req, addSVGElementsFromJson: addElem } = svgCanvas
@@ -388,4 +388,4 @@ export default {
       }
     }
   }
-}
+})

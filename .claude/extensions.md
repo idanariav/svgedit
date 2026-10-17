@@ -6,54 +6,39 @@
 
 ## Extension Contract
 
-Every extension lives in `src/editor/extensions/ext-name/` and exports a single default object:
+Every extension (a *feature*) lives in `src/editor/extensions/ext-name/` and exports one default `defineFeature({...})`
+(`extensions/defineFeature.ts`; it types `init` and the hooks, and costs nothing at run time):
 
-```js
+```ts
 // src/editor/extensions/ext-myname/ext-myname.ts
-export default {
-  name: 'ext-myname',      // must be unique; used as identifier
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
-  async init (S) {
-    // S is a context object provided by EditorStartup
-    // available on S:
-    //   S.svgCanvas       — the SvgCanvas instance
-    //   S.editor          — the Editor instance
-    //   S.addLangData     — function to register i18n strings
-    //   S.importLocale    — load locale file dynamically
-    //   ...other helpers
+const name = 'myname'
+
+export default defineFeature({
+  name,
+  async init (svgEditor) {                      // the Editor instance (no `this`, no context object)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
+    const { svgCanvas } = svgEditor
+
+    // Register commands (svgEditor.commands.register), tools (svgCanvas.registerTool: PREFERRED for new tools,
+    // see "Adding a canvas tool" below), and panel sections here.
 
     return {
-      // Optional hooks (all optional):
-      name: 'ext-myname',
+      // Hooks, all optional, each typed with its payload (core/extension-hooks.ts):
+      elementChanged ({ elems }) { },           // any element changed
+      selectedChanged ({ elems }) { },          // the selection changed
+      zoomChanged (zoom) { },                   // the zoom factor (1 = 100%)
+      keyDown ({ event }) { },                  // an Editor-owned keydown; return { preventDefault: true } to swallow it
 
-      // Called when any element is changed
-      elementChanged ({ elems }) { },
+      // Legacy mouse hooks (mix coordinate spaces: start_x unzoomed, mouse_x ZOOMED); use registerTool instead:
+      mouseDown (opts) { }, mouseMove (opts) { }, mouseUp (opts) { },
 
-      // Called when selection changes
-      selectedChanged ({ elems }) { },
-
-      // Called on Editor-owned keydown (focused editor only); return
-      // { preventDefault: true } to swallow the key
-      keyDown ({ event }) { },
-
-      // Add items to a panel (via innerHTML or DOM manipulation)
-      // Use S.editor or document.querySelector() to find containers
-
-      // Register a new drawing mode. PREFERRED for new tools: svgCanvas.registerTool({...})
-      // (see "Adding a canvas tool" below) -- normalised document-space events and
-      // automatic undo. The legacy hooks below still work, but note their
-      // coordinates mix spaces (start_x unzoomed, mouse_x ZOOMED).
-      // S.svgCanvas.setMode('my-mode') triggers mousedown/mousemove/up hooks
-
-      mouseDown (opts) { },
-      mouseMove (opts) { },
-      mouseUp (opts) { },
-
-      // Called when zoom changes
-      zoomChanged ({ zoom }) { },
+      // Runs once, after every extension has been added
+      callback () { }
     }
   }
-}
+})
 ```
 
 ### How Extensions Load
@@ -69,9 +54,9 @@ single `Editor.ts`.
    the registry:
    ```js
    const imported = getExtension(name)          // from extensionRegistry.ts
-   svgCanvas.addExtension(imported.default.name, imported.default.init)
+   svgCanvas.addExtension(imported.default.name, () => imported.default.init(editor), …)
    ```
-3. `svgCanvas.addExtension()` calls `ext.init(S)` and stores returned hooks
+3. `svgCanvas.addExtension()` awaits `init(editor)` and stores the returned hooks
 4. Canvas events then dispatch to all registered extension hooks. Valid hook names live in `packages/svgcanvas/core/extension-hooks.ts` (`EXTENSION_HOOKS`); `addExtension` warns about unknown function members and `runExtensions` about unknown dispatches. Add a new hook there first, with a payload typedef (`ExtensionHookPayloads`); a test fails if a dispatched hook is unregistered or a registered one is never dispatched. `ext-puppet-warp` deliberately keeps its own window-capture Escape listener instead of `keyDown` (ordering vs. the hotkey dispatcher).
 
 > **Adding a new built-in extension:** drop it in `extensions/ext-<name>/` and
@@ -98,7 +83,7 @@ in the same change.
 
 Each extension has a `locale/` subfolder with JS modules per language. These are
 **inlined** via `import.meta.glob('./locale/*.js', { eager: true })` inside each
-extension's `loadExtensionTranslation()` (falls back to `en`). There is no
+extension's `addFeatureLocale()` call (falls back to `en`). There is no
 runtime `import(`./locale/${lang}.js`)` any more.
 
 This fork is **English-only**: every extension's `locale/` folder holds just

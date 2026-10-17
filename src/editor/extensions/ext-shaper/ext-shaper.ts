@@ -21,6 +21,7 @@
  */
 
 import { recognize } from '@svgedit/svgcanvas/core/shape-recognize.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'shaper'
 
@@ -30,16 +31,6 @@ const PREVIEW_STROKE = '#2b7fff'
 const MIN_SAMPLE_SPACING = 0.5
 /** …and into at most this many samples, so a very long scribble stays cheap. */
 const MAX_SAMPLES = 2000
-
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
 
 const round = (v: number) => Math.round(v * 100) / 100
 
@@ -162,13 +153,12 @@ export const describeShape = (shape: import('@svgedit/svgcanvas/core/shape-recog
   }
 }
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     /** In-progress stroke: document points, the preview polyline and the last client point kept. */
     let stroke: { points: { x: number, y: number }[], line: SVGPolylineElement, lastScreen: { x: number, y: number } } | null = null
@@ -268,4 +258,4 @@ export default {
       }
     }
   }
-}
+})

@@ -42,20 +42,12 @@ import { deformPoint } from './mls.ts'
 import { getMatrixToContent, getMatrix, matrixMultiply, transformPoint } from '@svgedit/svgcanvas/core/math.ts'
 import { getPaperScope } from '@svgedit/svgcanvas/core/paper-utils.ts'
 import { getPathDFromElement } from '@svgedit/svgcanvas/core/path-utils.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'puppetwarp'
 const svgNS = 'http://www.w3.org/2000/svg'
 const REST_D_ATTR = 'se:puppet-rest-d'
 const PINS_ATTR = 'se:puppet-pins'
-
-const loadExtensionTranslation = async function (svgEditor: import('../../Editor.ts').default) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
 
 const fmt = (n: number) => Math.round(n * 100) / 100
 
@@ -261,14 +253,13 @@ export const computeCommitPatch = ({ origD, hasRestD, oldPinsJson, newPinsJson, 
   return { newRestD, newPins }
 }
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
 
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     // Via svgCanvas.registerGeometryRemap (assigned by coords.js's own init),
     // not a direct import of geometry-remap-registry.js: this extension is
@@ -655,4 +646,4 @@ export default {
       }
     }
   }
-}
+})

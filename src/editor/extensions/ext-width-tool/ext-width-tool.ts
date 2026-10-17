@@ -22,6 +22,7 @@
 import { centerline, pointAt, locate } from '@svgedit/svgcanvas/core/width-outline.ts'
 import { profileAt, withPoint, withoutPoint, movedPoint, isProfile } from '@svgedit/svgcanvas/core/width-profile.ts'
 import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'width-tool'
 
@@ -34,25 +35,14 @@ export const CLICK_PX = 3
 const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
 const UNIFORM: Array<[number, number, number]> = [[0, 1, 1], [1, 1, 1]]
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     interface Target {
       el: Element
@@ -370,4 +360,4 @@ export default {
       }
     }
   }
-}
+})

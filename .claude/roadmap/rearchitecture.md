@@ -272,8 +272,7 @@ disabled names are real built-ins). The fork release `v7.4.1-fork.8` carries it 
 features one at a time, deleting extension hooks as their last user goes; puppet warp after the `registerTool` session
 concept ([infrastructure](infrastructure.md) › Tier 0 follow-ups).
 
-`userExtensions` (a dynamic `import()` of a host-given path, consumed in `EditorStartup.extAndLocaleFunc`; no host uses it)
-goes with the extension API if that is dropped.
+**Status (2026-10-17).** The host-given `userExtensions` (a dynamic `import()` of a path) is gone: neither the editor nor the plugin used it. Every built-in is `defineFeature({ name, init(editor) })` (`extensions/defineFeature.ts`; typed hooks, one shared `addFeatureLocale`), instead of an object whose `init` read `this`. The hooks nothing implemented (`toolButtonStateUpdate`, `beforeClear`, `onSavedDocument`, `elementRenamed`) are deleted. Next, in order: move the mouse-hook users (`ext-brush`, `ext-connector`, `ext-curvature`, `ext-cutter`, `ext-glow`, `ext-outline`, `ext-puppet-warp` (after the `registerTool` session concept), `ext-repeat`, `ext-shadow`, `ext-shapes`) to `registerTool` and delete the mouse hooks; replace `selectedChanged` / `elementChanged` / `zoomChanged` (20 / 20 / 8 users) with typed canvas events and drop the `runExtensions` fan-out; only then rename to `features/`.
 
 Size: L, incremental, low risk per feature.
 

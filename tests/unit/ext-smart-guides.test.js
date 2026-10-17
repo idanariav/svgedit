@@ -46,7 +46,7 @@ describe('ext-smart-guides', () => {
 
     mockCommands(svgEditor)
 
-    const extInstance = await extSmartGuides.init.call(svgEditor)
+    const extInstance = await extSmartGuides.init(svgEditor)
     extInstance.callback.call(svgEditor)
   })
 

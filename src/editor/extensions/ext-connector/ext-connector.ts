@@ -21,27 +21,19 @@
  *
  */
 
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+
 const name = 'connector'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init (S: { svgroot: SVGSVGElement, selectorManager: any }) {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { getElement, $id, addSVGElementsFromJson } = svgCanvas
-    const { svgroot, selectorManager } = S
+    const svgroot = svgCanvas.getSvgRoot()
+    const { selectorManager } = svgCanvas
     const seNs = svgCanvas.getEditorNS()
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     let startX: number
     let startY: number
@@ -870,7 +862,7 @@ export default {
       // Primary hook for keeping bound lines in sync during interactive drag,
       // because svgCanvas moves elements via SVG transforms (not attribute
       // changes) and does NOT fire 'changed' on mouseUp for move operations.
-      elementTransition (opts: { elems: { filter: (arg0: BooleanConstructor) => never[]; }; }) {
+      elementTransition (opts) {
         if (started) return // don't interfere during line drawing
         const elems = opts.elems?.filter(Boolean) || []
         if (elems.length) updateConnectors(elems)
@@ -888,9 +880,10 @@ export default {
           handleOneChangedElement((elem as Element))
         }
       },
-      IDsUpdated (input: { elems: { attr: Record<string, string> }[], changes: Record<string, string> }) {
+      IDsUpdated (input) {
         const remove: string[] = []
-        input.elems.forEach(function (elem) {
+        input.elems.forEach(function (clipElem) {
+          const elem = { attr: clipElem.attr as Record<string, string> }
           // Legacy both-ends connector attribute.
           if ('se:connector' in elem.attr) {
             elem.attr['se:connector'] = elem.attr['se:connector']
@@ -915,4 +908,4 @@ export default {
       }
     }
   }
-}
+})

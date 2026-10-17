@@ -39,7 +39,7 @@ describe('ext-brush', () => {
 
     svgEditor = { svgCanvas }
 
-    await extBrush.init.call(svgEditor)
+    await extBrush.init(svgEditor)
   })
 
   afterEach(() => {

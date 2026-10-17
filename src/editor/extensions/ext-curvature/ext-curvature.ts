@@ -26,18 +26,9 @@
  */
 
 import { spiroToBezierOnContext } from 'spiro'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'curvature'
-
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
 
 // ── Path builders (one per smoothing mode) ───────────────────────────────────
 
@@ -216,14 +207,13 @@ function buildPathD (points: Array<{ x: number, y: number, corner: boolean, end:
 
 // ── Extension ────────────────────────────────────────────────────────────────
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
 
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     // svgedit's native double-click handler switches the canvas mode to
     // 'select' (and may enter path-edit). While the curvature tool is active
@@ -533,4 +523,4 @@ export default {
       }
     }
   }
-}
+})

@@ -16,28 +16,19 @@
  * @license MIT
  */
 import { combineSelection, selectionOpFor, findSameAs } from '@svgedit/svgcanvas/core/select-same.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'magic-wand'
 const MODE = 'wand'
 const TOLERANCE_PREF = 'select_same_tolerance'
 const COLOUR_CRITERIA = new Set(['fill', 'stroke', 'fillstroke'])
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
     let criterion = 'fill'
@@ -135,4 +126,4 @@ export default {
       }
     }
   }
-}
+})

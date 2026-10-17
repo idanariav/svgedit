@@ -9,29 +9,20 @@
  *
  */
 
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+
 const name = 'polystar'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { ChangeElementCommand } = svgCanvas.history
     const addToHistory = (cmd: import('@svgedit/svgcanvas').HistoryCommand) => { svgCanvas.undoMgr.addCommandToHistory(cmd) }
     const { $id, $req } = svgCanvas
     let selElems: Element[] = []
     let newFO: Element | null
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     /**
  * @param on true=display
@@ -474,4 +465,4 @@ export default {
       }
     }
   }
-}
+})

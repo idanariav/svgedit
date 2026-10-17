@@ -35,7 +35,7 @@ describe('ext-opensave', () => {
       saveSourceEditor: vi.fn()
     }
     mockCommands(svgEditor)
-    const ext = await extOpenSave.init.call(svgEditor)
+    const ext = await extOpenSave.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

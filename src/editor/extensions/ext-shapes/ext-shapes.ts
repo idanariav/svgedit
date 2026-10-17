@@ -7,17 +7,9 @@
  * @copyright 2010 Christian Tzurcanu, 2010 Alexis Deveria
  *
  */
-const name = 'shapes'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
+const name = 'shapes'
 
 /** the `shape-insert` event detail */
 export interface ShapeInsertDetail {
@@ -30,15 +22,14 @@ export interface ShapeInsertDetail {
   linkedFile?: string
 }
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const canv = svgEditor.svgCanvas
     const { $id, $req } = canv
     const svgroot = canv.getSvgRoot()
     let lastBBox: { x: number, y: number, width: number, height: number } = { x: 0, y: 0, width: 0, height: 0 }
-    loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     const modeId = 'shapelib'
 
@@ -283,4 +274,4 @@ export default {
       }
     }
   }
-}
+})

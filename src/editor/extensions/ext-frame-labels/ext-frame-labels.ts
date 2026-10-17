@@ -15,12 +15,13 @@
  * @license Apache-2.0
  */
 
+import { defineFeature } from '../defineFeature.ts'
+
 const name = 'frame-labels'
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
     const host = $id('svgcanvas')
@@ -149,4 +150,4 @@ export default {
       selectedChanged: schedule
     }
   }
-}
+})

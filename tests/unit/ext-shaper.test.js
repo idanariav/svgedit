@@ -208,7 +208,7 @@ describe('ext-shaper', () => {
       listenerAbort: new AbortController()
     }
     mockCommands(svgEditor)
-    const ext = await extShaper.init.call(svgEditor)
+    const ext = await extShaper.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

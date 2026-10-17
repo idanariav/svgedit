@@ -29,6 +29,7 @@ import {
 } from '@svgedit/svgcanvas/core/gradient-edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { closestRoot } from '../../domScope.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'gradient-tool'
 
@@ -47,15 +48,6 @@ const BAR = '#202020'
 const LIGHT = '#f0f0f0'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const SHAPES = ['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygon', 'text']
-
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
 
 const mk = (tag: string, attrs: Record<string, unknown>) => {
   const e = document.createElementNS(SVG_NS, tag)
@@ -78,13 +70,12 @@ const toHex = (color: string | CanvasGradient | CanvasPattern) => {
   return typeof parsed === 'string' && /^#[0-9a-f]{6}$/i.test(parsed) ? parsed : '#000000'
 }
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
     interface Target {
@@ -581,4 +572,4 @@ export default {
       elementChanged: redrawIdle
     }
   }
-}
+})

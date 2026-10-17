@@ -62,7 +62,7 @@ describe('ext-glow', function () {
       i18next: { t: (key) => labels[key] ?? key, addResourceBundle () {} }
     }
     mockCommands(svgEditor)
-    ext = await extGlow.init.call(svgEditor)
+    ext = await extGlow.init(svgEditor)
     ext.callback.call(svgEditor)
     fx = svgEditor.fxFilter
   })

@@ -11,6 +11,8 @@
  * @license MIT
  */
 
+import type { SVGElementJSON } from '../svgcanvas.ts'
+
 export interface MouseDownPayload {
   event: MouseEvent
   /** canvas coordinates */
@@ -51,8 +53,8 @@ export interface KeyDownPayload {
 export type ZoomChangedPayload = number
 
 export interface IDsUpdatedPayload {
-  /** the pasted elements */
-  elems: Element[]
+  /** the pasted elements, as the clipboard's JSON (not yet in the document) */
+  elems: SVGElementJSON[]
   /** maps old id to new id */
   changes: Record<string, string>
   // Return `{ remove: string[] }` to drop elements by id.
@@ -67,11 +69,6 @@ export interface CanvasUpdatedPayload {
   d_y: number
 }
 
-export interface ToolButtonStateUpdatePayload {
-  nofill: boolean
-  nostroke: boolean
-}
-
 export interface SelectedChangedPayload {
   elems: Element[]
   selectedElement: Element | null
@@ -82,21 +79,11 @@ export interface ElementsPayload {
   elems: Element[]
 }
 
-export interface ElementRenamedPayload {
-  /** the canvas `elementRenamed` event detail */
-  renameObj: object
-}
-
 export interface OpenedDocumentPayload {
   name: string
   lastModified: number
   size: number
   type: string
-}
-
-export interface SavedDocumentPayload {
-  name: string
-  kind: string
 }
 
 /**
@@ -111,25 +98,21 @@ export interface ExtensionHookPayloads {
   zoomChanged: ZoomChangedPayload
   IDsUpdated: IDsUpdatedPayload
   canvasUpdated: CanvasUpdatedPayload
-  toolButtonStateUpdate: ToolButtonStateUpdatePayload
   selectedChanged: SelectedChangedPayload
   elementTransition: ElementsPayload
   elementChanged: ElementsPayload
-  elementRenamed: ElementRenamedPayload
   layersChanged: undefined
   layerVisChanged: undefined
   afterClear: undefined
-  beforeClear: undefined
   onOpenedDocument: OpenedDocumentPayload
-  onSavedDocument: SavedDocumentPayload
 }
 
 export const EXTENSION_HOOKS: ReadonlyArray<keyof ExtensionHookPayloads> = Object.freeze([
   'mouseDown', 'mouseMove', 'mouseUp', 'keyDown',
-  'zoomChanged', 'IDsUpdated', 'canvasUpdated', 'toolButtonStateUpdate',
-  'selectedChanged', 'elementTransition', 'elementChanged', 'elementRenamed',
+  'zoomChanged', 'IDsUpdated', 'canvasUpdated',
+  'selectedChanged', 'elementTransition', 'elementChanged',
   'layersChanged', 'layerVisChanged',
-  'afterClear', 'beforeClear', 'onOpenedDocument', 'onSavedDocument'
+  'afterClear', 'onOpenedDocument'
 ] as const)
 
 export const isExtensionHook = (name: string): boolean => (EXTENSION_HOOKS as readonly string[]).includes(name)

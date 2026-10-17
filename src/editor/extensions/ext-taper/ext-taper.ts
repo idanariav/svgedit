@@ -12,23 +12,14 @@
  */
 
 import '../../components/seTaperSettings.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'taper'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
-    await loadExtensionTranslation(svgEditor)
+  async init (svgEditor) {
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
 
@@ -62,4 +53,4 @@ export default {
       }
     }
   }
-}
+})

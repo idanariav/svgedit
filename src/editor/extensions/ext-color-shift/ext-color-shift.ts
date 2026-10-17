@@ -25,17 +25,9 @@
  * cleanly rather than compounding, and Reset (delta=0) restores the snapshot.
  */
 
-const name = 'color-shift'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
+const name = 'color-shift'
 
 // ── Colour helpers ────────────────────────────────────────────────────────
 
@@ -151,14 +143,13 @@ const PAINTABLE_TAGS = new Set([
   'path', 'text', 'tspan', 'foreignObject'
 ])
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const { $id, $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     // Per-element baseline. Keyed by element node so multi-select works even
     // when elements have different starting colours.
@@ -408,4 +399,4 @@ export default {
       }
     }
   }
-}
+})

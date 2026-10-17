@@ -73,7 +73,7 @@ describe('ext-live-effects', function () {
       configObj: { pref: () => 'en' },
       i18next: { t: (key) => labels[key] ?? key, addResourceBundle () {} }
     }
-    ext = await extLiveEffects.init.call(svgEditor)
+    ext = await extLiveEffects.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

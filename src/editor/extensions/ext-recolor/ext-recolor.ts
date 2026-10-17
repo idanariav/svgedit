@@ -12,6 +12,7 @@
  * @license Apache-2.0
  */
 import { collectColors, applyColors } from '@svgedit/svgcanvas/core/recolor.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'recolor'
 const DIALOG_LABELS = [
@@ -19,23 +20,12 @@ const DIALOG_LABELS = [
   'empty', 'cancel', 'ok'
 ]
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selection = () => svgCanvas.getSelectedElements().filter(Boolean)
@@ -108,4 +98,4 @@ export default {
       }
     }
   }
-}
+})

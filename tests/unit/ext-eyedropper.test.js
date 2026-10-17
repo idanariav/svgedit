@@ -40,7 +40,7 @@ describe('ext-eyedropper', () => {
 
     mockCommands(svgEditor)
 
-    extInstance = await extEyedropper.init.call(svgEditor)
+    extInstance = await extEyedropper.init(svgEditor)
     extInstance.callback.call(svgEditor)
   })
 

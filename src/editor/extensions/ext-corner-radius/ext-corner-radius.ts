@@ -24,23 +24,15 @@ import {
   isCornerStateCurrent, CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR
 } from '@svgedit/svgcanvas/core/corner-radius.ts'
 
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+
 const name = 'corner-radius'
 const KIND_ICONS = { r: 'round', i: 'inverted', c: 'chamfer' }
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
-    await loadExtensionTranslation(svgEditor)
+  async init (svgEditor) {
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
 
@@ -164,4 +156,4 @@ export default {
       }
     }
   }
-}
+})

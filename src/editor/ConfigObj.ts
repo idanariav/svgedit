@@ -266,8 +266,7 @@ export default class ConfigObj {
     this.curConfig = {
       // We do not put on defaultConfig to simplify object copying
       //   procedures (we obtain instead from defaultExtensions)
-      extensions: [],
-      userExtensions: []
+      extensions: []
     }
     this.editor = editor
   }
@@ -350,7 +349,7 @@ have been read.
           // rather than treated as a getter (see pref()).
           this.pref(key, val, true)
         }
-      } else if (['extensions', 'userExtensions'].includes(key)) {
+      } else if (key === 'extensions') {
         this.curConfig[key] = this.curConfig[key].concat(val) // We will handle any dupes later
       // Only allow other configObj.curConfig if defined in configObj.defaultConfig
       } else if ({}.hasOwnProperty.call(this.defaultConfig, key)) {

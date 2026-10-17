@@ -106,13 +106,6 @@ class BottomPanel {
         ($req(btn) as any).disabled = false
       })
     }
-    this.editor.svgCanvas.runExtensions(
-      'toolButtonStateUpdate',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_toolButtonStateUpdate} */ {
-        nofill: bNoFill,
-        nostroke: bNoStroke
-      }
-    )
   }
 
   handleColorPicker (type: string, evt: Event) {

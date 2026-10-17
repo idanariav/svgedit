@@ -54,7 +54,7 @@ describe('ext-path-edit', function () {
       i18next: { t: (key) => key, addResourceBundle () {} }
     }
     mockCommands(svgEditor)
-    ext = await extPathEdit.init.call(svgEditor)
+    ext = await extPathEdit.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

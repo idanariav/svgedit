@@ -62,7 +62,7 @@ describe('ext-corner-radius', function () {
       i18next: { t: (key) => key, addResourceBundle () {} }
     }
     mockCommands(svgEditor)
-    ext = await extCornerRadius.init.call(svgEditor)
+    ext = await extCornerRadius.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

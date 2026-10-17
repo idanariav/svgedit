@@ -105,7 +105,7 @@ describe('ext-shape-family', () => {
       listenerAbort: new AbortController()
     }
     mockCommands(svgEditor)
-    ext = await extShapeFamily.init.call(svgEditor)
+    ext = await extShapeFamily.init(svgEditor)
     ext.callback.call(svgEditor)
   })
 

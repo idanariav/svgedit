@@ -14,6 +14,8 @@ describe('ext-connector', () => {
     document.body.append(svgroot)
 
     svgCanvas = {
+      getSvgRoot: () => svgroot,
+      selectorManager: {},
       getElement: vi.fn(),
       $id: vi.fn(() => null),
       addSVGElementsFromJson: vi.fn(),
@@ -73,7 +75,7 @@ describe('ext-connector', () => {
       has: (el, key) => store.has(`${el.id}:${key}`)
     })
 
-    const ext = await extConnector.init.call(svgEditor, { svgroot, selectorManager: {} })
+    const ext = await extConnector.init(svgEditor)
     ext.elementChanged({ elems: [boxA, boxB] })
 
     expect(lineA.getAttribute('x1')).toBeTruthy()
@@ -103,7 +105,7 @@ describe('ext-connector', () => {
       has: (el, key) => store.has(`${el.id}:${key}`)
     })
 
-    const ext = await extConnector.init.call(svgEditor, { svgroot, selectorManager: {} })
+    const ext = await extConnector.init(svgEditor)
     ext.elementChanged({ elems: [boxA] })
 
     expect(lineA.hasAttribute('x1')).toBe(false)
@@ -122,7 +124,7 @@ describe('ext-connector', () => {
     const ownListener = vi.spyOn(ownWorkarea, 'addEventListener')
     svgCanvas.$id.mockImplementation((id) => (id === 'workarea' ? ownWorkarea : null))
 
-    const ext = await extConnector.init.call(svgEditor, { svgroot, selectorManager: {} })
+    const ext = await extConnector.init(svgEditor)
     ext.callback()
 
     expect(ownListener).toHaveBeenCalledWith('mousemove', expect.any(Function))

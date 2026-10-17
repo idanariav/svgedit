@@ -21,6 +21,7 @@
 import { BRUSH_SLOT_COUNT, getBrushSlot, saveBrushSlot, deleteBrushSlot, renameBrushSlot } from '../../customBrushes.ts'
 import { createBrushOptions } from './brushOptions.ts'
 import { createSmoother, buildBrushOutline, finalizeBrushOutline } from '@svgedit/svgcanvas/core/brush-stroke.ts'
+import { defineFeature } from '../defineFeature.ts'
 
 const name = 'brush'
 
@@ -29,10 +30,9 @@ const name = 'brush'
 let lastPressure = 1
 let lastPointerType = 'mouse'
 
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $req } = svgCanvas
     let element: Element | null = null
@@ -125,4 +125,4 @@ export default {
       }
     }
   }
-}
+})

@@ -719,15 +719,6 @@ host restore) leave this false to avoid polluting history.
     applyDefaultClassAttrs(elem, preset)
   }
 
-  elementRenamed (win: Window, renameObj: { elem: Element, oldId: string, newId: unknown }): void {
-    this.svgCanvas.runExtensions(
-      'elementRenamed',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_elementRenamed} */ {
-        renameObj
-      }
-    )
-  }
-
   /**
    * Show the faint brand watermark on the canvas only while the drawing has no
    * objects yet (e.g. a freshly opened document). Lazily sets the background
@@ -747,10 +738,6 @@ host restore) leave this false to avoid polluting history.
   afterClear (win: Window): void {
     this.updateCanvasWatermark()
     this.svgCanvas.runExtensions('afterClear')
-  }
-
-  beforeClear (win: Window): void {
-    this.svgCanvas.runExtensions('beforeClear')
   }
 
   zoomDone (): void {

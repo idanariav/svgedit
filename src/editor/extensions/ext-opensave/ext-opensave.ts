@@ -12,27 +12,17 @@
 import { fileOpen, fileSave } from 'browser-fs-access'
 import { insertImageFromHref } from '../../dialogs/insertImage.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
+import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'opensave'
 let handle: FileSystemFileHandle | null | undefined = null
 
-const loadExtensionTranslation = function (svgEditor: EditorInstance) {
-  const lang = svgEditor.configObj.pref('lang')
-  // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
-  const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
-  if (translationModule) {
-    svgEditor.i18next.addResourceBundle(lang, 'translation', translationModule.default, true, true)
-  }
-}
-
-export default {
+export default defineFeature({
   name,
-  async init () {
-    const svgEditor = (this as unknown) as import('../../Editor.ts').default
+  async init (svgEditor) {
     const { svgCanvas } = svgEditor
     const { $id, $req } = svgCanvas
-    await loadExtensionTranslation(svgEditor)
+    addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>, 'translation')
     const importImage = (e: Event): void => {
       const target = e.target as HTMLInputElement | null
       const fileInput = (target && target.type === 'file') ? target : null
@@ -203,10 +193,6 @@ export default {
           }
           if (handle) {
             svgEditor.topPanel.updateTitle(handle.name)
-            svgCanvas.runExtensions('onSavedDocument', {
-              name: handle.name,
-              kind: handle.kind
-            })
           }
         } catch (err) {
           if ((err as Error).name !== 'AbortError') {
@@ -251,4 +237,4 @@ export default {
       }
     }
   }
-}
+})
