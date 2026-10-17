@@ -151,7 +151,7 @@ class BottomPanel {
   handlePalette (e) {
     const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
-    // `picker` is the destination chosen via the palette's target button.
+    // `picker` is the destination chosen by the palette (Alt/Shift-click = stroke).
     const { picker, color, paint: incomingPaint } = e.detail
     // Gradient swatches dispatch a ready-made Paint instead of a color string.
     if (incomingPaint) {

@@ -92,27 +92,25 @@ describe('se-palette', () => {
     expect(swatch.querySelector('svg').getAttribute('aria-label')).toBe('No color')
   })
 
-  it('cycles the color target through fill -> stroke -> fill on target button click', () => {
+  it('has no target toggle button', () => {
     const el = mountElement('se-palette')
-    expect(el.$targetBtn.dataset.target).toBe('fill')
-
-    el.$targetBtn.dispatchEvent(new MouseEvent('click'))
-    expect(el.$targetBtn.dataset.target).toBe('stroke')
-
-    el.$targetBtn.dispatchEvent(new MouseEvent('click'))
-    expect(el.$targetBtn.dataset.target).toBe('fill')
+    expect(el.shadowRoot.querySelector('.palette_target_btn')).toBeNull()
   })
 
-  it('swatch clicks use the cycled target in the change event', () => {
+  it.each([['altKey'], ['shiftKey']])('a swatch click with %s held targets the stroke', (key) => {
     const el = mountElement('se-palette')
-    el.$targetBtn.dispatchEvent(new MouseEvent('click')) // -> stroke
     const handler = vi.fn()
     el.addEventListener('change', handler)
 
     const swatch = el.shadowRoot.querySelector('.palette_item[data-index="1"]')
-    swatch.dispatchEvent(new MouseEvent('click'))
+    swatch.dispatchEvent(new MouseEvent('click', { [key]: true }))
 
     expect(handler.mock.calls[0][0].detail.picker).toBe('stroke')
+  })
+
+  it('removed swatches no longer cap the width of the remaining ones', () => {
+    const el = mountElement('se-palette')
+    expect(el.shadowRoot.querySelector('style').textContent).not.toMatch(/max-width:\s*22px;\s*height: 22px/)
   })
 
   it('toggles edit mode via the edit button', () => {

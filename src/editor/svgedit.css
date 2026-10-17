@@ -990,14 +990,14 @@ hr {
 
 /* Object rows (layerTree.js): a tree under each expanded layer */
 #layerlist td.layertoggle {
-  width: 14px;
+  width: 20px;
   padding: 9px 0 9px 6px;
   text-align: center;
 }
 #layerlist td.layertoggle::before {
   content: '\25B8';
   display: inline-block;
-  font-size: 10px;
+  font-size: 16px;
   color: var(--muted);
   transition: transform 0.12s;
 }
@@ -1031,9 +1031,10 @@ hr {
 }
 #layerlist .disclosure {
   display: inline-block;
-  width: 12px;
+  width: 16px;
   margin-right: 2px;
-  font-size: 10px;
+  font-size: 15px;
+  line-height: 1;
   color: var(--muted);
   text-align: center;
 }

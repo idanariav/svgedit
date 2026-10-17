@@ -136,15 +136,11 @@ const NONE_SWATCH_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" aria-la
 
 const PENCIL_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l11-11-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>'
 
-// Where a clicked swatch sends its color. Cycled via the target button; the
-// icon shown on that button reflects the active target so it's clear what the
-// custom palette will change. Background isn't included here — it changes
-// rarely enough that it has its own dedicated color picker (bg_color) instead.
-const TARGETS = ['fill', 'stroke']
-const TARGET_LABELS = { fill: 'fill', stroke: 'stroke' }
-const TARGET_ICONS = {
-  fill: '<svg viewBox="0 0 24 24" width="15" height="15"><rect x="4" y="4" width="16" height="16" rx="3" fill="currentColor"/></svg>',
-  stroke: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>'
+// A plain click paints the fill; holding Alt/Option or Shift paints the stroke.
+// Background has its own dedicated color picker (bg_color) instead.
+const targetOf = (/** @type {Event} */ evt) => {
+  const { altKey, shiftKey } = /** @type {MouseEvent} */ (evt)
+  return altKey || shiftKey ? 'stroke' : 'fill'
 }
 
 const template = document.createElement('template')
@@ -210,9 +206,8 @@ template.innerHTML = `
   }
   div.palette_item {
     flex: 1;
-    /* never shrink to a sliver in a narrow pane: the strip scrolls instead */
+    /* grows to fill the strip when swatches are removed; never shrinks to a sliver in a narrow pane (the strip scrolls) */
     min-width: 14px;
-    max-width: 22px;
     height: 22px;
     border-radius: 5px;
     border: 1px solid rgba(0,0,0,0.12);
@@ -338,7 +333,6 @@ template.innerHTML = `
     justify-content: center;
   }
   .palette_edit_btn,
-  .palette_target_btn,
   .reset_btn {
     background: transparent;
     border: none;
@@ -357,7 +351,6 @@ template.innerHTML = `
     padding: 0;
   }
   .palette_edit_btn:hover,
-  .palette_target_btn:hover,
   .reset_btn:hover {
     background: var(--icon-hover-bg, #EEF1F5);
     color: var(--icon-hover, #0F172A);
@@ -365,14 +358,6 @@ template.innerHTML = `
   .palette_edit_btn.is-active {
     background: var(--accent-soft, #E0EAFD);
     color: var(--accent, #2563EB);
-  }
-  /* The target button is the primary control here — keep its glyph at full
-     foreground strength so it reads as an actionable selector, not a hint. */
-  .palette_target_btn {
-    color: var(--fg, #0F172A);
-  }
-  .palette_target_btn svg {
-    display: block;
   }
   .reset_btn {
     display: none;
@@ -393,7 +378,6 @@ template.innerHTML = `
   </div>
   <button class="palette_edit_btn" title="Edit palette colors" aria-pressed="false">${PENCIL_SVG}</button>
   <button class="reset_btn" title="Reset palette colors" aria-label="Reset palette colors">↺</button>
-  <button class="palette_target_btn" title="Color target"></button>
 `
 
 /**
@@ -418,16 +402,9 @@ export class SEPalette extends HTMLElement {
       e.preventDefault()
     }, { passive: false })
     this.$editBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('button.palette_edit_btn'))
-    this.$targetBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('button.palette_target_btn'))
     this.$resetBtn = /** @type {HTMLButtonElement} */ (this._shadowRoot.querySelector('.reset_btn'))
     this._overrides = loadOverrides()
     this._editMode = false
-    this._target = 'fill'
-
-    $click(this.$targetBtn, (e) => {
-      e.stopPropagation()
-      this._cycleTarget()
-    })
 
     $click(this.$editBtn, (e) => {
       e.stopPropagation()
@@ -439,7 +416,6 @@ export class SEPalette extends HTMLElement {
       this._resetAll()
     })
 
-    this._renderTargetBtn()
     this.renderSwatches()
   }
 
@@ -545,7 +521,7 @@ export class SEPalette extends HTMLElement {
         evt.preventDefault()
         if (this._editMode) return
         this.dispatchEvent(new CustomEvent('change', {
-          detail: { picker: this._target, color },
+          detail: { picker: targetOf(evt), color },
           bubbles: false
         }))
       })
@@ -648,7 +624,7 @@ export class SEPalette extends HTMLElement {
     const val = this.getColor(i)
     if (isGradientOverride(val)) {
       this.dispatchEvent(new CustomEvent('change', {
-        detail: { picker: this._target, paint: paintFromOverride(val) },
+        detail: { picker: targetOf(evt), paint: paintFromOverride(val) },
         bubbles: false
       }))
       return
@@ -658,7 +634,7 @@ export class SEPalette extends HTMLElement {
       color = 'none'
     }
     this.dispatchEvent(new CustomEvent('change', {
-      detail: { picker: this._target, color },
+      detail: { picker: targetOf(evt), color },
       bubbles: false
     }))
   }
@@ -706,26 +682,6 @@ export class SEPalette extends HTMLElement {
     this._overrides = {}
     saveOverrides(this._overrides)
     this.renderSwatches()
-  }
-
-  // ── Color target ─────────────────────────────────────────────────────────
-  /**
-   * Advance the destination a clicked swatch paints (fill → stroke → fill)
-   * and reflect it on the target button.
-   * @returns {void}
-   */
-  _cycleTarget () {
-    const idx = TARGETS.indexOf(this._target)
-    this._target = TARGETS[(idx + 1) % TARGETS.length]
-    this._renderTargetBtn()
-  }
-
-  _renderTargetBtn () {
-    const label = TARGET_LABELS[this._target]
-    this.$targetBtn.innerHTML = TARGET_ICONS[this._target]
-    this.$targetBtn.dataset.target = this._target
-    this.$targetBtn.setAttribute('title', `Color target: ${label} (click to change)`)
-    this.$targetBtn.setAttribute('aria-label', `Color target: ${label}`)
   }
 }
 
