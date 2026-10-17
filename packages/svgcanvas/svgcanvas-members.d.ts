@@ -15,7 +15,7 @@ import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { ProportionSnapGuides } from './core/proportions.ts'
 import type { SegmentParams } from './core/segment.ts'
 
-/** The text-edit session (`core/text-actions.js`): the caret, the selection and the hidden textarea behind them. */
+/** The text-edit session (`core/text-actions.ts`): the caret, the selection and the hidden textarea behind them. */
 export interface TextActionsApi {
   select(target: SVGTextElement, x: number, y: number): void
   start(elem: SVGTextElement): void

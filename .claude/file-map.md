@@ -63,7 +63,7 @@
 | `event-shape-draw.ts` | Shape-creation mode mouse handlers, extracted from the rect/square/frame/foreignObject/image/circle/ellipse/line/text/ fhellipse/fhrect/fhpath cases of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event-text-edit.ts` | Text-editing mode (`textedit`) mouse handlers, extracted from the `textedit` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event-zoom.ts` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
-| `event.js` | Tools for event |
+| `event.ts` | Pointer and wheel dispatch for the canvas: press, move, release and double-click are routed to the per-mode `event-*` handlers, with the debug log and the creation epilogue |
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
@@ -98,7 +98,7 @@
 | `path-seg-shim.js` | Replacement for the deprecated `SVGPathSeg`/`SVGPathSegList` DOM API, removed from browsers around 2016 and previously restored here via the `pathseg` npm polyfill |
 | `path-simplify.ts` | Path simplification / smoothing, on the corner-keeping Bézier fit in `path-fit.js` (sharp turns stay corners; tolerances are distances in user units) |
 | `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
-| `path.js` | Path functionality |
+| `path.ts` | Path functionality |
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.ts` | Recalculate dimensions and transformations of SVG elements |
@@ -119,7 +119,7 @@
 | `svg-exec.js` | Tools for svg |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
-| `text-actions.js` | Text cursor/selection editing (`verticalMove` for area text) |
+| `text-actions.ts` | Text edit session: the caret, the selection and the hidden textarea behind them (`verticalMove` / `lineEdge` for area text) |
 | `text-attrs.ts` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
 | `text-path.ts` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |

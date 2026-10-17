@@ -1,7 +1,6 @@
-// @ts-check
-// text-actions.js — Text cursor/selection editing (`verticalMove` for area text)
 /**
- * @module text-actions Tools for Text edit functions
+ * Text edit session: the caret, the selection and the hidden textarea behind them (`verticalMove` / `lineEdge` for area text).
+ * @module text-actions
  * @license MIT
  *
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
@@ -18,14 +17,12 @@ import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import { supportsGoodTextCharPos } from '../common/browser.ts'
 import { isAreaText, rowsOf, softCount } from './text-rows.ts'
 
-/** @typedef {{x: number, y: number, height: number}} CharBox */
+import type SvgCanvas from '../svgcanvas.js'
 
-/**
- * @function module:text-actions.init
- * @param {import('../svgcanvas.js').default} canvas
- * @returns {void}
- */
-export const init = (canvas) => {
+interface CharBox { x: number, y: number, height: number }
+interface Point { x: number, y: number }
+
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; the TextActions class below closes over it
 
   /**
@@ -35,48 +32,37 @@ export const init = (canvas) => {
  * @memberof module:svgcanvas.SvgCanvas#
  */
   class TextActions {
-    /** @type {?SVGTextElement} */
-    #curtext = null
-    /** @type {?HTMLTextAreaElement} */
-    #textinput = null
-    /** @type {?SVGLineElement} */
-    #cursor = null
-    /** @type {?SVGPathElement} */
-    #selblock = null
-    /** @type {?ReturnType<typeof setInterval>} */
-    #blinker = null
-    /** @type {CharBox[]} */
-    #chardata = [] // per textarea-caret-position: { x, y(row top), height }
-    /** @type {?{x: number, y: number, width: number, height: number}} */
-    #textbb = null // , transbb;
-    /** @type {?SVGMatrix} */
-    #matrix = null
-    /** @type {?number} */
-    #lastX = null
-    /** @type {?number} */
-    #lastY = null
+    #curtext: SVGTextElement | null = null
+    #textinput: HTMLTextAreaElement | null = null
+    #cursor: SVGLineElement | null = null
+    #selblock: SVGPathElement | null = null
+    #blinker: ReturnType<typeof setInterval> | null = null
+    #chardata: CharBox[] = [] // per textarea-caret-position: { x, y(row top), height }
+    #textbb: { x: number, y: number, width: number, height: number } | null = null // , transbb;
+    #matrix: SVGMatrix | null = null
+    #lastX: number | null = null
+    #lastY: number | null = null
     #allowDbl = false
 
     /**
    * Get the accumulated transformation matrix from the element up to the SVG content element.
    * This includes transforms from all parent groups, fixing the issue where text cursor
    * appears in the wrong position when editing text inside a transformed group.
-   * @param {Element} elem - The element to get the accumulated matrix for
-   * @returns {SVGMatrix|null} The accumulated transformation matrix, or null if none
+   * @param elem - The element to get the accumulated matrix for
+   * @returns The accumulated transformation matrix, or null if none
    */
-    #getAccumulatedMatrix = (elem) => {
+    #getAccumulatedMatrix = (elem: Element): SVGMatrix | null => {
       const svgContent = svgCanvas.getSvgContent()
-      /** @type {SVGMatrix[]} */
-      const matrices = []
+      const matrices: SVGMatrix[] = []
 
-      let current = elem
+      let current: Element | null = elem
       while (current && current !== svgContent && current.nodeType === 1) {
         const tlist = getTransformList(current)
         if (tlist && tlist.numberOfItems > 0) {
           const matrix = transformListToTransform(tlist).matrix
           matrices.unshift(matrix) // Add to beginning to maintain correct order
         }
-        current = /** @type {Element} */ (current.parentNode)
+        current = current.parentNode as Element | null
       }
 
       if (matrices.length === 0) {
@@ -91,12 +77,7 @@ export const init = (canvas) => {
       return matrixMultiply(...matrices)
     }
 
-    /**
-   *
-   * @param {number} [index]
-   * @returns {void}
-   */
-    #setCursor = (index = undefined) => {
+    #setCursor = (index: number | undefined = undefined): void => {
       const input = this.#textinput
       if (!input) return
       const empty = input.value === ''
@@ -117,7 +98,7 @@ export const init = (canvas) => {
       if (!empty) {
         input.setSelectionRange(index, index)
       }
-      let cursor = /** @type {?SVGLineElement} */ (svgCanvas.getElement('text_cursor'))
+      let cursor = svgCanvas.getElement('text_cursor') as SVGLineElement | null | undefined
       if (!cursor) {
         cursor = document.createElementNS(NS.SVG, 'line')
         assignAttributes(cursor, {
@@ -125,7 +106,7 @@ export const init = (canvas) => {
           stroke: '#333',
           'stroke-width': 1
         })
-        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
         parentGroup.append(cursor)
       }
       this.#cursor = cursor
@@ -156,14 +137,7 @@ export const init = (canvas) => {
       }
     }
 
-    /**
-   *
-   * @param {number} start
-   * @param {number} end
-   * @param {boolean} [skipInput]
-   * @returns {void}
-   */
-    #setSelection = (start, end, skipInput) => {
+    #setSelection = (start: number, end: number, skipInput?: boolean): void => {
       if (start === end) {
         this.#setCursor(end)
         return
@@ -173,7 +147,7 @@ export const init = (canvas) => {
         this.#textinput?.setSelectionRange(start, end)
       }
 
-      let selblock = /** @type {?SVGPathElement} */ (svgCanvas.getElement('text_selectblock'))
+      let selblock = svgCanvas.getElement('text_selectblock') as SVGPathElement | null | undefined
       if (!selblock) {
         selblock = document.createElementNS(NS.SVG, 'path')
         assignAttributes(selblock, {
@@ -182,7 +156,7 @@ export const init = (canvas) => {
           opacity: 0.5,
           style: 'pointer-events:none'
         })
-        const parentGroup = /** @type {Element} */ (svgCanvas.getElement('selectorParentGroup'))
+        const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
         parentGroup.append(selblock)
       }
       this.#selblock = selblock
@@ -192,7 +166,7 @@ export const init = (canvas) => {
       // Highlight the selection as one quad per row it spans. Consecutive caret
       // positions on the same row share a `y`; a change in `y` marks a row break.
       const cd = this.#chardata
-      const quad = (/** @type {CharBox} */ e0, /** @type {CharBox} */ e1) => {
+      const quad = (e0: CharBox, e1: CharBox): string => {
         const tl = this.#ptToScreen(e0.x, e0.y)
         const tr = this.#ptToScreen(e1.x, e1.y)
         const bl = this.#ptToScreen(e0.x, e0.y + e0.height)
@@ -216,13 +190,7 @@ export const init = (canvas) => {
       })
     }
 
-    /**
-   *
-   * @param {number} mouseX
-   * @param {number} mouseY
-   * @returns {number}
-   */
-    #getIndexFromPoint = (mouseX, mouseY) => {
+    #getIndexFromPoint = (mouseX: number, mouseY: number): number => {
       const cd = this.#chardata
       // No content, so return 0
       if (!cd || cd.length <= 1) {
@@ -247,24 +215,11 @@ export const init = (canvas) => {
       return best
     }
 
-    /**
-   *
-   * @param {number} mouseX
-   * @param {number} mouseY
-   * @returns {void}
-   */
-    #setCursorFromPoint = (mouseX, mouseY) => {
+    #setCursorFromPoint = (mouseX: number, mouseY: number): void => {
       this.#setCursor(this.#getIndexFromPoint(mouseX, mouseY))
     }
 
-    /**
-   *
-   * @param {number} x
-   * @param {number} y
-   * @param {boolean} [apply]
-   * @returns {void}
-   */
-    #setEndSelectionFromPoint = (x, y, apply) => {
+    #setEndSelectionFromPoint = (x: number, y: number, apply?: boolean): void => {
       const i1 = this.#textinput?.selectionStart ?? 0
       const i2 = this.#getIndexFromPoint(x, y)
 
@@ -273,13 +228,7 @@ export const init = (canvas) => {
       this.#setSelection(start, end, !apply)
     }
 
-    /**
-   *
-   * @param {number} xIn
-   * @param {number} yIn
-   * @returns {module:math.XYObject}
-   */
-    #screenToPt = (xIn, yIn) => {
+    #screenToPt = (xIn: number, yIn: number): Point => {
       const out = {
         x: xIn,
         y: yIn
@@ -297,13 +246,7 @@ export const init = (canvas) => {
       return out
     }
 
-    /**
-   *
-   * @param {number} xIn
-   * @param {number} yIn
-   * @returns {module:math.XYObject}
-   */
-    #ptToScreen = (xIn, yIn) => {
+    #ptToScreen = (xIn: number, yIn: number): Point => {
       const out = {
         x: xIn,
         y: yIn
@@ -321,45 +264,24 @@ export const init = (canvas) => {
       return out
     }
 
-    /**
-   *
-   * @returns {void}
-   */
-    #selectAll = () => {
+    #selectAll = (): void => {
       if (!this.#allowDbl || !this.#curtext || !this.#textinput) {
         return
       }
       this.#setSelection(0, this.#textinput.value.length)
     }
 
-    /**
-   * @param {SVGTextElement} target
-   * @param {number} x
-   * @param {number} y
-   * @returns {void}
-   */
-    select (target, x, y) {
+    select (target: SVGTextElement, x: number, y: number): void {
       this.#curtext = target
       svgCanvas.textActions.toEditMode(x, y)
     }
 
-    /**
-   * @param {SVGTextElement} elem
-   * @returns {void}
-   */
-    start (elem) {
+    start (elem: SVGTextElement): void {
       this.#curtext = elem
       svgCanvas.textActions.toEditMode()
     }
 
-    /**
-   * @param {MouseEvent} evt
-   * @param {Element} mouseTarget
-   * @param {number} startX
-   * @param {number} startY
-   * @returns {void}
-   */
-    mouseDown (evt, mouseTarget, startX, startY) {
+    mouseDown (_evt: MouseEvent, _mouseTarget: Element, startX: number, startY: number): void {
       const pt = this.#screenToPt(startX, startY)
 
       this.#textinput?.focus()
@@ -370,23 +292,12 @@ export const init = (canvas) => {
     // TODO: Find way to block native selection
     }
 
-    /**
-   * @param {number} mouseX
-   * @param {number} mouseY
-   * @returns {void}
-   */
-    mouseMove (mouseX, mouseY) {
+    mouseMove (mouseX: number, mouseY: number): void {
       const pt = this.#screenToPt(mouseX, mouseY)
       this.#setEndSelectionFromPoint(pt.x, pt.y)
     }
 
-    /**
-   * @param {MouseEvent} evt
-   * @param {number} mouseX
-   * @param {number} mouseY
-   * @returns {void}
-   */
-    mouseUp (evt, mouseX, mouseY) {
+    mouseUp (evt: MouseEvent, mouseX: number, mouseY: number): void {
       const pt = this.#screenToPt(mouseX, mouseY)
 
       this.#setEndSelectionFromPoint(pt.x, pt.y, true)
@@ -412,11 +323,10 @@ export const init = (canvas) => {
    * Move the caret one drawn row up (-1) or down (1). The edit buffer has no idea where an area text wraps, so
    * the textarea's own ArrowUp / ArrowDown would jump a whole paragraph; this picks the caret position nearest
    * the same x in the neighbouring row instead (past the first / last row it goes to the start / end).
-   * @param {-1|1} dir
-   * @param {boolean} [extend] Shift: grow the selection from its anchor
-   * @returns {boolean} Whether the key was handled (only area text is)
+   * @param extend Shift: grow the selection from its anchor
+   * @returns Whether the key was handled (only area text is)
    */
-    verticalMove (dir, extend = false) {
+    verticalMove (dir: -1 | 1, extend = false): boolean {
       const text = this.#curtext
       const input = this.#textinput
       if (!text || !input || !isAreaText(text) || !this.#chardata.length) { return false }
@@ -426,7 +336,7 @@ export const init = (canvas) => {
       const anchor = backward ? input.selectionEnd : input.selectionStart
       const ys = [...new Set(cd.map((c) => c.y))]
       const row = ys.indexOf(cd[head].y) + dir
-      let target
+      let target: number
       if (row < 0) {
         target = 0
       } else if (row >= ys.length) {
@@ -444,11 +354,10 @@ export const init = (canvas) => {
     /**
    * Home / End by drawn row: the textarea's own would go to the start / end of the whole paragraph. A row's caret
    * positions are the consecutive ones that share its y (the end of a soft row includes the spaces the break swallowed).
-   * @param {'start'|'end'} edge
-   * @param {boolean} [extend] Shift: grow the selection from its anchor
-   * @returns {boolean} Whether the key was handled (only area text is)
+   * @param extend Shift: grow the selection from its anchor
+   * @returns Whether the key was handled (only area text is)
    */
-    lineEdge (edge, extend = false) {
+    lineEdge (edge: 'start' | 'end', extend = false): boolean {
       const text = this.#curtext
       const input = this.#textinput
       if (!text || !input || !isAreaText(text) || !this.#chardata.length) { return false }
@@ -467,31 +376,21 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {number} target caret position to move to
-   * @param {number} anchor the selection's fixed end
-   * @param {boolean} extend keep the anchor (a selection) instead of collapsing onto `target`
-   * @returns {void}
+   * @param target caret position to move to
+   * @param anchor the selection's fixed end
+   * @param extend keep the anchor (a selection) instead of collapsing onto `target`
    */
-    #moveCaret (target, anchor, extend) {
+    #moveCaret (target: number, anchor: number, extend: boolean): void {
       const from = extend ? anchor : target
       this.#textinput?.setSelectionRange(Math.min(from, target), Math.max(from, target), target < from ? 'backward' : 'forward')
       this.init()
     }
 
-    /**
-   * @param {number} index
-   * @returns {void}
-   */
-    setCursor (index) {
+    setCursor (index?: number): void {
       this.#setCursor(index)
     }
 
-    /**
-   * @param {number} x
-   * @param {number} y
-   * @returns {void}
-   */
-    toEditMode (x, y) {
+    toEditMode (x?: number, y?: number): void {
       this.#allowDbl = false
       svgCanvas.setCurrentMode('textedit')
       svgCanvas.selectorManager.requestSelector(this.#curtext).showGrips(false)
@@ -511,7 +410,7 @@ export const init = (canvas) => {
       if (arguments.length === 0) {
         this.#setCursor()
       } else {
-        const pt = this.#screenToPt(x, y)
+        const pt = this.#screenToPt(x as number, y as number)
         this.#setCursorFromPoint(pt.x, pt.y)
       }
 
@@ -521,11 +420,9 @@ export const init = (canvas) => {
     }
 
     /**
-   * @param {boolean|Element} selectElem
    * @fires module:svgcanvas.SvgCanvas#event:selected
-   * @returns {void}
    */
-    toSelectMode (selectElem) {
+    toSelectMode (selectElem?: boolean | Element): void {
     // Lock mode: a freshly-placed text re-arms the text tool instead of
     // dropping back to select, so the user can place several texts in a row.
     // Use setCurrentMode (not setMode) to avoid re-entering textActions.clear().
@@ -558,7 +455,7 @@ export const init = (canvas) => {
         svgCanvas.clearSelection()
         if (this.#curtext) this.#curtext.style.cursor = 'move'
 
-        const curtext = /** @type {Element} */ (this.#curtext)
+        const curtext = this.#curtext as Element
         svgCanvas.call('selected', [curtext])
         svgCanvas.addToSelection([curtext], true)
       }
@@ -577,28 +474,20 @@ export const init = (canvas) => {
     // }
     }
 
-    /**
-   * @param {HTMLTextAreaElement} elem
-   * @returns {void}
-   */
-    setInputElem (elem) {
+    setInputElem (elem: HTMLTextAreaElement): void {
       this.#textinput = elem
     }
 
-    /**
-   * @returns {void}
-   */
-    clear () {
+    clear (): void {
       if (svgCanvas.getCurrentMode() === 'textedit') {
         svgCanvas.textActions.toSelectMode()
       }
     }
 
     /**
-   * @param {Element} [_inputElem] Not in use
-   * @returns {void}
+   * @param _inputElem Not in use
    */
-    init (_inputElem) {
+    init (_inputElem?: Element): void {
       let text = this.#curtext
       const input = this.#textinput
       if (!text || !input) {
@@ -608,7 +497,7 @@ export const init = (canvas) => {
       if (!text.parentNode) {
       // Result of the ffClone, need to get correct element
         const selectedElements = svgCanvas.getSelectedElements()
-        text = /** @type {SVGTextElement} */ (selectedElements[0])
+        text = selectedElements[0] as SVGTextElement
         this.#curtext = text
         svgCanvas.selectorManager.requestSelector(text).showGrips(false)
       }
@@ -643,7 +532,7 @@ export const init = (canvas) => {
       if (isNaN(row0Baseline)) {
         row0Baseline = (textbb?.y ?? 0) + ascent
       }
-      const rowTop = (/** @type {number} */ row) => row0Baseline + row * lineHeight - ascent
+      const rowTop = (row: number) => row0Baseline + row * lineHeight - ascent
 
       // Anchor x for blank rows / empty text — the row's reference point, which
       // is the (shared) tspan x = text x attribute.
@@ -658,7 +547,7 @@ export const init = (canvas) => {
         : (text.textContent ?? '').length
       const goodPos = supportsGoodTextCharPos()
       const zoom = svgCanvas.getZoom()
-      const glyph = new Array(renderedLen)
+      const glyph: Array<{ x0: number, x1: number }> = new Array(renderedLen)
       for (let s = 0; s < renderedLen; s++) {
         const start = text.getStartPositionOfChar(s)
         const end = text.getEndPositionOfChar(s)
@@ -674,7 +563,7 @@ export const init = (canvas) => {
 
       if (isAreaText(text)) {
         // Wrapped rows: each row is a tspan with its own baseline; a soft break stands for the spaces it swallowed.
-        const chardata = new Array(len + 1)
+        const chardata: CharBox[] = new Array(len + 1)
         const rows = rowsOf(text)
         let k = 0
         let s = 0
@@ -683,7 +572,7 @@ export const init = (canvas) => {
           const text = tspan.textContent ?? ''
           const top = (parseFloat(tspan.getAttribute('y') ?? '') || row0Baseline) - ascent
           const rowX = parseFloat(tspan.getAttribute('x') ?? '')
-          const box = (/** @type {number} */ x) => ({ x, y: top, height: cursorHeight })
+          const box = (x: number): CharBox => ({ x, y: top, height: cursorHeight })
           for (let j = 0; j < text.length; j++) {
             lastX = glyph[s + j] ? glyph[s + j].x0 : lastX
             chardata[k + j] = box(lastX)
@@ -711,13 +600,13 @@ export const init = (canvas) => {
       }
 
       // Phase 2: walk the textarea value, producing a caret box per position.
-      const chardata = new Array(len + 1)
+      const chardata: CharBox[] = new Array(len + 1)
       let s = 0 // rendered char index
       let row = 0
       let rowStartS = 0 // value of `s` at the start of the current row
       for (let k = 0; k <= len; k++) {
         const ch = k < len ? value[k] : undefined
-        let x
+        let x: number
         if (ch !== undefined && ch !== '\n') {
         // caret sits at the left edge of a rendered char
           x = glyph[s] ? glyph[s].x0 : anchorX

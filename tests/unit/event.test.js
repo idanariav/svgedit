@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { init as initEvent } from '../../packages/svgcanvas/core/event.js'
+import { init as initEvent } from '../../packages/svgcanvas/core/event.ts'
 import { attachUnits } from './unitsMock.js'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 

@@ -1,6 +1,5 @@
-// @ts-check
 /**
- * Tools for event.
+ * Pointer and wheel dispatch for the canvas: press, move, release and double-click are routed to the per-mode `event-*` handlers, with the debug log and the creation epilogue.
  * @module event
  * @license MIT
  * @copyright 2011 Jeff Schiller
@@ -27,33 +26,31 @@ import { init as eventResizeInit } from './event-resize.ts'
 import { init as eventRotateInit } from './event-rotate.ts'
 import { init as eventSelectInit } from './event-select.ts'
 import { describeElement, describePointer } from './debug-events.ts'
+import type SvgCanvas from '../svgcanvas.js'
+import type { DrawSnapOptions } from './draw-snap.ts'
 
 const {
   InsertElementCommand
 } = hstry
 
-/**
-* @function module:undo.init
-* @param {import('../svgcanvas.js').default} canvas
-* @returns {void}
-*/
-export const init = (canvas) => {
+/** What an extension's `mouseUp` hook may return to keep, replace or start an element. */
+interface MouseUpHookResult {
+  keep?: boolean
+  element?: Element | null
+  started?: boolean
+}
+
+export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
    * Debug log: one entry per press and release (what was hit, in which mode, with which
    * modifiers, where in the document, and what the release committed). A no-op unless a
    * host turned the debug log on.
-   * @type {?{down: object, moves: number, undoSize: number}}
    */
-  let press = null
+  let press: { down: object, moves: number, undoSize: number } | null = null
 
-  /**
-   * @param {'pointer-down'|'pointer-up'} kind
-   * @param {MouseEvent} evt
-   * @returns {void}
-   */
-  const logPress = (kind, evt) => {
+  const logPress = (kind: 'pointer-down' | 'pointer-up', evt: MouseEvent): void => {
     if (!svgCanvas._debugEventSink) return
     try {
       // the root matrix is refreshed by a press itself, so the first press falls back to the document's
@@ -84,19 +81,12 @@ export const init = (canvas) => {
   const eventRotate = eventRotateInit(svgCanvas)
   const eventSelect = eventSelectInit(svgCanvas)
   // Snap a point being drawn to other objects (core/draw-snap.ts).
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {import('./draw-snap.ts').DrawSnapOptions} [opts]
-   */
-  const snapDraw = (x, y, opts) => svgCanvas.drawSnap.snapDrawPoint(x, y, opts)
+  const snapDraw = (x: number, y: number, opts?: DrawSnapOptions) => svgCanvas.drawSnap.snapDrawPoint(x, y, opts)
 
   /**
    * Show where a press would snap while the pointer only hovers (core/draw-snap.ts).
-   * @param {MouseEvent} evt
-   * @returns {void}
    */
-  const hoverSnap = (evt) => {
+  const hoverSnap = (evt: MouseEvent): void => {
     const tool = Boolean(svgCanvas.activeToolSnaps?.())
     if (!tool && !isDrawSnapMode(svgCanvas.getCurrentMode())) {
       svgCanvas.drawSnap.clearDrawHover()
@@ -110,13 +100,10 @@ export const init = (canvas) => {
   }
 
   /**
- *
- * @param {MouseEvent} evt
  * @fires module:svgcanvas.SvgCanvas#event:transition
  * @fires module:svgcanvas.SvgCanvas#event:ext_mouseMove
- * @returns {void}
  */
-  const mouseMoveEvent = (evt) => {
+  const mouseMoveEvent = (evt: MouseEvent): void => {
     if (press) press.moves++
     // if the mouse is move without dragging an element, just return.
     if (!svgCanvas.getStarted()) {
@@ -194,7 +181,7 @@ export const init = (canvas) => {
       case 'fhellipse':
       case 'fhrect':
       case 'fhpath': {
-        eventShapeDraw.move(evt, { x, y, realX, realY, shape: /** @type {SVGElement} */ (shape) })
+        eventShapeDraw.move(evt, { x, y, realX, realY, shape: shape as SVGElement })
         break
       }
       case 'path': // fall through
@@ -224,7 +211,7 @@ export const init = (canvas) => {
   * @property {number} mouse_y y coordinate on canvas
   * @property {Element} selected Refers to the first selected element
   */
-    svgCanvas.runExtensions('mouseMove', /** @type {module:svgcanvas.SvgCanvas#event:ext_mouseMove} */ {
+    svgCanvas.runExtensions('mouseMove', {
       event: evt,
       mouse_x: mouseX,
       mouse_y: mouseY,
@@ -232,12 +219,7 @@ export const init = (canvas) => {
     })
   } // mouseMove()
 
-  /**
-*
-* @returns {void}
-*/
-  /** @param {MouseEvent} evt */
-  const mouseOutEvent = (evt) => {
+  const mouseOutEvent = (evt: MouseEvent): void => {
     const { $id } = svgCanvas
     svgCanvas.drawSnap.clearDrawHover()
     if (svgCanvas.getCurrentMode() !== 'select' && svgCanvas.getStarted()) {
@@ -270,14 +252,12 @@ export const init = (canvas) => {
 * gesture — a thrown error here still bubbles to the DOM listener (which
 * swallows it), but the flags below would otherwise stay in whatever
 * mid-gesture state they were in, wedging future mouseDown/mouseUp handling.
-* @param {MouseEvent} evt
 * @fires module:svgcanvas.SvgCanvas#event:zoomed
 * @fires module:svgcanvas.SvgCanvas#event:elementInserted
 * @fires module:svgcanvas.SvgCanvas#event:changed
 * @fires module:svgcanvas.SvgCanvas#event:ext_mouseUp
-* @returns {void}
 */
-  const mouseUpEvent = (evt) => {
+  const mouseUpEvent = (evt: MouseEvent): void => {
     try {
       mouseUpEventImpl(evt)
       logPress('pointer-up', evt) // after the release ran, so `undoSize` shows what it committed
@@ -296,8 +276,7 @@ export const init = (canvas) => {
     }
   }
 
-  /** @param {MouseEvent} evt */
-  const mouseUpEventImpl = (evt) => {
+  const mouseUpEventImpl = (evt: MouseEvent): void => {
     evt.preventDefault()
     svgCanvas.gesture.moveSelectionThresholdReached = false
     svgCanvas.gesture.dragStartBBox = null
@@ -341,8 +320,7 @@ export const init = (canvas) => {
     // event-select.js never got a chance to see) must not leak into a later,
     // unrelated select-mode drag.
     svgCanvas.gesture.altCloneArmed = false
-    /** @type {any} */
-    let t
+    let t: Element | null = null
     // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
     // Resize must be flattened via recalculateDimensions (which bakes the scale into
     // real attributes like width/height/font-size), not consolidated into a matrix.
@@ -419,7 +397,8 @@ export const init = (canvas) => {
       element
     }, true)
 
-    extResult.forEach((/** @type {any} */ r) => {
+    extResult.forEach((res) => {
+      const r = res as MouseUpHookResult | undefined
       if (r) {
         keep = r.keep || keep;
         ({ element } = r)
@@ -432,20 +411,20 @@ export const init = (canvas) => {
       element.remove()
       element = null
 
-      t = evt.target
+      t = evt.target as Element | null
 
       // if this element is in a group, go up until we reach the top-level group
       // just below the layer groups
       // TODO: once we implement links, we also would have to check for <a> elements
-      while (t?.parentNode?.parentNode?.tagName === 'g') {
-        t = t.parentNode
+      while ((t?.parentNode?.parentNode as Element | null | undefined)?.tagName === 'g') {
+        t = (t as Element).parentNode as Element
       }
       // if we are not in the middle of creating a path, and we've clicked on some shape,
       // then go to Select mode.
       // WebKit returns <div> when the canvas is clicked, Firefox/Opera return <svg>
       if ((svgCanvas.getCurrentMode() !== 'path' || !svgCanvas.getDrawnPath()) &&
       t &&
-      t.parentNode?.id !== 'selectorParentGroup' &&
+      (t.parentNode as Element | null)?.id !== 'selectorParentGroup' &&
       t.id !== 'svgcanvas' && t.id !== 'svgroot'
       ) {
       // switch into "select" mode if we've clicked on an element
@@ -492,14 +471,13 @@ export const init = (canvas) => {
       }
 
       let aniDur = 0.2
-      /** @type {any} */
-      let cAni
+      let cAni: SVGAnimateElement | undefined
       const curShape = svgCanvas.getStyle()
       const opacAni = svgCanvas.getOpacAni()
       if (typeof opacAni.beginElement === 'function' && Number.parseFloat(element.getAttribute('opacity') ?? '') !== curShape.opacity) {
-        cAni = opacAni.cloneNode(true)
-        cAni.setAttribute('to', curShape.opacity)
-        cAni.setAttribute('dur', aniDur)
+        cAni = opacAni.cloneNode(true) as SVGAnimateElement
+        cAni.setAttribute('to', String(curShape.opacity))
+        cAni.setAttribute('dur', String(aniDur))
         element.appendChild(cAni)
         try {
         // Fails in FF4 on foreignObject
@@ -561,10 +539,9 @@ export const init = (canvas) => {
     svgCanvas.setStartTransform(null)
   }
 
-  /** @param {MouseEvent} evt */
-  const dblClickEvent = (evt) => {
-    const evtTarget = /** @type {Element} */ (evt.target)
-    const parent = /** @type {Element} */ (evtTarget.parentNode)
+  const dblClickEvent = (evt: MouseEvent): void => {
+    const evtTarget = evt.target as Element
+    const parent = evtTarget.parentNode as Element
 
     const mouseTarget = svgCanvas.getMouseTarget(evt)
     const { tagName } = mouseTarget
@@ -573,7 +550,7 @@ export const init = (canvas) => {
     // Editing an existing text (not a fresh placement) — don't let lock mode re-arm the text tool
       svgCanvas.setTextFreshCreate(false)
       const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.getrootSctm())
-      svgCanvas.textActions.select(/** @type {SVGTextElement} */ (mouseTarget), pt.x, pt.y)
+      svgCanvas.textActions.select(mouseTarget as SVGTextElement, pt.x, pt.y)
     }
 
     // getMouseTarget() falls back to the svg root as its "this click isn't
@@ -634,10 +611,8 @@ export const init = (canvas) => {
  * the browser's native hit-test rarely lands on them when they overlap a filled
  * shape. Detected via computed style so it generalizes to any `fill:none`
  * element regardless of how the fill/stroke were set.
- * @param {Element} el
- * @returns {boolean}
  */
-  const isStrokeOnlyElement = (el) => {
+  const isStrokeOnlyElement = (el: Element): boolean => {
     if (!el || !(el instanceof SVGGraphicsElement)) { return false }
     const cs = getComputedStyle(el)
     if (cs.fill !== 'none') { return false }
@@ -650,8 +625,7 @@ export const init = (canvas) => {
   // "inside" it) apart from a closed shape (a hollow rect/circle, or a filled
   // shape's rotated-corner gaps) whose whole bbox is a reasonable grab target.
   const OPEN_LINE_TAGS = new Set(['line', 'polyline'])
-  /** @param {Element|null|undefined} el */
-  const isOpenPathElement = (el) => {
+  const isOpenPathElement = (el: Element | null | undefined): boolean => {
     if (!el) { return false }
     if (OPEN_LINE_TAGS.has(el.tagName)) { return true }
     if (el.tagName !== 'path') { return false }
@@ -667,11 +641,10 @@ export const init = (canvas) => {
  * browser's own hit-testing (`elementsFromPoint`), which already accounts for
  * transforms, zoom and stroke width. Group isolation is honored by resolving
  * each sampled node through `getMouseTargetFromNode`.
- * @param {MouseEvent} evt
- * @param {Element} currentTarget - the element the native hit-test resolved to
- * @returns {Element|null} a nearby stroke-only selectable element, or null
+ * @param currentTarget - the element the native hit-test resolved to
+ * @returns a nearby stroke-only selectable element, or null
  */
-  const findStrokeElementNearPoint = (evt, currentTarget) => {
+  const findStrokeElementNearPoint = (evt: MouseEvent, currentTarget: Element): Element | null => {
   // Already on a stroke-only element (or a selector grip) — nothing to upgrade.
     if (
       currentTarget === svgCanvas.selectorManager.selectorParentGroup ||
@@ -696,7 +669,7 @@ export const init = (canvas) => {
           const target = svgCanvas.getMouseTargetFromNode(node)
           if (
             target &&
-          (target.parentNode === parentContext || (anyLayer && Layer.isLayer(/** @type {SVGGElement} */ (target.parentNode)))) &&
+          (target.parentNode === parentContext || (anyLayer && Layer.isLayer(target.parentNode as SVGGElement))) &&
           isStrokeOnlyElement(target)
           ) {
             return target
@@ -718,11 +691,9 @@ export const init = (canvas) => {
  * try/catch: it's a single data-flow pipeline (not independent steps), so a
  * throw partway through must still leave drag state recoverable for the next
  * gesture rather than silently wedged.
- * @param {MouseEvent} evt
  * @fires module:svgcanvas.SvgCanvas#event:ext_mouseDown
- * @returns {void}
  */
-  const mouseDownEvent = (evt) => {
+  const mouseDownEvent = (evt: MouseEvent): void => {
     logPress('pointer-down', evt)
     try {
       mouseDownEventImpl(evt)
@@ -735,8 +706,7 @@ export const init = (canvas) => {
     }
   }
 
-  /** @param {MouseEvent} evt */
-  const mouseDownEventImpl = (evt) => {
+  const mouseDownEventImpl = (evt: MouseEvent): void => {
     const dataStorage = svgCanvas.getDataStorage()
     const selectedElements = svgCanvas.getSelectedElements()
     const zoom = svgCanvas.getZoom()
@@ -791,7 +761,7 @@ export const init = (canvas) => {
     let mouseTarget = svgCanvas.getMouseTarget(evt)
 
     if (mouseTarget.tagName === 'a' && mouseTarget.childNodes.length === 1) {
-      mouseTarget = /** @type {Element} */ (mouseTarget.firstChild)
+      mouseTarget = mouseTarget.firstChild as Element
     }
 
     // Ctrl/Cmd-click drills straight into a group and selects the clicked child in
@@ -846,7 +816,7 @@ export const init = (canvas) => {
       // is (or contains) a currently-selected element.
         const stack = document.elementsFromPoint(evt.clientX, evt.clientY)
         for (const node of stack) {
-          const hit = sel.find((/** @type {Element} */ s) => s === node || s.contains(node))
+          const hit = sel.find((s) => s === node || s.contains(node))
           if (hit) { mouseTarget = hit; break }
         }
       }
@@ -934,7 +904,7 @@ export const init = (canvas) => {
       svgCanvas.getCurrentMode() === 'select' &&
     mouseTarget === svgCanvas.selectorManager.selectorParentGroup && selectedElements[0]
     ) {
-      const grip = /** @type {Element} */ (evt.target)
+      const grip = evt.target as Element
       const griptype = dataStorage.get(grip, 'type')
       // rotating
       if (griptype === 'rotate') {
@@ -1028,19 +998,17 @@ export const init = (canvas) => {
       selectedElements
     }, true)
 
-    extResult.forEach((/** @type {any} */ r) => {
+    extResult.forEach((r) => {
       if (r?.started) {
         svgCanvas.setStarted(true)
       }
     })
   }
   /**
- * @param {WheelEvent & {wheelDelta?: number}} e
  * @fires module:event.SvgCanvas#event:updateCanvas
  * @fires module:event.SvgCanvas#event:zoomDone
- * @returns {void}
  */
-  const DOMMouseScrollEvent = (e) => {
+  const DOMMouseScrollEvent = (e: WheelEvent & { wheelDelta?: number }): void => {
     const zoom = svgCanvas.getZoom()
     const { $id } = svgCanvas
     if (!e.ctrlKey && !e.metaKey) { return }
@@ -1055,7 +1023,7 @@ export const init = (canvas) => {
     if (!screenCTM) { return }
     svgCanvas.setRootSctm(screenCTM.inverse())
 
-    const workarea = /** @type {Element} */ (svgCanvas.$id('workarea'))
+    const workarea = svgCanvas.$id('workarea') as Element
     const scrbar = 15
     const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
@@ -1072,7 +1040,7 @@ export const init = (canvas) => {
 
     const factor = Math.max(3 / 4, Math.min(4 / 3, (delta)))
 
-    let wZoom; let hZoom
+    let wZoom: number; let hZoom: number
     if (factor > 1) {
       wZoom = Math.ceil(editorW / workareaViewW * factor * 100) / 100
       hZoom = Math.ceil(editorH / workareaViewH * factor * 100) / 100
@@ -1091,14 +1059,13 @@ export const init = (canvas) => {
  * Apply a zoom level while keeping a given screen point fixed under the
  * pointer/fingers. Shared by the Ctrl+wheel handler and the tablet-mode
  * pinch gesture (see `core/touch.js`).
- * @param {number} zoomlevel - target zoom (clamped to [0.01, 10])
- * @param {number} clientX - screen x of the zoom anchor
- * @param {number} clientY - screen y of the zoom anchor
+ * @param zoomlevel - target zoom (clamped to [0.01, 10])
+ * @param clientX - screen x of the zoom anchor
+ * @param clientY - screen y of the zoom anchor
  * @fires module:event.SvgCanvas#event:updateCanvas
  * @fires module:event.SvgCanvas#event:zoomDone
- * @returns {void}
  */
-  const zoomAtPoint = (zoomlevel, clientX, clientY) => {
+  const zoomAtPoint = (zoomlevel: number, clientX: number, clientY: number): void => {
     const zoom = svgCanvas.getZoom()
     const { $id } = svgCanvas
 
@@ -1114,7 +1081,7 @@ export const init = (canvas) => {
     if (zoomlevel === zoom) { return }
     const factor = zoomlevel / zoom
 
-    const workarea = /** @type {Element} */ (svgCanvas.$id('workarea'))
+    const workarea = svgCanvas.$id('workarea') as Element
     const rulerwidth = svgCanvas.getCurConfig().showRulers ? 16 : 0
 
     // full work area size in screen pixels
@@ -1125,7 +1092,7 @@ export const init = (canvas) => {
     const pt = transformPoint(clientX, clientY, svgCanvas.getrootSctm())
 
     // content offset from canvas in screen pixels
-    const wOffset = findPos(/** @type {HTMLElement} */ (workarea))
+    const wOffset = findPos(workarea as HTMLElement)
     const wOffsetLeft = wOffset.left + rulerwidth
     const wOffsetTop = wOffset.top + rulerwidth
 
@@ -1151,7 +1118,7 @@ export const init = (canvas) => {
     }
 
     svgCanvas.setZoom(zoomlevel)
-    const zoomField = /** @type {HTMLInputElement} */ (svgCanvas.$id('zoom'))
+    const zoomField = svgCanvas.$id('zoom') as HTMLInputElement
     zoomField.value = ((zoomlevel * 100).toFixed(1))
 
     svgCanvas.call('updateCanvas', { center: false, newCtr })

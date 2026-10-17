@@ -5,7 +5,7 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import * as domUtils from '../../packages/svgcanvas/core/dom-utils.ts'
 import * as bboxUtils from '../../packages/svgcanvas/core/bbox-utils.ts'
 import * as math from '../../packages/svgcanvas/core/math.ts'
-import * as path from '../../packages/svgcanvas/core/path.js'
+import * as path from '../../packages/svgcanvas/core/path.ts'
 import { attachUnits } from './unitsMock.js'
 
 const utilities = { ...domUtils, ...bboxUtils }

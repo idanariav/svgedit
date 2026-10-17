@@ -201,7 +201,7 @@ export interface InternalMembers {
   simplifyFreehand(element: Element, fidelity?: number): Element
   pencilEnd(x: number, y: number): PenEnd | null
   continueFreehand(polyline: Element, end: PenEnd, fidelity?: number): Element
-  // --- `core/path.js` ---
+  // --- `core/path.ts` ---
   clearData(): void
   getLinkControlPts(): boolean
   getPathFuncs(): (string | number)[]
