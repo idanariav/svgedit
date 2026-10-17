@@ -33,7 +33,7 @@ export interface SelectedElemApi {
   moveUpDownSelected(dir: 'Up' | 'Down'): void
   switchSelectedZorder(): void
   // Element manipulation
-  moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): HistoryCommand | void
+  moveSelectedElements(dx: number | number[], dy: number | number[], undoable?: boolean): (HistoryCommand & { isEmpty(): boolean }) | undefined
   cloneSelectedElements(x: number, y: number): void
   transformAgain(): void
   matchStrokes(): void

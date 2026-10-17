@@ -210,9 +210,9 @@ class SeZoom extends HTMLElement {
     )
     this.arrowDown.addEventListener('mouseup', e => this.handleMouseUp('down'))
 
-    this.optionsContainer = this._shadowRoot.querySelector(
+    this.optionsContainer = /** @type {HTMLElement} */ (this._shadowRoot.querySelector(
       '#options-container'
-    )
+    ))
     this.changedTimeout = null
   }
 
@@ -281,7 +281,7 @@ class SeZoom extends HTMLElement {
     if (oldValue === newValue) {
       switch (name) {
         case 'value':
-          if (parseInt(this.inputElement.value) !== newValue) {
+          if (Number.parseInt(this.inputElement.value) !== Number(newValue)) {
             this.inputElement.value = showZoom(newValue)
           }
           break
@@ -334,7 +334,7 @@ class SeZoom extends HTMLElement {
    */
   handleSelect (e) {
     this.value = /** @type {Element} */ (e.target).getAttribute('value')
-    this.title = /** @type {Element} */ (e.target).getAttribute('text')
+    this.title = /** @type {Element} */ (e.target).getAttribute('text') ?? ''
   }
 
   /**
@@ -462,7 +462,7 @@ class SeZoom extends HTMLElement {
 
   /**
    * @function handleKeyDown
-   * @param {Event} e
+   * @param {KeyboardEvent} e
    * @returns {void}
    */
   handleKeyDown (e) {

@@ -35,7 +35,7 @@ const NAMED_KEYS = new Set([
   'pageup', 'pagedown', 'insert',
   'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12'
 ])
-const isValidKeyToken = (/** @type {string | undefined} */ k) => /^[a-z0-9]$/.test(k) || NAMED_KEYS.has(k)
+const isValidKeyToken = (/** @type {string} */ k) => /^[a-z0-9]$/.test(k) || NAMED_KEYS.has(k)
 // A human-readable display hint (e.g. "Z / Ctrl + wheel", "Delete/Backspace")
 // rather than a single bindable combo.
 const isDisplayString = (/** @type {string} */ raw) => /[\s/]/.test(raw)
@@ -78,7 +78,7 @@ const normalizeComponentSpec = (raw) => {
   const canonical = normalizeSpec(raw.replace(/ctrl/ig, 'mod'))
   if (!canonical) return null
   // Reject non-key garbage (e.g. an unresolved i18n path used as a shortcut).
-  return isValidKeyToken(canonical.split('+').pop()) ? canonical : null
+  return isValidKeyToken(canonical.split('+').pop() ?? '') ? canonical : null
 }
 
 /**
@@ -89,7 +89,7 @@ const normalizeComponentSpec = (raw) => {
  * @returns {string[]}
  */
 export const expandEditorKey = (key) =>
-  String(key).split('/').map((k) => normalizeSpec(k)).filter(Boolean)
+  String(key).split('/').flatMap((k) => normalizeSpec(k) ?? [])
 
 /**
  * Build the canonical key string for a keydown event, or null for a lone
@@ -109,6 +109,7 @@ const pressedCombo = (e) => {
 }
 
 // Human-readable token map for displaying a canonical key in the UI.
+/** @type {Record<string, string>} */
 const KEY_LABELS = {
   arrowleft: '←',
   arrowright: '→',
@@ -120,7 +121,7 @@ const KEY_LABELS = {
   backspace: 'Backspace',
   tab: 'Tab'
 }
-const MOD_LABELS = () => ({
+const MOD_LABELS = () => /** @type {Record<string, string>} */ ({
   meta: isMac() ? '⌘' : 'Meta',
   ctrl: 'Ctrl',
   alt: isMac() ? '⌥' : 'Alt',
@@ -142,6 +143,7 @@ export const formatHotkey = (canonical) => {
 }
 
 // A badge on a tool icon is a few pixels wide: modifiers are symbols on every platform.
+/** @type {Record<string, string>} */
 const BADGE_MODS = { meta: '⌘', ctrl: '⌃', alt: '⌥', shift: '⇧' }
 
 /**
@@ -203,13 +205,14 @@ export const tooltipText = (name, rawShortcut) => {
  */
 export const boundTooltipText = (name, rawShortcut, hotkeys, id) => {
   const action = id ? hotkeys?.getAction(id) : undefined
-  if (!hotkeys || !action || action.decorative) return tooltipText(name, rawShortcut)
+  if (!hotkeys || !id || !action || action.decorative) return tooltipText(name, rawShortcut)
   const key = hotkeys.effectiveKeys(id)[0]
   return key ? `${name} [${formatCanonicalShortcut(key)}]` : name
 }
 
 // Bucket a component (button/menu) action into a manager group by its id.
 // Anything not listed falls back to 'Tools'.
+/** @type {Record<string, string>} */
 const GROUP_BY_ID = {
   // View toggles
   tool_frame: 'View',
@@ -273,18 +276,7 @@ export const GROUP_ORDER = [
   'Move', 'Clone', 'Rotate', 'Zoom', 'Selection', 'Navigate'
 ]
 
-/**
- * @typedef {object} HotkeyAction
- * @property {string} id
- * @property {string} group
- * @property {string[]} defaultKeys canonical
- * @property {boolean} pd preventDefault on dispatch
- * @property {?function} run editor-level action (null for component actions)
- * @property {?Element} el component element to click (null for editor actions)
- * @property {string} labelKey i18n key / fallback label
- * @property {?string} decorative raw display string when the binding is fixed
- * @property {boolean} [alias] twin button of another command: owns no keys (see commands.js)
- */
+/** @typedef {import('./commands.js').CommandRecord} HotkeyAction one action: a command, as the registry holds it */
 
 const FOCUS_CONTROL = 'button, a[href], input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])'
 
@@ -295,8 +287,10 @@ const FOCUS_CONTROL = 'button, a[href], input, select, textarea, summary, [role=
  * @param {?EventTarget} target
  * @returns {boolean}
  */
-export const isFocusControl = (target) =>
-  !!target?.matches && (target.localName.startsWith('se-') || target.matches(FOCUS_CONTROL))
+export const isFocusControl = (target) => {
+  const el = /** @type {Element|null|undefined} */ (target)
+  return !!el?.matches && (el.localName.startsWith('se-') || el.matches(FOCUS_CONTROL))
+}
 
 /**
  * Central hotkey registry.
@@ -337,17 +331,20 @@ export default class HotkeyManager {
    * Ingest the editor-level `this.shortcuts` array. Each entry must carry
    * `id`, `group`, `label`; `key` may use `mod`/`ctrl` tokens and `/`
    * alternatives, `pd` is preserved.
-   * @param {Array<object>} shortcuts
+   * @param {ReturnType<typeof import('./editorShortcuts.js').buildEditorShortcuts>} shortcuts
    * @returns {void}
    */
   ingestEditorShortcuts (shortcuts) {
     shortcuts.forEach((sc) => {
       if (!sc.id) return
-      let keyval = sc.key
+      /** @type {string|undefined} */
+      let keyval
       let pd = false
       if (Array.isArray(sc.key)) {
-        keyval = sc.key[0]
-        pd = sc.key.length > 1 ? sc.key[1] : false
+        keyval = /** @type {string} */ (sc.key[0])
+        pd = sc.key.length > 1 ? Boolean(sc.key[1]) : false
+      } else {
+        keyval = sc.key
       }
       this.editor.commands.register({
         id: sc.id,
@@ -374,7 +371,7 @@ export default class HotkeyManager {
    */
   registerEl ({ id, el, label, rawKey }) {
     if (!id) return
-    const canonical = normalizeComponentSpec(rawKey)
+    const canonical = normalizeComponentSpec(rawKey ?? '')
     // A non-bindable but human-readable hint (e.g. "Z / Ctrl + wheel") is shown
     // read-only; anything else with no valid combo is simply unassigned (and so
     // remains editable, letting the user add a real binding).
@@ -457,14 +454,15 @@ export default class HotkeyManager {
 
   /**
    * Grouped, display-ready snapshot of every action for the manager dialog.
-   * @returns {Array<{group:string, actions:Array<object>}>}
+   * @returns {Array<{group:string, actions:Array<{id: string, label: string, keys: string[], decorative: ?string, readonly: boolean, customised: boolean}>}>}
    */
   listForUi () {
+    /** @type {Map<string, Array<{id: string, label: string, keys: string[], decorative: ?string, readonly: boolean, customised: boolean}>>} */
     const groups = new Map()
     for (const a of this.actions.values()) {
       if (a.alias) continue
       if (!groups.has(a.group)) groups.set(a.group, [])
-      groups.get(a.group).push({
+      ;/** @type {Array<*>} */ (groups.get(a.group)).push({
         id: a.id,
         label: this.labelFor(a),
         keys: this.effectiveKeys(a.id),
@@ -482,7 +480,7 @@ export default class HotkeyManager {
     })
     return ordered.map((g) => ({
       group: g,
-      actions: groups.get(g).sort((a, b) => a.label.localeCompare(b.label))
+      actions: /** @type {Array<*>} */ (groups.get(g)).sort((a, b) => a.label.localeCompare(b.label))
     }))
   }
 

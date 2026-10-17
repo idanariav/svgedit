@@ -22,6 +22,11 @@ import { createFxComposer } from '../fx-filter.js'
 
 const name = 'glow'
 
+/** @typedef {import('../fx-filter.js').OuterGlow} OuterGlow */
+/** @typedef {import('../fx-filter.js').InnerGlow} InnerGlow */
+/** @typedef {{outer?: OuterGlow|null, inner?: (OuterGlow & {source?: string})|null, feather?: {radius: number}|null, remove?: boolean}} GlowParams */
+/** @typedef {'outer'|'inner'} GlowKind */
+
 const DEFAULT_BLUR = 5
 const DEFAULTS = {
   outer: { color: '#ffff00', opacity: 0.75 },
@@ -46,6 +51,8 @@ export default {
     const { svgCanvas } = svgEditor
     const { BatchCommand } = svgCanvas.history
     const { $id, $req } = svgCanvas
+    /** A panel field by id (the glow panel's ids are built per kind, so they are not in the typed id map). */
+    const field = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ ($req(id))
     await loadExtensionTranslation(svgEditor)
     const t = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
@@ -56,7 +63,7 @@ export default {
      * An element's glow and feather as `{ outer, inner, feather }` (each may
      * be null), or null when it has none — the shape the class library stores.
      * @param {Element} elem
-     * @returns {?{outer: ?object, inner: ?object, feather: ?object}}
+     * @returns {?{outer: ?OuterGlow, inner: ?InnerGlow, feather: ?{radius: number}}}
      */
     const getGlowFromElement = (elem) => {
       if (!elem) return null
@@ -65,21 +72,22 @@ export default {
     }
 
     /** Current panel values for one glow; null when its blur is 0 (off). */
-    const readPanel = (/** @type {string} */ kind) => {
-      const blur = Number($req(`glow_${kind}_blur`).value)
+    const readPanel = (/** @type {GlowKind} */ kind) => {
+      const blur = Number(field(`glow_${kind}_blur`).value)
       if (!(blur > 0)) return null
+      /** @type {OuterGlow & {source?: string}} */
       const glow = {
         blur,
-        color: $req(`glow_${kind}_color`).value,
-        opacity: Math.min(1, Math.max(0, Number($req(`glow_${kind}_opacity`).value) / 100))
+        color: field(`glow_${kind}_color`).value,
+        opacity: Math.min(1, Math.max(0, Number(field(`glow_${kind}_opacity`).value) / 100))
       }
-      if (kind === 'inner') glow.source = $req('glow_inner_source').value === 'centre' ? 'centre' : 'edge'
+      if (kind === 'inner') glow.source = field('glow_inner_source').value === 'centre' ? 'centre' : 'edge'
       return glow
     }
 
     /** Current panel value of the feather; null when its radius is 0 (off). */
     const readFeather = () => {
-      const radius = Number($req('glow_feather_radius').value)
+      const radius = Number(field('glow_feather_radius').value)
       return radius > 0 ? { radius } : null
     }
 
@@ -90,22 +98,22 @@ export default {
      * the element is preserved. Shared by the panel and the class library's
      * apply path.
      * @param {Element} elem
-     * @param {object} params - `{ outer, inner, feather }` (each a glow / feather or null) or `{ remove: true }`
-     * @param {BatchCommand} batchCmd
+     * @param {GlowParams} params - `{ outer, inner, feather }` (each a glow / feather or null) or `{ remove: true }`
+     * @param {InstanceType<typeof BatchCommand>} batchCmd
      */
     const applyGlowToElement = (elem, params, batchCmd) => {
       if (!elem) return
       const spec = fx.readEffects(elem)
-      const keep = (g) => (g && Number(g.blur) > 0 ? g : null)
+      const keep = (/** @type {*} */ g) => (g && Number(g.blur) > 0 ? g : null)
       spec.glow = params.remove
         ? { outer: null, inner: null }
         : { outer: keep(params.outer), inner: keep(params.inner) }
-      spec.feather = !params.remove && params.feather?.radius > 0 ? params.feather : null
+      spec.feather = !params.remove && params.feather && params.feather.radius > 0 ? params.feather : null
       fx.writeEffects(elem, spec, batchCmd)
     }
 
     /** Apply the panel's values to the selection as one undo step. */
-    const setGlow = (/** @type {object} */ params) => {
+    const setGlow = (/** @type {GlowParams} */ params) => {
       const elem = svgCanvas.getSelectedElements()[0]
       if (!elem) return
       const batchCmd = new BatchCommand('Set glow')
@@ -133,26 +141,26 @@ export default {
       panel.style.display = on ? '' : 'none'
       if (!on || !elem) return
       const glow = getGlowFromElement(elem) || { outer: null, inner: null }
-      for (const kind of ['outer', 'inner']) {
+      for (const kind of /** @type {GlowKind[]} */ (['outer', 'inner'])) {
         const g = glow[kind]
         // Blur 0 when off, so the panel reads "no glow" rather than showing
         // phantom active values.
-        $req(`glow_${kind}_blur`).value = g?.blur ?? 0
-        $req(`glow_${kind}_opacity`).value = Math.round((g?.opacity ?? DEFAULTS[kind].opacity) * 100)
-        $req(`glow_${kind}_color`).value = g?.color ?? DEFAULTS[kind].color
-        panel.querySelector(`[data-glow="${kind}"]`).toggleAttribute('data-off', !g)
+        field(`glow_${kind}_blur`).value = String(g?.blur ?? 0)
+        field(`glow_${kind}_opacity`).value = String(Math.round((g?.opacity ?? DEFAULTS[kind].opacity) * 100))
+        field(`glow_${kind}_color`).value = g?.color ?? DEFAULTS[kind].color
+        ;/** @type {Element} */ (panel.querySelector(`[data-glow="${kind}"]`)).toggleAttribute('data-off', !g)
       }
-      $req('glow_inner_source').value = glow.inner?.source ?? DEFAULTS.inner.source
+      field('glow_inner_source').value = glow.inner?.source ?? DEFAULTS.inner.source
       const { feather } = fx.readEffects(elem)
-      $req('glow_feather_radius').value = feather?.radius ?? 0
-      panel.querySelector('[data-glow="feather"]').toggleAttribute('data-off', !feather)
+      field('glow_feather_radius').value = String(feather?.radius ?? 0)
+      ;/** @type {Element} */ (panel.querySelector('[data-glow="feather"]')).toggleAttribute('data-off', !feather)
     }
 
     return {
       name: t('name'),
 
       callback () {
-        const group = (/** @type {string} */ kind) => `
+        const group = (/** @type {GlowKind} */ kind) => `
           <div class="glow_group" data-glow="${kind}" data-off>
             <div class="glow_group_label">${t(kind)}</div>
             <div class="sidepanel_section_grid">
@@ -193,24 +201,24 @@ export default {
           anchor.after(node)
         } else {
           const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
-          host.appendChild(node)
+          ;/** @type {Element} */ (host).appendChild(node)
         }
 
-        const source = $id('glow_inner_source')
+        const source = /** @type {HTMLElementTagNameMap['se-select']} */ ($req('glow_inner_source'))
         source.addOption('edge', t('contextTools.edge'))
         source.addOption('centre', t('contextTools.centre'))
         source.value = DEFAULTS.inner.source
 
         const commit = () => setGlow({ outer: readPanel('outer'), inner: readPanel('inner'), feather: readFeather() })
-        for (const kind of ['outer', 'inner']) {
+        for (const kind of /** @type {GlowKind[]} */ (['outer', 'inner'])) {
           // Editing opacity / colour of a glow that is off switches it on at a
           // visible default blur (a zero blur would mean "no glow").
           const switchOn = () => {
-            if (!(Number($req(`glow_${kind}_blur`).value) > 0)) $req(`glow_${kind}_blur`).value = DEFAULT_BLUR
+            if (!(Number(field(`glow_${kind}_blur`).value) > 0)) field(`glow_${kind}_blur`).value = String(DEFAULT_BLUR)
           }
-          $req(`glow_${kind}_blur`).addEventListener('change', commit)
+          field(`glow_${kind}_blur`).addEventListener('change', commit)
           for (const part of ['opacity', 'color']) {
-            $req(`glow_${kind}_${part}`).addEventListener('change', () => {
+            field(`glow_${kind}_${part}`).addEventListener('change', () => {
               switchOn()
               commit()
             })
@@ -218,7 +226,7 @@ export default {
         }
         source.addEventListener('change', () => {
           const blur = /** @type {HTMLInputElement} */ ($id('glow_inner_' + 'blur'))
-          if (!(Number(blur.value) > 0)) blur.value = DEFAULT_BLUR
+          if (!(Number(blur.value) > 0)) blur.value = String(DEFAULT_BLUR)
           commit()
         })
         $req('glow_feather_radius').addEventListener('change', commit)
@@ -232,7 +240,7 @@ export default {
         })
       },
 
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{selectedElement: Element|null, multiselected: boolean}} */ opts) {
         if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
         if (!opts.selectedElement || opts.multiselected) {
           showPanel(false)
@@ -252,8 +260,8 @@ export default {
         svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
       },
 
-      elementChanged (opts) {
-        (opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
+      elementChanged (/** @type {{elems: Element[]}} */ opts) {
+        ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
       }
     }
   }

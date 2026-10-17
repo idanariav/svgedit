@@ -35,6 +35,8 @@ const loadExtensionTranslation = function (svgEditor) {
   }
 }
 
+/** @typedef {{angle?: number, length?: number, blur?: number, opacity?: number, color?: string, remove?: boolean}} ShadowParams */
+
 export default {
   name,
   async init () {
@@ -103,8 +105,8 @@ export default {
      * outline on the element is preserved. Shared by the panel's setShadow and
      * the class library's apply path.
      * @param {Element} elem
-     * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
-     * @param {BatchCommand} batchCmd
+     * @param {ShadowParams} params - { angle, length, blur, opacity, color } or { remove: true }
+     * @param {InstanceType<typeof BatchCommand>} batchCmd
      */
     const applyShadowToElement = (elem, params, batchCmd) => {
       if (!elem) return
@@ -115,7 +117,7 @@ export default {
       if (params.remove || Number(params.length) === 0) {
         spec.shadow = null
       } else {
-        const { angle, length, blur, opacity, color } = params
+        const { angle, length, blur, opacity, color } = /** @type {Required<ShadowParams>} */ (params)
         const { dx, dy } = toOffset(angle, length)
         spec.shadow = { dx, dy, blur, color, opacity }
       }
@@ -125,7 +127,7 @@ export default {
     /**
      * Apply/update/remove the shadow on the current selection, committing the
      * change as one undo step. Thin wrapper over {@link applyShadowToElement}.
-     * @param {object} params - { angle, length, blur, opacity, color } or { remove: true }
+     * @param {ShadowParams} params - { angle, length, blur, opacity, color } or { remove: true }
      */
     const setShadow = (params) => {
       const elem = svgCanvas.getSelectedElements()[0]
@@ -148,7 +150,7 @@ export default {
     /**
      * Show/hide the shadow panel and populate controls from the element.
      */
-    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null|undefined} */ elem) => {
+    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null} */ elem = null) => {
       const panel = $id('shadow_panel')
       if (!panel) return
       panel.style.display = on ? '' : 'none'
@@ -199,7 +201,7 @@ export default {
           </div>
         `
         const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
-        host.appendChild(panelTemplate.content.cloneNode(true))
+        ;/** @type {Element} */ (host).appendChild(panelTemplate.content.cloneNode(true))
 
         // Wire event listeners
         const DEFAULT_LENGTH = 8
@@ -217,7 +219,7 @@ export default {
           setShadow(getShadowPanelValues())
         }
         ;['shadow_angle', 'shadow_length', 'shadow_blur', 'shadow_opacity', 'shadow_color'].forEach((id) => {
-          $id(id).addEventListener('change', applyFromPanel)
+          $req(id).addEventListener('change', applyFromPanel)
         })
         $req('shadow_enabled').addEventListener('change', (e) => {
           if (/** @type {HTMLInputElement} */ (e.target).checked) {
@@ -229,7 +231,7 @@ export default {
         })
       },
 
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{selectedElement: Element|null, multiselected: boolean}} */ opts) {
         if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
         if (!opts.selectedElement || opts.multiselected) {
           showPanel(false)
@@ -250,8 +252,8 @@ export default {
         svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
       },
 
-      elementChanged (opts) {
-        (opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
+      elementChanged (/** @type {{elems: Element[]}} */ opts) {
+        ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
       }
     }
   }

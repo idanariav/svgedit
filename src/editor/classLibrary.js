@@ -129,7 +129,7 @@ export const getClassesForScope = scope =>
 /**
  * Look up a single preset by name.
  * @param {string} name
- * @returns {Object|undefined}
+ * @returns {{name:string,scope:string,attrs:Object}|undefined}
  */
 export const getClass = name => getClasses().find(c => c.name === name)
 

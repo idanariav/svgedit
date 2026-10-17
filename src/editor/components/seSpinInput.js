@@ -142,6 +142,11 @@ template.innerHTML = `
  * stepping, min/max clamping, and step-precision value formatting.
  */
 export class SESpinInput extends HTMLElement {
+  /** @type {number|null} */ _min
+  /** @type {number|null} */ _max
+  /** @type {ReturnType<typeof setTimeout>|null} */ _holdTimer
+  /** @type {{id: number, startX: number, lastX: number, acc: number, start: number, original: string, tx: {commit(): unknown, cancel(): void}|null, active: boolean}|null} a label drag in progress */ _scrub
+
   /**
     * @function constructor
     */
@@ -205,7 +210,7 @@ export class SESpinInput extends HTMLElement {
         this._loadIcon(newValue)
         break
       case 'size':
-        this.$input.size = newValue
+        this.$input.size = Number(newValue)
         this.$input.style.width = 'unset'
         break
       case 'step':
@@ -337,7 +342,7 @@ export class SESpinInput extends HTMLElement {
 
   /**
 * Shift steps by 10, Ctrl/Cmd by a tenth.
-* @param {WheelEvent} e
+* @param {MouseEvent} e
 */
   _modifierScale (e) {
     if (e.shiftKey) return 10
@@ -370,7 +375,7 @@ export class SESpinInput extends HTMLElement {
   }
 
   /**
-* @param {{ pointerId: number; clientX: number; }} e
+* @param {PointerEvent} e
 */
   _onScrubMove (e) {
     const s = this._scrub
@@ -395,7 +400,7 @@ export class SESpinInput extends HTMLElement {
 
   // Escape during the drag puts the original value back and rolls the drawing back with it.
   /**
-* @param {{ key: string; preventDefault: () => void; stopPropagation: () => void; }} e
+* @param {KeyboardEvent} e
 */
   _onScrubKey (e) {
     if (e.key !== 'Escape' || !this._scrub) return
@@ -452,7 +457,7 @@ export class SESpinInput extends HTMLElement {
   }
 
   _stopHold () {
-    clearTimeout(this._holdTimer)
+    clearTimeout(this._holdTimer ?? undefined)
     this._holdTimer = null
     window.removeEventListener('mouseup', this._stopHold)
   }
@@ -562,7 +567,7 @@ export class SESpinInput extends HTMLElement {
     })
     this.$input.addEventListener('keyup', (e) => {
       e.preventDefault()
-      if (!isNaN(/** @type {HTMLInputElement} */ (e.target).value)) {
+      if (!isNaN(Number(/** @type {HTMLInputElement} */ (e.target).value))) {
         this.value = /** @type {HTMLInputElement} */ (e.target).value
         this.dispatchEvent(this.$event)
       }

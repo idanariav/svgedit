@@ -212,14 +212,14 @@ export class SeImageImportDialog extends HTMLElement {
     // The "import as paths" toggle only applies to editable SVG imports.
     this.$pathsRow.classList.toggle('show', isSvg)
     const reader = new FileReader()
-    reader.onloadend = ({ target: { result } }) => {
-      this.showPreview(result, file.name)
+    reader.onloadend = () => {
+      this.showPreview(/** @type {string} */ (reader.result), file.name)
     }
     reader.readAsDataURL(file)
     if (isSvg) {
       const textReader = new FileReader()
-      textReader.onloadend = ({ target: { result } }) => {
-        this.editableSvg = result
+      textReader.onloadend = () => {
+        this.editableSvg = /** @type {string} */ (textReader.result)
       }
       textReader.readAsText(file)
     }

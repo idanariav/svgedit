@@ -67,13 +67,24 @@
  * intentional and visually negligible for thin lines/arrows — not a bug.
  */
 
+/** @typedef {{blur: number, color: string, opacity: number}} OuterGlow */
+/** @typedef {OuterGlow & {source: string}} InnerGlow `source`: `'edge'` or `'centre'` */
+/**
+ * The combined effects of one element; a caller may leave out `feather` and `glow`.
+ * @typedef {object} FxSpec
+ * @property {{radius: number}|null} [feather]
+ * @property {{width: number, color: string, opacity: number}|null} outline
+ * @property {{outer?: OuterGlow|null, inner?: InnerGlow|null}} [glow]
+ * @property {{dx: number, dy: number, blur: number, color: string, opacity: number}|null} shadow
+ */
+/** @typedef {FxSpec & {feather: {radius: number}|null, glow: {outer: OuterGlow|null, inner: InnerGlow|null}}} FullFxSpec what `readEffects` returns */
+
 /**
  * Build a shared filter composer bound to a canvas. A single instance must be
  * shared by every effect extension so they agree on the per-element filter and
  * on `prevFilterMap` (the restore-on-removal bookkeeping for a pre-existing,
  * foreign `filter`). Callers should store one instance on `svgEditor`.
- * @param {module:svgcanvas.SvgCanvas} svgCanvas
- * @returns {{ readEffects: Function, writeEffects: Function }}
+ * @param {import('@svgedit/svgcanvas').default} svgCanvas
  */
 export const createFxComposer = (svgCanvas) => {
   const {
@@ -81,6 +92,7 @@ export const createFxComposer = (svgCanvas) => {
   } = svgCanvas.history
 
   // elemId → previous (foreign) filter url, restored when all effects removed.
+  /** @type {Record<string, string>} */
   const prevFilterMap = {}
 
   /** Resolve the <filter> element an element currently references, or null. */
@@ -89,7 +101,7 @@ export const createFxComposer = (svgCanvas) => {
     if (!attr) return null
     const m = /url\(["']?#([^"')]+)["']?\)/.exec(attr)
     if (!m) return null
-    return svgCanvas.getElement(m[1])
+    return svgCanvas.getElement(m[1]) ?? null
   }
 
   /**
@@ -102,29 +114,35 @@ export const createFxComposer = (svgCanvas) => {
    * until the next load-time pass (svg-exec's convertDropShadowFilters) stamps
    * them too.
    */
+  /**
+   * @param {Element} elem
+   * @param {Element|null} filter
+   * @returns {filter is Element}
+   */
   const isOurFilter = (elem, filter) =>
     !!filter && (filter.hasAttribute('data-fx') || filter.id === `${elem.id}_fx` || filter.id === `${elem.id}_shadow`)
 
-  const featherOf = (/** @type {{ feather: { radius: number; }; }} */ spec) => (spec.feather && spec.feather.radius > 0 ? spec.feather : null)
+  const featherOf = (/** @type {FxSpec} */ spec) => (spec.feather && spec.feather.radius > 0 ? spec.feather : null)
 
-  const hasEffects = (spec) => {
+  const hasEffects = (/** @type {FxSpec} */ spec) => {
     const { outer, inner } = glowOf(spec)
     return !!(spec.outline || spec.shadow || outer || inner || featherOf(spec))
   }
 
   /** A filter child by its `result` name. */
-  const byResult = (filter, tag, result) =>
+  const byResult = (/** @type {Element} */ filter, /** @type {string} */ tag, /** @type {string} */ result) =>
     [...filter.querySelectorAll(tag)].find((el) => el.getAttribute('result') === result) || null
 
   /** The outer / inner glow of a spec (callers may omit `glow`). */
-  const glowOf = (spec) => ({ outer: spec.glow?.outer || null, inner: spec.glow?.inner || null })
+  const glowOf = (/** @type {FxSpec} */ spec) => ({ outer: spec.glow?.outer || null, inner: spec.glow?.inner || null })
 
   /**
    * Read the combined effect spec off an element's referenced filter.
    * @param {Element} elem
-   * @returns {{ feather: object|null, outline: object|null, glow: { outer: object|null, inner: object|null }, shadow: object|null }}
+   * @returns {FullFxSpec}
    */
   const readEffects = (elem) => {
+    /** @type {FullFxSpec} */
     const spec = { feather: null, outline: null, glow: { outer: null, inner: null }, shadow: null }
     if (!elem) return spec
     const filter = getRefFilter(elem)
@@ -186,8 +204,8 @@ export const createFxComposer = (svgCanvas) => {
    * {@link refreshRegion} re-derives it on move (see the extensions' mouseUp /
    * elementChanged hooks). Must be called after the element has layout.
    */
-  const setRegion = (filter, elem, spec) => {
-    const bbox = elem.getBBox()
+  const setRegion = (/** @type {Element} */ filter, /** @type {Element} */ elem, /** @type {FxSpec} */ spec) => {
+    const bbox = /** @type {SVGGraphicsElement} */ (elem).getBBox()
     // A missing stroke-width means the SVG initial value of 1, not 0 —
     // cleanupElement strips the attribute at that value.
     const swAttr = elem.getAttribute('stroke-width')
@@ -216,19 +234,20 @@ export const createFxComposer = (svgCanvas) => {
    * No-op unless the element wears one of our effect filters. Not recorded in
    * undo — the region is derived state, refreshed after a move so the filter
    * does not clip the relocated element. Safe to call repeatedly.
-   * @param {Element} elem
+   * @param {Element|null|undefined} elem
    */
   const refreshRegion = (elem) => {
     if (!elem) return
     const filter = getRefFilter(elem)
-    if (!isOurFilter(elem, filter)) return
+    if (!filter || !isOurFilter(elem, filter)) return
     const spec = readEffects(elem)
     if (!hasEffects(spec)) return
     setRegion(filter, elem, spec)
   }
 
   /** Assemble a fresh <filter> (with children) from the spec. Detached. */
-  const buildFilter = (elem, spec, filterId) => {
+  const buildFilter = (/** @type {Element} */ elem, /** @type {FxSpec} */ spec, /** @type {string} */ filterId) => {
+    /** @type {import('@svgedit/svgcanvas').SVGElementJSON[]} */
     const children = []
     const { outer, inner } = glowOf(spec)
     const feather = featherOf(spec)
@@ -237,6 +256,7 @@ export const createFxComposer = (svgCanvas) => {
     const alpha = feather ? 'fx_feathered' : 'SourceAlpha'
     // Name of the newest merged image: the input of the next block (and of the
     // drop shadow). null = nothing yet, i.e. the plain SourceGraphic.
+    /** @type {string|null} */
     let last = null
     if (feather) {
       // Fade the edge inward: the shape times its own blurred alpha, clipped to the shape.
@@ -310,6 +330,7 @@ export const createFxComposer = (svgCanvas) => {
     }
     if (spec.shadow) {
       const { dx, dy, blur, color, opacity } = spec.shadow
+      /** @type {Record<string, string>} */
       const attr = {
         dx: String(dx),
         dy: String(dy),
@@ -320,6 +341,7 @@ export const createFxComposer = (svgCanvas) => {
       if (last) attr.in = last
       children.push({ element: 'feDropShadow', attr })
     }
+    /** @type {Record<string, string>} */
     const filterAttr = { id: filterId, 'data-fx': '1' }
     if (outer || inner || feather) filterAttr['color-interpolation-filters'] = 'sRGB'
     const filter = svgCanvas.addSVGElementsFromJson({
@@ -337,8 +359,8 @@ export const createFxComposer = (svgCanvas) => {
    * whole per-element filter wholesale (Remove old + Insert new) so undo is a
    * pair of element commands rather than per-primitive bookkeeping.
    * @param {Element} elem
-   * @param {{ feather?: object|null, outline: object|null, glow?: object, shadow: object|null }} spec
-   * @param {BatchCommand} batchCmd
+   * @param {FxSpec} spec
+   * @param {import('@svgedit/svgcanvas/core/history.js').BatchCommand} batchCmd
    */
   const writeEffects = (elem, spec, batchCmd) => {
     if (!elem) return

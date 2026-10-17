@@ -123,7 +123,7 @@ export default {
     /**
      * Draw the snap guide line(s) for the currently snapped axes. Called from
      * core `event.js` during a drag; `null`/empty clears the guides.
-     * @param {{x?: {pos: number, color: string}, y?: {pos: number, color: string}}|null} snap
+     * @param {import('@svgedit/svgcanvas/core/proportions.ts').ProportionSnapGuides|null} snap
      * @returns {void}
      */
     svgCanvas.showSnapGuides = (snap) => {

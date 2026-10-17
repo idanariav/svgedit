@@ -28,7 +28,7 @@ interface ZoomAndBBox { zoom: number, bbox: ZoomBox }
 export interface ElemGetSetApi {
   setImageURL(val: string): void
   setLinkURL(val: string): void
-  setRectRadius(val: number): void
+  setRectRadius(val: number | string): void
   makeHyperlink(url: string): void
   removeHyperlink(): void
   setSegType(newType: number): void

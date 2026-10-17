@@ -73,8 +73,8 @@ export default {
      * — so any existing drop shadow on the element is preserved. Shared by the
      * panel's setOutline and the class library's apply path.
      * @param {Element} elem
-     * @param {object} params - { width, opacity, color } or { remove: true }
-     * @param {BatchCommand} batchCmd
+     * @param {{width?: number, opacity?: number, color?: string, remove?: boolean}} params - { width, opacity, color } or { remove: true }
+     * @param {InstanceType<typeof BatchCommand>} batchCmd
      */
     const applyOutlineToElement = (elem, params, batchCmd) => {
       if (!elem) return
@@ -85,7 +85,7 @@ export default {
         spec.outline = null
       } else {
         const { width, opacity, color } = params
-        spec.outline = { width, color, opacity }
+        spec.outline = { width: /** @type {number} */ (width), color: /** @type {string} */ (color), opacity: /** @type {number} */ (opacity) }
       }
       fx.writeEffects(elem, spec, batchCmd)
     }
@@ -94,7 +94,7 @@ export default {
      * Apply/update/remove the outline on the current selection, committing the
      * change as one undo step. Thin wrapper over {@link applyOutlineToElement}.
      */
-    const setOutline = (/** @type {object} */ params) => {
+    const setOutline = (/** @type {{width?: number, opacity?: number, color?: string, remove?: boolean}} */ params) => {
       const elem = svgCanvas.getSelectedElements()[0]
       if (!elem) return
       const batchCmd = new BatchCommand('Set outline')
@@ -114,7 +114,7 @@ export default {
     }
 
     /** Show/hide the outline panel and populate controls from the element. */
-    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null|undefined} */ elem) => {
+    const showPanel = (/** @type {boolean} */ on, /** @type {Element|null} */ elem = null) => {
       const panel = $id('outline_panel')
       if (!panel) return
       panel.style.display = on ? '' : 'none'
@@ -158,12 +158,12 @@ export default {
           shadowPanel.after(node)
         } else {
           const host = $id('tab_effects') || $id('sidepanel_content') || $id('tools_top')
-          host.appendChild(node)
+          ;/** @type {Element} */ (host).appendChild(node)
         }
 
         // Wire event listeners
         ;['outline_width', 'outline_opacity'].forEach((id) => {
-          $id(id).addEventListener('change', () => setOutline(getOutlinePanelValues()))
+          $req(id).addEventListener('change', () => setOutline(getOutlinePanelValues()))
         })
         $req('outline_color').addEventListener('change', () => setOutline(getOutlinePanelValues()))
         svgEditor.commands.register({
@@ -176,7 +176,7 @@ export default {
         })
       },
 
-      selectedChanged (opts) {
+      selectedChanged (/** @type {{selectedElement: Element|null, multiselected: boolean}} */ opts) {
         if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
         if (!opts.selectedElement || opts.multiselected) {
           showPanel(false)
@@ -195,8 +195,8 @@ export default {
         svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
       },
 
-      elementChanged (opts) {
-        (opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
+      elementChanged (/** @type {{elems: Element[]}} */ opts) {
+        ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
       }
     }
   }

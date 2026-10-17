@@ -9,10 +9,13 @@ const PRESET_COLORS = [
   '#FACC15', '#22C55E', '#2563EB', '#7C3AED', 'none'
 ]
 
+/** @typedef {[string, string, string]} ToolEntry `[mode, iconFile, label]` */
+
 // Command-bar tools, in order. `null` is a tray separator. Each entry is
 // [mode, iconFile, label]; every mode already exists on the canvas (built-in or
 // provided by a default extension). The Shapes flyout is inserted between
 // `line` and `text`.
+/** @type {Array<ToolEntry|null>} */
 const TOOLS = [
   ['select', 'select.svg', 'Select'],
   ['ext-panning', 'panning.svg', 'Pan'],
@@ -25,6 +28,7 @@ const TOOLS = [
   ['line', 'line_tool.svg', 'Line']
 ]
 
+/** @type {ToolEntry[]} */
 const SHAPES = [
   ['rect', 'rect.svg', 'Rectangle'],
   ['square', 'square.svg', 'Square'],
@@ -44,6 +48,7 @@ const SHAPE_MODES = new Set(SHAPES.map((s) => s[0]))
 // extension's mode; [mode, iconFile, label]. A tool is listed only when its `tool_<mode>` command exists, so a
 // build without that extension just has a shorter menu. Tools with an options bar on the desktop (Blend, Magic
 // Wand) run on their defaults here, and Shift / Alt (the wand's add / subtract) are not available on touch.
+/** @type {ToolEntry[]} */
 const MORE_TOOLS = [
   ['shaper', 'shaper.svg', 'Shaper'],
   ['smooth', 'smooth-tool.svg', 'Smooth'],
@@ -66,13 +71,30 @@ const EXTENSION_MODES = new Set(['spiral', 'arc', 'rectgrid', 'polargrid', ...MO
  * `.svg_editor` carries the `ui-tablet` class (see uiMode.js).
  */
 class TabletShell {
+  // Built by `init()`.
+  /** @type {HTMLElement} */ shell
+  /** @type {HTMLElement} */ sheet
+  /** @type {HTMLElement} */ sheetRow
+  /** @type {HTMLButtonElement} */ shapesBtn
+  /** @type {HTMLButtonElement} */ moreBtn
+  /** @type {HTMLButtonElement} */ bUndo
+  /** @type {HTMLButtonElement} */ bRedo
+  /** @type {HTMLElement} */ zLabel
+  /** @type {HTMLElement} */ shapeLib
+  /** @type {HTMLElement|undefined} */ _swSlider
+  /** @type {HTMLElement|undefined} */ _opSlider
+
   /** @param {EditorInstance} editor svgedit handler */
   constructor (editor) {
     this.editor = editor
     this.currentShape = 'rect'
+    /** @type {Record<string, HTMLElement>} */
     this.toolBtns = {}
+    /** @type {Element[]} */
     this.selectedElems = []
+    /** @type {(HTMLElement & {_anchor?: Node|null})|null} the open popover */
     this._pop = null
+    /** @type {((e: PointerEvent) => void)|null} */
     this._onDoc = null
   }
 
@@ -81,14 +103,14 @@ class TabletShell {
 
   /** @returns {void} */
   init () {
-    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const tpl = document.createElement('template')
     tpl.innerHTML = tabletShellHTML
     this.editor.$svgEditor.append(tpl.content.cloneNode(true))
 
-    this.shell = this.editor.$svgEditor.querySelector('.tablet-shell')
-    this.sheet = $id('ts_sheet')
-    this.sheetRow = $id('ts_sheet_row')
+    this.shell = /** @type {HTMLElement} */ (this.editor.$svgEditor.querySelector('.tablet-shell'))
+    this.sheet = $req('ts_sheet')
+    this.sheetRow = $req('ts_sheet_row')
 
     this.buildToolgroup()
     this.buildRightControls()
@@ -105,7 +127,7 @@ class TabletShell {
   /* ─────────────────── small DOM helpers ─────────────────── */
 
   /**
-* @param {HTMLElement | undefined} elem
+* @param {HTMLElement} elem
 * @param {string} iconFile
 */
   async setIcon (elem, iconFile) {
@@ -117,6 +139,7 @@ class TabletShell {
 * @param {string} tag
 * @param {string | null | undefined} [cls]
 * @param {string | null | undefined} [html]
+* @returns {HTMLElement}
 */
   el (tag, cls, html) {
     const e = document.createElement(tag)
@@ -127,21 +150,23 @@ class TabletShell {
 
   /**
 * @param {string} iconFile
+* @param {{cls?: string, title?: string, tap?: (b: HTMLButtonElement, e: Event) => void}} [opts]
+* @returns {HTMLButtonElement}
 */
   makeBtn (iconFile, { cls, title, tap } = {}) {
-    const b = this.el('button', 'tbtn' + (cls ? ' ' + cls : ''))
+    const b = /** @type {HTMLButtonElement} */ (this.el('button', 'tbtn' + (cls ? ' ' + cls : '')))
     b.type = 'button'
     if (title) b.title = title
     if (iconFile) this.setIcon(b, iconFile)
-    if (tap) b.addEventListener('click', (/** @type {{ stopPropagation: () => void; }} */ e) => { e.stopPropagation(); tap(b, e) })
+    if (tap) b.addEventListener('click', (e) => { e.stopPropagation(); tap(b, e) })
     return b
   }
 
   /* ─────────────────── command bar ─────────────────── */
 
   buildToolgroup () {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
-    const tg = $id('ts_toolgroup')
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const tg = $req('ts_toolgroup')
     const sep = () => tg.append(this.el('div', 'ts-sep'))
 
     TOOLS.forEach((t) => {
@@ -179,7 +204,7 @@ class TabletShell {
     tg.append(this.makeBtn('text.svg', {
       title: 'Text', tap: () => this.svgCanvas.setMode('text')
     }))
-    this.toolBtns.text = tg.lastChild
+    this.toolBtns.text = /** @type {HTMLElement} */ (tg.lastChild)
     sep()
     const cut = this.makeBtn('cutter.svg', { title: 'Cutter', tap: () => this.svgCanvas.setMode('cutter') })
     this.toolBtns.cutter = cut
@@ -192,7 +217,7 @@ class TabletShell {
       e.stopPropagation()
       const mode = this.svgCanvas.getMode()
       const tools = this.available(MORE_TOOLS)
-      const menu = this.menuList(tools.map(([m, icon, label]) => [icon, label, () => this.editor.commands.tryRun(`tool_${m}`, {}, 'tablet')]))
+      const menu = this.menuList(tools.map(([m, icon, label]) => /** @type {[string, string, () => void]} */ ([icon, label, () => this.editor.commands.tryRun(`tool_${m}`, {}, 'tablet')])))
       menu.classList.add('menu-2col')
       tools.forEach(([m], i) => menu.children[i].classList.toggle('is-active', m === mode))
       this.popover(this.moreBtn, menu, { title: 'More tools', place: 'bottom' })
@@ -234,7 +259,7 @@ class TabletShell {
   }
 
   buildRightControls () {
-    const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // Default-style chip — pick stroke/fill/width before drawing
     $req('ts_stylechip').addEventListener('click', (/** @type {{ stopPropagation: () => void; }} */ e) => {
       e.stopPropagation()
@@ -245,9 +270,9 @@ class TabletShell {
       fill.append(this.el('div', 'sec-label', 'Fill'),
         this.swatchRow(this.svgCanvas.getColor('fill'), (c) => this.svgCanvas.setColor('fill', c)))
       const wd = this.el('div'); wd.style.marginTop = '16px'
-      wd.append(this.slider('Width', 0, 24, this.svgCanvas.getStrokeWidth() || 0, (n) => this.svgCanvas.setStrokeWidth(n)))
+      wd.append(this.slider('Width', 0, 24, Number(this.svgCanvas.getStrokeWidth() || 0), (n) => this.svgCanvas.setStrokeWidth(n)))
       box.append(fill, wd)
-      this.popover($id('ts_stylechip'), box, { place: 'bottom' })
+      this.popover($req('ts_stylechip'), box, { place: 'bottom' })
     })
 
     // Zoom − % +
@@ -257,8 +282,8 @@ class TabletShell {
       this.zLabel,
       this.makeBtn('', { cls: 'sm', title: 'Zoom in', tap: () => this.stepZoom(25) })
     )
-    $req('ts_zoom').firstChild.textContent = '−'
-    $req('ts_zoom').lastChild.textContent = '+'
+    ;/** @type {ChildNode} */ ($req('ts_zoom').firstChild).textContent = '−'
+    ;/** @type {ChildNode} */ ($req('ts_zoom').lastChild).textContent = '+'
     this.syncZoom()
 
     // Undo / redo
@@ -300,9 +325,15 @@ class TabletShell {
     return s
   }
 
-  // A row of preset swatches + a "More…" entry that opens the full seColorPicker.
+  /**
+   * A row of preset swatches + a "More…" entry that opens the full seColorPicker.
+   * @param {string} current
+   * @param {(color: string) => void} onPick
+   * @param {'fill'|'stroke'} [type] set to offer the "More…" entry
+   * @returns {HTMLElement}
+   */
   swatchRow (current, onPick, type) {
-    const { $id } = this.editor // container-scoped lookups (see EditorStartup constructor)
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const row = this.el('div', 'swrow')
     PRESET_COLORS.forEach((c) => {
       const s = this.swatchEl(c)
@@ -315,7 +346,7 @@ class TabletShell {
       row.append(s)
     })
     if (type) {
-      const more = this.el('button', 'menu-item')
+      const more = /** @type {HTMLButtonElement} */ (this.el('button', 'menu-item'))
       more.type = 'button'
       more.style.cssText = 'width:100%;justify-content:center;margin-top:8px'
       more.textContent = 'More…'
@@ -323,7 +354,7 @@ class TabletShell {
         e.stopPropagation()
         // Reuse the existing (hidden) desktop picker — its `change` listener in
         // BottomPanel applies the paint to the selection. Dialog appends to body.
-        $id(type === 'fill' ? 'fill_color' : 'stroke_color').openColorDialog()
+        $req(type === 'fill' ? 'fill_color' : 'stroke_color').openColorDialog()
         this.closePop()
       })
       const wrap = this.el('div')
@@ -335,10 +366,19 @@ class TabletShell {
 
   /* ─────────────────── slider ─────────────────── */
 
+  /**
+   * @param {string} label
+   * @param {number} min
+   * @param {number} max
+   * @param {number} val
+   * @param {(value: number) => void} onInput
+   * @param {string} [unit]
+   * @returns {HTMLElement}
+   */
   slider (label, min, max, val, onInput, unit = '') {
     const wrap = this.el('div', 'slider-row')
     const input = /** @type {HTMLInputElement} */ (this.el('input', 'te-range'))
-    input.type = 'range'; input.min = min; input.max = max; input.value = val
+    input.type = 'range'; input.min = String(min); input.max = String(max); input.value = String(val)
     const v = this.el('span', 'val', val + unit)
     input.addEventListener('input', () => { v.textContent = input.value + unit; onInput(+input.value) })
     wrap.append(this.el('span', 'lab', label), input, v)
@@ -360,7 +400,7 @@ class TabletShell {
   /**
 * @param {string} label
 * @param {string} current
-* @param {string} type
+* @param {'fill'|'stroke'} type
 */
   colorCol (label, current, type) {
     const sw = this.swatchEl(current)
@@ -386,7 +426,7 @@ class TabletShell {
 
     const fill = this.svgCanvas.getColor('fill')
     const stroke = this.svgCanvas.getColor('stroke')
-    const sw = this.svgCanvas.getStrokeWidth() || 0
+    const sw = Number(this.svgCanvas.getStrokeWidth() || 0)
     const op = Math.round((this.svgCanvas.getOpacity() ?? 1) * 100)
 
     row.append(this.colorCol('Fill', fill, 'fill'))
@@ -448,13 +488,13 @@ class TabletShell {
     if (!this.sheet.classList.contains('show')) return
     if (this._swSlider) {
       const sw = this.svgCanvas.getStrokeWidth() || 0
-      this._swSlider.querySelector('input').value = sw
-      this._swSlider.querySelector('.val').textContent = sw
+      ;/** @type {HTMLInputElement} */ (this._swSlider.querySelector('input')).value = String(sw)
+      ;/** @type {Element} */ (this._swSlider.querySelector('.val')).textContent = String(sw)
     }
     if (this._opSlider) {
       const op = Math.round((this.svgCanvas.getOpacity() ?? 1) * 100)
-      this._opSlider.querySelector('input').value = op
-      this._opSlider.querySelector('.val').textContent = op + '%'
+      ;/** @type {HTMLInputElement} */ (this._opSlider.querySelector('input')).value = String(op)
+      ;/** @type {Element} */ (this._opSlider.querySelector('.val')).textContent = op + '%'
     }
   }
 
@@ -466,13 +506,15 @@ class TabletShell {
   }
 
   /**
-* @param {Node | null | undefined} anchor
+* @param {Element} anchor
 * @param {string | Node} content
+* @param {{title?: string, place?: 'top'|'bottom'}} [opts]
+* @returns {HTMLElement|undefined}
 */
   popover (anchor, content, opts = {}) {
     if (this._pop && this._pop._anchor === anchor) { this.closePop(); return }
     this.closePop()
-    const p = this.el('div', 'ts-pop')
+    const p = /** @type {HTMLElement & {_anchor?: Node|null}} */ (this.el('div', 'ts-pop'))
     p._anchor = anchor
     if (opts.title) p.append(this.el('div', 'sec-label', opts.title))
     p.append(content)
@@ -491,17 +533,21 @@ class TabletShell {
     p.style.left = left + 'px'; p.style.top = top + 'px'
 
     this._pop = p
-    this._onDoc = (/** @type {{ target: Node | null; }} */ e) => {
-      if (!p.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) this.closePop()
+    this._onDoc = (e) => {
+      if (!p.contains(/** @type {Node|null} */ (e.target)) && e.target !== anchor && !anchor.contains(/** @type {Node|null} */ (e.target))) this.closePop()
     }
-    setTimeout(() => document.addEventListener('pointerdown', this._onDoc, true), 0)
+    setTimeout(() => { if (this._onDoc) document.addEventListener('pointerdown', this._onDoc, true) }, 0)
     return p
   }
 
+  /**
+   * @param {Array<[string, string, () => void]>} items `[iconFile, label, tap]`
+   * @returns {HTMLElement}
+   */
   menuList (items) {
     const m = this.el('div', 'menu')
     items.forEach(([icon, label, tap]) => {
-      const row = this.el('button', 'menu-item')
+      const row = /** @type {HTMLButtonElement} */ (this.el('button', 'menu-item'))
       row.type = 'button'
       const ic = this.el('span', 'mi-ic')
       this.setIcon(ic, icon)
@@ -515,7 +561,7 @@ class TabletShell {
   /* ─────────────────── canvas event wiring ─────────────────── */
 
   bindEvents () {
-    this.svgCanvas.bind('selected', (_win, elems) => {
+    this.svgCanvas.bind('selected', (_win, /** @type {Element[]|undefined} */ elems) => {
       this.selectedElems = (elems || []).filter(Boolean)
       if (this.selectedElems.length) {
         this.buildSheet()

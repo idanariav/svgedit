@@ -80,9 +80,9 @@ export class SeImgPropDialog extends HTMLElement {
       case 'width':
         if (newValue === 'fit') {
           this.$canvasWidth.removeAttribute('disabled')
-          this.$canvasWidth.value = 100
+          this.$canvasWidth.value = '100'
           this.$canvasHeight.removeAttribute('disabled')
-          this.$canvasHeight.value = 100
+          this.$canvasHeight.value = '100'
         } else {
           this.$canvasWidth.value = newValue
         }
@@ -90,9 +90,9 @@ export class SeImgPropDialog extends HTMLElement {
       case 'height':
         if (newValue === 'fit') {
           this.$canvasWidth.removeAttribute('disabled')
-          this.$canvasWidth.value = 100
+          this.$canvasWidth.value = '100'
           this.$canvasHeight.removeAttribute('disabled')
-          this.$canvasHeight.value = 100
+          this.$canvasHeight.value = '100'
         } else {
           this.$canvasHeight.value = newValue
         }
@@ -109,11 +109,11 @@ export class SeImgPropDialog extends HTMLElement {
         break
       case 'save':
         if (newValue === 'ref') {
-          this.$imageOptEmbed.setAttribute('checked', false)
-          this.$imageOptRef.setAttribute('checked', true)
+          this.$imageOptEmbed.setAttribute('checked', 'false')
+          this.$imageOptRef.setAttribute('checked', 'true')
         } else {
-          this.$imageOptEmbed.setAttribute('checked', true)
-          this.$imageOptRef.setAttribute('checked', false)
+          this.$imageOptEmbed.setAttribute('checked', 'true')
+          this.$imageOptRef.setAttribute('checked', 'false')
         }
         break
       case 'embed':
@@ -278,21 +278,22 @@ export class SeImgPropDialog extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    const onChangeHandler = (ev) => {
-      if (!ev.target.selectedIndex) {
+    const onChangeHandler = (/** @type {Event} */ ev) => {
+      const target = /** @type {HTMLSelectElement} */ (ev.target)
+      if (!target.selectedIndex) {
         if (this.$canvasWidth.value === 'fit') {
           this.$canvasWidth.removeAttribute('disabled')
-          this.$canvasWidth.value = 100
+          this.$canvasWidth.value = '100'
           this.$canvasHeight.removeAttribute('disabled')
-          this.$canvasHeight.value = 100
+          this.$canvasHeight.value = '100'
         }
-      } else if (ev.target.value === 'content') {
+      } else if (target.value === 'content') {
         this.$canvasWidth.setAttribute('disabled', 'disabled')
         this.$canvasWidth.value = 'fit'
         this.$canvasHeight.setAttribute('disabled', 'disabled')
         this.$canvasHeight.value = 'fit'
       } else {
-        const dims = ev.target.value.split('x')
+        const dims = target.value.split('x')
         this.$canvasWidth.value = dims[0]
         this.$canvasWidth.removeAttribute('disabled')
         this.$canvasHeight.value = dims[1]
@@ -304,14 +305,14 @@ export class SeImgPropDialog extends HTMLElement {
       const w = this.$canvasWidth.value
       const h = this.$canvasHeight.value
       if (w !== 'fit' && !requireOwnerEditor(this).svgCanvas.isValidUnit('width', w)) {
-        this.$canvasWidth.parentElement.classList.add('error')
+        this.$canvasWidth.parentElement?.classList.add('error')
       } else {
-        this.$canvasWidth.parentElement.classList.remove('error')
+        this.$canvasWidth.parentElement?.classList.remove('error')
       }
       if (h !== 'fit' && !requireOwnerEditor(this).svgCanvas.isValidUnit('height', h)) {
-        this.$canvasHeight.parentElement.classList.add('error')
+        this.$canvasHeight.parentElement?.classList.add('error')
       } else {
-        this.$canvasHeight.parentElement.classList.remove('error')
+        this.$canvasHeight.parentElement?.classList.remove('error')
       }
       if (this.$imageOptEmbed.getAttribute('checked') === 'true') {
         saveOpt = 'embed'

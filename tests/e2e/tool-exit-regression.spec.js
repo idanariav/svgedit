@@ -199,9 +199,8 @@ test.describe('Tool exit / stale state regression', () => {
     await clickTool(page, '#tool_rect')
     await page.waitForTimeout(100)
     await dragContent(page, { x: 400, y: 350 }, { x: 460, y: 400 })
-    await page.waitForTimeout(200)
-
-    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('select')
+    // The tool hands back to Select once the shape is committed: wait for that rather than a fixed delay.
+    await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('select')
 
     const newRectParent = await page.evaluate(() => {
       const sel = window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean)

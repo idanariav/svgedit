@@ -100,6 +100,8 @@ label {
  * @class SeList
  */
 export class SeList extends HTMLElement {
+  /** @type {string|undefined} The value of the item last picked (set when a pick fires `change`). */ value
+
   /**
     * @function constructor
     */

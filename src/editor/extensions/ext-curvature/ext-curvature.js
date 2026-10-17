@@ -135,7 +135,7 @@ function buildSpiro (pts, closed) {
 
   const ctx = new SpiroPathContext()
   try {
-    spiroToBezierOnContext(knots, closed, ctx)
+    spiroToBezierOnContext(/** @type {Parameters<typeof spiroToBezierOnContext>[0]} */ (knots), closed, ctx)
   } catch (_err) {
     // Spiro can fail to converge; degrade gracefully rather than break drawing.
     return buildCatmullRom(pts, closed)
@@ -182,6 +182,9 @@ function splitIntoSegments (pts) {
 /**
  * Build the `d` string for a single independent segment (already extracted by
  * `splitIntoSegments`), reusing the existing 1-point / ≥2-point dispatch.
+ * @param {Array<{x:number, y:number, corner:boolean, end:boolean}>} pts
+ * @param {boolean} closed
+ * @returns {string}
  */
 function buildSegmentD (pts, closed) {
   if (pts.length === 1) return `M ${fmt(pts[0].x)},${fmt(pts[0].y)}`
@@ -256,10 +259,10 @@ export default {
     // leaving the tool visually selected but inert. We finalize paths via our
     // own dblclick (detail>=2) logic in mouseDown, so swallow the native
     // dblclick over the canvas to keep the mode intact between shapes.
-    const suppressNativeDblClick = (/** @type {{ target: Node | null; stopPropagation: () => void; }} */ evt) => {
+    const suppressNativeDblClick = (/** @type {MouseEvent} */ evt) => {
       if (svgCanvas.getMode() !== 'curvature') return
       const root = $id('svgcanvas')
-      if (!root || root.contains(evt.target)) {
+      if (!root || root.contains(/** @type {Node|null} */ (evt.target))) {
         evt.stopPropagation()
       }
     }
@@ -269,8 +272,8 @@ export default {
     // preview / anchor dots behind in the layer (they'd otherwise be real
     // content, serialized by getSvgString() and persisted by a host
     // autosave). Mirrors the Escape-key behavior: finalize as an open path.
-    document.addEventListener('modeChange', (/** @type {CustomEvent} */ evt) => {
-      if (evt.detail.getMode() !== 'curvature' && isDrawing) {
+    document.addEventListener('modeChange', (evt) => {
+      if (/** @type {CustomEvent} */ (evt).detail.getMode() !== 'curvature' && isDrawing) {
         finalize(false)
       }
     }, { signal: svgEditor.listenerAbort.signal })
@@ -285,6 +288,7 @@ export default {
     // when idle), the mousedown position (for points[0] close-vs-drag
     // disambiguation), and the index hit-tested at mousedown time.
     let draggingIndex = -1
+    /** @type {{x: number, y: number}|null} */
     let mouseDownPos = null
     let mouseDownHitIndex = -1
     // Whether the pointer has moved past the click-vs-drag threshold since
@@ -297,7 +301,7 @@ export default {
 
     const dist = (/** @type {number} */ ax, /** @type {number} */ ay, /** @type {number} */ bx, /** @type {number} */ by) => Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)
 
-    const getLayer = () => svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const getLayer = () => /** @type {Element} */ (svgCanvas.getCurrentDrawing().getCurrentLayer())
 
     const getMoveThreshold = () => 3 / svgCanvas.getZoom()
 
@@ -400,9 +404,9 @@ export default {
       const isBoundary = p.end || isImplicitStart(i)
       const r = (isBoundary ? 4.5 : 3.5) / zoom
       const dot = document.createElementNS(svgNS, 'circle')
-      dot.setAttribute('cx', p.x)
-      dot.setAttribute('cy', p.y)
-      dot.setAttribute('r', r)
+      dot.setAttribute('cx', String(p.x))
+      dot.setAttribute('cy', String(p.y))
+      dot.setAttribute('r', String(r))
       dot.setAttribute('fill', p.corner ? '#e00' : '#06f')
       // Start/end anchors get a heavier, higher-contrast ring; plain mid
       // anchors keep the thin white ring.
@@ -496,7 +500,7 @@ export default {
           // (larger) hit radius — not necessarily exactly on the anchor —
           // doesn't itself register as a move.
           if (!dragMoved) {
-            if (dist(mx, my, mouseDownPos.x, mouseDownPos.y) <= getMoveThreshold()) return
+            if (mouseDownPos && dist(mx, my, mouseDownPos.x, mouseDownPos.y) <= getMoveThreshold()) return
             dragMoved = true
           }
           points[draggingIndex].x = mx

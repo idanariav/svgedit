@@ -15,6 +15,7 @@ for (const [p, data] of Object.entries(shapeLibModules)) {
 }
 
 // ── Category labels ─────────────────────────────────────────────────────────
+/** @type {Record<string, string>} */
 export const CAT_LABELS = {
   basic: 'Basic',
   accents: 'Accents',

@@ -28,11 +28,26 @@ import { getUserDataAdapter } from '../../userDataAdapter.js'
 const STORAGE_KEY = 'svg-edit-user-shapes'
 
 /**
+ * @typedef {object} UserShape one saved shape
+ * @property {string} svgContent
+ * @property {{x: number, y: number, width: number, height: number}} bbox
+ * @property {string} [linkedFile] provenance link an embedding host can stamp onto the inserted element
+ */
+
+/**
+ * @typedef {object} UserShapeStore the saved shapes (the schema above)
+ * @property {string[]} categories
+ * @property {Record<string, Record<string, UserShape>>} shapes
+ * @property {Record<string, string>} categoryLabels
+ * @property {string[]} hidden
+ */
+
+/**
  * Validate an already-parsed store object into a safe
  * { categories, shapes, categoryLabels, hidden } shape. Returns a safe default
  * if the data is missing or corrupt.
  * @param {*} raw
- * @returns {{ categories: string[], shapes: Object, categoryLabels: Object, hidden: string[] }}
+ * @returns {UserShapeStore}
  */
 function normalizeStore (raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -40,7 +55,7 @@ function normalizeStore (raw) {
   }
 
   const categories = Array.isArray(raw.categories)
-    ? raw.categories.filter(c => typeof c === 'string')
+    ? raw.categories.filter((/** @type {unknown} */ c) => typeof c === 'string')
     : []
 
   const rawShapes = (raw.shapes && typeof raw.shapes === 'object' && !Array.isArray(raw.shapes))
@@ -48,6 +63,7 @@ function normalizeStore (raw) {
     : {}
 
   // Validate each shape entry
+  /** @type {UserShapeStore['shapes']} */
   const shapes = {}
   for (const cat of categories) {
     const catData = rawShapes[cat]
@@ -70,6 +86,7 @@ function normalizeStore (raw) {
   }
 
   // Display-name overrides for any category (built-in id or raw user cat name)
+  /** @type {Record<string, string>} */
   const categoryLabels = {}
   if (raw.categoryLabels && typeof raw.categoryLabels === 'object' && !Array.isArray(raw.categoryLabels)) {
     for (const [id, label] of Object.entries(raw.categoryLabels)) {
@@ -79,7 +96,7 @@ function normalizeStore (raw) {
 
   // Built-in category ids hidden from the library
   const hidden = Array.isArray(raw.hidden)
-    ? raw.hidden.filter(c => typeof c === 'string')
+    ? raw.hidden.filter((/** @type {unknown} */ c) => typeof c === 'string')
     : []
 
   return { categories, shapes, categoryLabels, hidden }
@@ -89,12 +106,12 @@ function normalizeStore (raw) {
  * Load and validate the user shapes store. Reads from the host storage adapter
  * when configured, otherwise from localStorage. Returns a safe default if the
  * data is missing or corrupt.
- * @returns {{ categories: string[], shapes: Object }}
+ * @returns {UserShapeStore}
  */
 export function loadUserShapes () {
   const adapter = getUserDataAdapter()
   if (adapter) {
-    return normalizeStore(adapter.getUserShapes())
+    return normalizeStore(adapter.getUserShapes?.())
   }
   let raw
   try {
@@ -108,12 +125,12 @@ export function loadUserShapes () {
 /**
  * Persist the full store. Writes to the host storage adapter when configured,
  * otherwise to localStorage.
- * @param {{ categories: string[], shapes: Object }} store
+ * @param {UserShapeStore} store
  */
 export function saveUserShapes (store) {
   const adapter = getUserDataAdapter()
   if (adapter) {
-    adapter.setUserShapes(store)
+    adapter.setUserShapes?.(store)
     return
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
@@ -136,6 +153,7 @@ export function addUserShape ({ category, label, svgContent, bbox, linkedFile })
     store.shapes[category] = {}
   }
 
+  /** @type {UserShape} */
   const entry = { svgContent, bbox }
   if (linkedFile) entry.linkedFile = linkedFile
   store.shapes[category][label] = entry

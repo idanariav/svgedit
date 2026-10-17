@@ -42,7 +42,7 @@ import { blurActiveField } from './components/fieldAutoBlur.js'
 import { runSteps } from './runSteps.js'
 import { buildEditorShortcuts } from './editorShortcuts.js'
 import { getDefaultClassForTag, getClass, applyDefaultClassAttrs } from './classLibrary.js'
-import { warn as logWarn, setLogSink, setLogLevel } from '@svgedit/svgcanvas/common/logger.ts'
+import { setLogSink, setLogLevel } from '@svgedit/svgcanvas/common/logger.ts'
 
 const { $click, decode64 } = SvgCanvas
 
@@ -50,15 +50,15 @@ const { $click, decode64 } = SvgCanvas
  *
  */
 class Editor extends EditorStartup {
+  /** @type {Array<[() => unknown, (value?: unknown) => void, (reason?: unknown) => void]>} What `ready()` queued until the editor is up. */ callbacks
+  /** @type {?string} The group being edited, as a breadcrumb; `null` at the top level. */ curContext
+  /** @type {?string} The name of the window an export goes to (set by the main menu). */ exportWindowName
+
   /**
-   *
+   * @param {?HTMLElement} [div] the editor's container
    */
   constructor (div = null) {
     super(div)
-    /**
-     * @type {boolean}
-     */
-    this.langChanged = false
     /**
      * @type {boolean}
      */
@@ -79,7 +79,6 @@ class Editor extends EditorStartup {
     this.exportWindowName = null
     this.docprops = false
     this.configObj.preferences = false
-    this.canvMenu = null
     this.goodLangs = ['en']
 
     // Editor-level shortcuts (not associated with a toolbar button). Each entry
@@ -110,8 +109,7 @@ class Editor extends EditorStartup {
   /**
    *
    * @param {string} str SVG string
-   * @param {PlainObject} [opts={}]
-   * @param {boolean} [opts.noAlert]
+   * @param {{noAlert?: boolean}} [opts={}]
    * @throws {Error} Upon failure to load SVG
    * @returns {void}
    */
@@ -160,7 +158,7 @@ class Editor extends EditorStartup {
    *  - invoke a file chooser dialog in 'save' mode
    *  - save the file to location chosen by the user.
    * @function module:SVGthis.CustomHandler#save
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:saved} svgStr A string of the SVG
    * @listens module:svgcanvas.SvgCanvas#event:saved
    * @returns {void}
@@ -173,7 +171,7 @@ class Editor extends EditorStartup {
    *    'WEBP'), "mimeType", and "quality" (for 'JPEG' and 'WEBP'
    *    types) to determine the proper output.
    * @function module:SVGthis.CustomHandler#exportImage
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:exported} data
    * @listens module:svgcanvas.SvgCanvas#event:exported
    * @returns {void}
@@ -209,12 +207,12 @@ class Editor extends EditorStartup {
     const elements = this.$container.getElementsByClassName('attr_changer') // scoped to this editor
     Array.from(elements).forEach(function (element) {
       element.addEventListener('keydown', function (evt) {
-        evt.currentTarget.dispatchEvent(new Event('change'))
+        evt.currentTarget?.dispatchEvent(new Event('change'))
         evt.preventDefault()
       })
     })
     $req('image_url').addEventListener('keydown', function (evt) {
-      evt.currentTarget.dispatchEvent(new Event('change'))
+      evt.currentTarget?.dispatchEvent(new Event('change'))
       evt.preventDefault()
     })
   }
@@ -281,7 +279,7 @@ class Editor extends EditorStartup {
    * to the console) to a host-provided sink, e.g. a plugin's debug log. Shared
    * by every editor on the page. Pass `null` to stop.
    * @param {?function(string, {message: string, data: any}): void} sink - `(level, { message, data })`
-   * @param {number} [level] - A `LogLevel` value; defaults to leaving the level unchanged
+   * @param {import('@svgedit/svgcanvas/common/logger.ts').LogLevelValue} [level] - A `LogLevel` value; defaults to leaving the level unchanged
    * @returns {void}
    */
   setLogSink (sink, level) {
@@ -289,38 +287,8 @@ class Editor extends EditorStartup {
     if (level !== undefined) setLogLevel(level)
   }
 
-  // parents() https://stackoverflow.com/a/12981248
-  getParents (el, parentSelector /* optional */) {
-    // If no parentSelector defined will bubble up all the way to *document*
-    if (parentSelector === undefined) {
-      parentSelector = document
-    }
-
-    const parents = []
-    let p = el.parentNode
-
-    while (p !== parentSelector) {
-      const o = p
-      parents.push(o)
-      p = o.parentNode
-    }
-    parents.push(parentSelector) // Push that parentSelector you wanted to stop at
-
-    return parents
-  }
-
   /**
-   * @param {string} sel Selector to match
-   * @returns {module:SVGthis.ToolButton}
-   */
-  getButtonData (sel) {
-    return Object.values(this.shortcuts).find((btn) => {
-      return btn.sel === sel
-    })
-  }
-
-  /**
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:exported} data
    * @listens module:svgcanvas.SvgCanvas#event:exported
    * @returns {void}
@@ -404,8 +372,7 @@ class Editor extends EditorStartup {
     }
 
     const editor = this
-    const cmd = new Command()
-    cmd.text = 'Change canvas background'
+    const cmd = Object.assign(new Command(), { text: 'Change canvas background' })
     cmd.type = () => 'ChangeBackgroundCommand'
     cmd.elements = () => []
     cmd.apply = (handler) => {
@@ -460,15 +427,15 @@ class Editor extends EditorStartup {
 
   /**
    * @function module:SVGthis.updateCanvas
-   * @param {boolean} center
-   * @param {module:math.XYObject} newCtr
+   * @param {boolean} [center]
+   * @param {{x: number, y: number}} [newCtr]
    * @returns {void}
    */
   updateCanvas (center, newCtr) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const zoom = this.svgCanvas.getZoom()
     const { workarea } = this
-    const cnvs = $id('svgcanvas')
+    const cnvs = $req('svgcanvas')
 
     let w = parseFloat(
       getComputedStyle(workarea, null).width.replace('px', '')
@@ -576,7 +543,7 @@ class Editor extends EditorStartup {
   // called when we've selected a different element
   /**
    *
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:selected} elems Array of elements that were selected
    * @listens module:svgcanvas.SvgCanvas#event:selected
    * @fires module:svgcanvas.SvgCanvas#event:ext_selectedChanged
@@ -635,7 +602,7 @@ class Editor extends EditorStartup {
   // Call when part of element is in process of changing, generally
   // on mousemove actions like rotate, move, etc.
   /**
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:transition} elems
    * @listens module:svgcanvas.SvgCanvas#event:transition
    * @fires module:svgcanvas.SvgCanvas#event:ext_elementTransition
@@ -650,7 +617,7 @@ class Editor extends EditorStartup {
       return
     }
 
-    this.multiselected = elems.length >= 2 && elems[1]
+    this.multiselected = elems.length >= 2 && !!elems[1]
 
     // Each step is isolated: a throw in one must not abort the others (see
     // selectedChanged() above for why) — this fires on every mousemove
@@ -693,8 +660,8 @@ class Editor extends EditorStartup {
 
   // called when any element has changed
   /**
-   * @param {external:Window} win
-   * @param {Array<PlainObject>} elems
+   * @param {Window} win
+   * @param {Element[]} elems
    * @listens module:svgcanvas.SvgCanvas#event:changed
    * @fires module:svgcanvas.SvgCanvas#event:ext_elementChanged
    * @returns {void}
@@ -757,7 +724,7 @@ class Editor extends EditorStartup {
    * if one is set. Not undo-tracked on its own: the element isn't in history
    * yet, so the insert command captures it already classed, and undoing the
    * insertion removes it whole.
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {Element[]} elems
    * @returns {void}
    */
@@ -775,6 +742,8 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * @param {Window} win
+   * @param {{elem: Element, oldId: string, newId: unknown}} renameObj
    * @returns {void}
    */
   elementRenamed (win, renameObj) {
@@ -804,6 +773,7 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * @param {Window} win
    * @returns {void}
    */
   afterClear (win) {
@@ -812,6 +782,7 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * @param {Window} win
    * @returns {void}
    */
   beforeClear (win) {
@@ -829,7 +800,7 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @typedef {PlainObject} module:SVGthis.BBoxObjectWithFactor (like `DOMRect`)
+   * @typedef {object} BBoxObjectWithFactor (like `DOMRect`)
    * @property {number} x
    * @property {number} y
    * @property {number} width
@@ -841,9 +812,9 @@ class Editor extends EditorStartup {
 
   /**
    * @function module:svgcanvas.SvgCanvas#zoomChanged
-   * @param {external:Window} win
-   * @param {module:svgcanvas.SvgCanvas#event:zoomed} bbox
-   * @param {boolean} autoCenter
+   * @param {Window} win
+   * @param {BBoxObjectWithFactor|'canvas'|'selection'|'layer'|'content'} bbox a box, or what to fit
+   * @param {boolean} [autoCenter]
    * @listens module:svgcanvas.SvgCanvas#event:zoomed
    * @fires module:svgcanvas.SvgCanvas#event:ext_zoomChanged
    * @returns {void}
@@ -867,7 +838,7 @@ class Editor extends EditorStartup {
     const bb = zInfo.bbox
 
     if (zoomlevel < 0.001) {
-      this.changeZoom(0.1)
+      this.bottomPanel.changeZoom(0.1)
       return
     }
 
@@ -900,7 +871,7 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:contextset} context
    * @listens module:svgcanvas.SvgCanvas#event:contextset
    * @returns {void}
@@ -914,7 +885,7 @@ class Editor extends EditorStartup {
         '<a href="#" data-root="y">' +
         this.svgCanvas.getCurrentDrawing().getCurrentLayerName() +
         '</a>'
-      const parentsUntil = getParentsUntil(context, '#svgcontent')
+      const parentsUntil = getParentsUntil(context, '#svgcontent') ?? []
       parentsUntil.forEach(function (parent) {
         if (parent.id) {
           str += ' > ' + parent.id
@@ -935,33 +906,10 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @function module:SVGEditor.setIcon
-   * @param {string|Element|external:jQuery} elem
-   * @param {string|external:jQuery} iconId
-   * @returns {void}
-   */
-  setIcon (elem, iconId) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
-    const img = document.createElement('img')
-    img.src = this.configObj.curConfig.imgPath + iconId
-    const icon = typeof iconId === 'string' ? img : iconId.cloneNode(true)
-    if (!icon) {
-      // Todo: Investigate why this still occurs in some cases
-      logWarn('NOTE: Icon image missing: ' + iconId, undefined, 'Editor')
-      return
-    }
-    // empty()
-    while ($id(elem).firstChild) {
-      $id(elem).removeChild($id(elem).firstChild)
-    }
-    $id(elem).appendChild(icon)
-  }
-
-  /**
-   * @param {external:Window} win
+   * @param {Window} win
    * @param {module:svgcanvas.SvgCanvas#event:extension_added} ext
    * @listens module:svgcanvas.SvgCanvas#event:extension_added
-   * @returns {Promise<void>|void} Resolves to `undefined`
+   * @returns {Promise<void>} Resolves to `undefined`
    */
   async extAdded (win, ext) {
     if (!ext) {
@@ -987,13 +935,13 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @param {number} multiplier
+   * @param {number} [multiplier]
    * @returns {void}
    */
   zoomImage (multiplier) {
     const { $req } = this // container-scoped lookup (see EditorStartup constructor)
     const resolution = this.svgCanvas.getResolution()
-    multiplier = multiplier ? resolution.zoom * multiplier : 1
+    multiplier = multiplier ? (resolution.zoom ?? this.svgCanvas.getZoom()) * multiplier : 1
     // setResolution(res.w * multiplier, res.h * multiplier, true);
     $req('zoom').value = (multiplier * 100).toFixed(1)
     this.svgCanvas.setCurrentZoom(multiplier)
@@ -1112,18 +1060,18 @@ class Editor extends EditorStartup {
    * @returns {void}
    */
   hideSourceEditor () {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
-    const $editorDialog = $id('se-svg-editor-dialog')
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
+    const $editorDialog = $req('se-svg-editor-dialog')
     $editorDialog.setAttribute('dialog', 'closed')
   }
 
   /**
-   * @param {Event} e
-   * @returns {void} Resolves to `undefined`
+   * @param {CustomEvent} e the source dialog's `change` event
+   * @returns {Promise<void>}
    */
   async saveSourceEditor (e) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
-    const $editorDialog = $id('se-svg-editor-dialog')
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
+    const $editorDialog = $req('se-svg-editor-dialog')
     if ($editorDialog.getAttribute('dialog') !== 'open') return
     const saveChanges = () => {
       this.svgCanvas.clearSelection()
@@ -1136,7 +1084,7 @@ class Editor extends EditorStartup {
       const ok = await seConfirm(
         this.i18next.t('notification.QerrorsRevertToSource')
       )
-      if (ok === false || ok === 'Cancel') {
+      if (ok === 'Cancel') {
         return
       }
       saveChanges()
@@ -1147,12 +1095,12 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @param {Event} e
-   * @returns {void} Resolves to `undefined`
+   * @param {CustomEvent} e the source dialog's `change` event
+   * @returns {Promise<void>}
    */
-  cancelOverlays (e) {
-    const { $id } = this // container-scoped lookup (see EditorStartup constructor)
-    const $editorDialog = $id('se-svg-editor-dialog')
+  async cancelOverlays (e) {
+    const { $req } = this // container-scoped lookup (see EditorStartup constructor)
+    const $editorDialog = $req('se-svg-editor-dialog')
     const editingsource = $editorDialog.getAttribute('dialog') === 'open'
     if (!editingsource && !this.docprops && !this.configObj.preferences) {
       if (this.curContext) {
@@ -1164,10 +1112,10 @@ class Editor extends EditorStartup {
     if (editingsource) {
       const origSource = this.svgCanvas.getSvgString()
       if (origSource !== e.detail.value) {
-        const ok = seConfirm(
+        const ok = await seConfirm(
           this.i18next.t('notification.QignoreSourceChanges')
         )
-        if (ok) {
+        if (ok && ok !== 'Cancel') {
           this.hideSourceEditor()
         }
       } else {
@@ -1177,12 +1125,13 @@ class Editor extends EditorStartup {
   }
 
   /**
+   * @param {CustomEvent} e the source dialog's `change` event
    * @returns {void}
    */
   toggleDynamicOutput (e) {
     this.configObj.curConfig.dynamicOutput = e.detail.dynamic
     this.svgCanvas.setConfig(this.configObj.curConfig)
-    const $editorDialog = this.$id('se-svg-editor-dialog') // container-scoped (see EditorStartup constructor)
+    const $editorDialog = this.$req('se-svg-editor-dialog') // container-scoped (see EditorStartup constructor)
     const origSource = this.svgCanvas.getSvgString()
     $editorDialog.setAttribute('dialog', 'open')
     $editorDialog.setAttribute('value', origSource)
@@ -1211,8 +1160,8 @@ class Editor extends EditorStartup {
 
   /**
    * @function module:SVGthis.openPrep
-   * @returns {boolean|Promise<boolean>} Resolves to boolean indicating `true` if there were no changes
-   *  and `false` after the user confirms.
+   * @returns {Promise<true|string|undefined>} `true` when there is nothing to lose, else the choice the user made in the
+   *  confirm dialog (`'Cancel'` to stop; anything else to go on).
    */
   async openPrep () {
     if (this.svgCanvas.undoMgr.getUndoStackSize() === 0) {
@@ -1254,51 +1203,16 @@ class Editor extends EditorStartup {
   }
 
   /**
-   * @function module:SVGthis.setLang
-   * @param {string} lang The language code
-   * @param {module:locale.LocaleStrings} allStrings See {@tutorial LocaleDocs}
-   * @fires module:svgcanvas.SvgCanvas#event:ext_langReady
-   * @fires module:svgcanvas.SvgCanvas#event:ext_langChanged
-   * @returns {void} A Promise which resolves to `undefined`
-   */
-  setLang (lang) {
-    const { $id, $req } = this // container-scoped lookup (see EditorStartup constructor)
-    this.langChanged = true
-    this.configObj.pref('lang', lang)
-    const $editDialog = $id('se-edit-prefs')
-    $editDialog.setAttribute('lang', lang)
-    const oldLayerName = $id('#layerlist')
-      ? $req('#layerlist').querySelector('tr.layersel td.layername').textContent
-      : ''
-    const renameLayer =
-      oldLayerName === this.i18next.t('layers.layer') + ' 1'
-
-    this.setTitles()
-
-    if (renameLayer) {
-      this.svgCanvas.renameCurrentLayer(
-        this.i18next.t('layers.layer') + ' 1'
-      )
-      this.rightPanel.populateLayers()
-    }
-
-    this.svgCanvas.runExtensions(
-      'langChanged',
-      /** @type {module:svgcanvas.SvgCanvas#event:ext_langChanged} */ lang
-    )
-  }
-
-  /**
-   * @callback module:SVGthis.ReadyCallback
-   * @returns {Promise<void>|void}
+   * @callback ReadyCallback
+   * @returns {*}
    */
   /**
    * Queues a callback to be invoked when the editor is ready (or
    *   to be invoked immediately if it is already ready--i.e.,
    *   if `runCallbacks` has been run).
    * @function module:SVGthis.ready
-   * @param {module:SVGthis.ReadyCallback} cb Callback to be queued to invoke
-   * @returns {Promise<ArbitraryCallbackResult>} Resolves when all callbacks, including the supplied have resolved
+   * @param {ReadyCallback} cb Callback to be queued to invoke
+   * @returns {Promise<*>} Resolves when all callbacks, including the supplied have resolved
    */
   ready (cb) {
     return new Promise((resolve, reject) => {
@@ -1313,7 +1227,7 @@ class Editor extends EditorStartup {
   /**
    * Invokes the callbacks previous set by `svgthis.ready`
    * @function module:SVGthis.runCallbacks
-   * @returns {Promise<unknown>} Resolves once the extension is added if all callbacks succeeded and rejects otherwise
+   * @returns {Promise<void>} Resolves once every queued callback has run, rejects if one failed
    */
   async runCallbacks () {
     try {
@@ -1337,8 +1251,7 @@ class Editor extends EditorStartup {
   /**
    * @function module:SVGthis.loadFromString
    * @param {string} str The SVG string to load
-   * @param {PlainObject} [opts={}]
-   * @param {boolean} [opts.noAlert=false] Option to avoid alert to user and instead get rejected promise
+   * @param {{noAlert?: boolean}} [opts={}] `noAlert`: avoid the alert to the user and get a rejected promise instead
    * @returns {Promise<void>}
    */
   loadFromString (str, { noAlert } = {}) {
@@ -1361,16 +1274,14 @@ class Editor extends EditorStartup {
   /**
    * @function module:SVGthis.loadFromURL
    * @param {string} url URL from which to load an SVG string via Ajax
-   * @param {PlainObject} [opts={}] May contain properties: `cache`, `callback`
-   * @param {boolean} [opts.cache]
-   * @param {boolean} [opts.noAlert]
+   * @param {{cache?: boolean, noAlert?: boolean}} [opts={}]
    * @returns {Promise<unknown>} Resolves once the extension is added or rejects upon bad loading of
    *   the SVG (or upon failure to parse the loaded string) when `noAlert` is
    *   enabled
    */
   loadFromURL (url, { cache, noAlert } = {}) {
     return this.ready(() => {
-      return new Promise((resolve, reject) => {
+      return new Promise(/** @type {(resolve: (value?: unknown) => void, reject: (reason?: unknown) => void) => void} */ ((resolve, reject) => {
         fetch(url, { cache: cache ? 'force-cache' : 'no-cache' })
           .then((response) => {
             if (!response.ok) {
@@ -1384,7 +1295,7 @@ class Editor extends EditorStartup {
             return response.text()
           })
           .then((str) => {
-            this.loadSvgString(str, { noAlert })
+            this.loadSvgString(/** @type {string} */ (str), { noAlert })
             resolve(str)
           })
           .catch((error) => {
@@ -1397,15 +1308,14 @@ class Editor extends EditorStartup {
             )
             resolve()
           })
-      })
+      }))
     })
   }
 
   /**
    * @function module:SVGthis.loadFromDataURI
    * @param {string} str The Data URI to base64-decode (if relevant) and load
-   * @param {PlainObject} [opts={}]
-   * @param {boolean} [opts.noAlert]
+   * @param {{noAlert?: boolean}} [opts={}]
    * @returns {Promise<unknown>} Resolves once the extension is added and rejects if loading SVG string fails and `noAlert` is enabled
    */
   loadFromDataURI (str, { noAlert } = {}) {
@@ -1417,10 +1327,8 @@ class Editor extends EditorStartup {
       } else {
         pre = str.match(/^data:image\/svg\+xml(?:;|;utf8)?,/)
       }
-      if (pre) {
-        pre = pre[0]
-      }
-      const src = str.slice(pre.length)
+      if (!pre) throw new Error('Not an SVG data URI')
+      const src = str.slice(pre[0].length)
       return this.loadSvgString(
         base64 ? decode64(src) : decodeURIComponent(src),
         { noAlert }

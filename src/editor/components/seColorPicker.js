@@ -3,7 +3,7 @@ import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import PaintBox from './PaintBox.js'
 import { t } from '../locale.js'
 import { fetchSvgEl } from './svgIconLoader.js'
-import { closestRoot, ownerEditor, requireOwnerEditor } from '../domScope.js'
+import { closestRoot, requireOwnerEditor } from '../domScope.js'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import './colorPicker/index.js'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
@@ -103,6 +103,9 @@ template.innerHTML = `
  * @class SeColorPicker
  */
 export class SeColorPicker extends HTMLElement {
+  /** @type {PaintBox|null} made when the element is connected */ paintBox
+  /** @type {import('i18next').i18n|null} */ i18next
+
   /**
    * @function constructor
    */
@@ -233,6 +236,12 @@ export class SeColorPicker extends HTMLElement {
     this.setAttribute('src', value)
   }
 
+  /** The paint box, which exists once the element is connected. @returns {PaintBox} */
+  requirePaintBox () {
+    if (!this.paintBox) throw new Error('se-colorpicker: used before it was connected')
+    return this.paintBox
+  }
+
   /**
    * Open the <se-color-dialog> for this swatch: a popover beside it, or a modal where there is no
    * on-screen swatch to anchor to (touch shell, command search).
@@ -248,7 +257,7 @@ export class SeColorPicker extends HTMLElement {
     // Remove any existing dialog
     existing?.remove()
     const dialog = document.createElement('se-color-dialog')
-    dialog.paint = this.paintBox.paint
+    dialog.paint = this.requirePaintBox().paint
     dialog.type = this.type
     dialog.i18next = this.i18next
     // Open as a popover beside the swatch when it is actually on screen; the touch
@@ -256,20 +265,20 @@ export class SeColorPicker extends HTMLElement {
     const box = this.getBoundingClientRect()
     const tablet = root.querySelector('.svg_editor')?.classList.contains('ui-tablet')
     if (box.width > 0 && box.height > 0 && !tablet) dialog.anchor = this
-    ;(root.body ?? root).appendChild(dialog)
+    ;(('body' in root ? root.body : null) ?? root).appendChild(dialog)
 
     // Live preview — solid colours and gradients, on the selected shapes (groups
     // expand to their leaf shapes, exactly as the real `setColor` does) or on the
     // canvas background. Previews bypass history; the originals are put back
     // before the real change is applied (so undo records old → new) or on cancel.
     const attr = this.type
-    const editor = ownerEditor(this)
-    const canvas = editor?.svgCanvas
+    const editor = requireOwnerEditor(this)
+    const canvas = editor.svgCanvas
+    /** @type {Map<Element, Record<string, string|null>>} */
     const originals = new Map()
-    /**
-* @type {string | Node | null}
-*/
+    /** @type {SVGGradientElement|null} */
     let previewGradient = null
+    /** @type {{color: string, url: string, gradient: string}|null} */
     let bgOriginal = null
     const revert = () => {
       originals.forEach((orig, el) => {
@@ -293,7 +302,7 @@ export class SeColorPicker extends HTMLElement {
 * @type {Element[]}
 */
       const out = []
-      ;(canvas?.getSelectedElements?.() ?? []).forEach((el) => {
+      ;(canvas.getSelectedElements?.() ?? []).forEach((el) => {
         if (!el) return
         if (el.tagName === 'g') {
           el.querySelectorAll('*').forEach((c) => { if (c.tagName !== 'g') out.push(c) })
@@ -303,10 +312,10 @@ export class SeColorPicker extends HTMLElement {
       })
       return out
     }
-    const gradientOf = (paint) => (paint.type === 'linearGradient' || paint.type === 'radialGradient') ? paint[paint.type] : null
+    const gradientOf = (/** @type {Paint} */ paint) => (paint.type === 'linearGradient' || paint.type === 'radialGradient') ? paint[paint.type] : null
     if (attr === 'background') {
-      dialog.addEventListener('preview', (/** @type {CustomEvent} */ evt) => {
-        const { paint } = evt.detail
+      dialog.addEventListener('preview', (evt) => {
+        const { paint } = /** @type {CustomEvent} */ (evt).detail
         if (!bgOriginal) {
           bgOriginal = {
             color: editor.configObj.pref('bkgd_color'),
@@ -320,13 +329,13 @@ export class SeColorPicker extends HTMLElement {
       })
       dialog.addEventListener('cancel', revert)
     } else if (attr === 'fill' || attr === 'stroke') {
-      dialog.addEventListener('preview', (/** @type {CustomEvent} */ evt) => {
-        const { paint } = evt.detail
+      dialog.addEventListener('preview', (evt) => {
+        const { paint } = /** @type {CustomEvent} */ (evt).detail
         const grad = gradientOf(paint)
         let value
         if (grad) {
           previewGradient?.remove()
-          previewGradient = grad.cloneNode(true)
+          previewGradient = /** @type {SVGGradientElement} */ (grad.cloneNode(true))
           previewGradient.id = `se_preview_${attr}`
           canvas.findDefs().append(previewGradient)
           value = `url(#${previewGradient.id})`
@@ -346,22 +355,22 @@ export class SeColorPicker extends HTMLElement {
       dialog.addEventListener('cancel', revert)
     }
 
-    dialog.addEventListener('change', (/** @type {CustomEvent} */ evt) => {
+    dialog.addEventListener('change', (evt) => {
       revert()
-      const paint = new Paint({ copy: evt.detail.paint })
+      const paint = new Paint({ copy: /** @type {CustomEvent} */ (evt).detail.paint })
       this.setPaint(paint)
       this.dispatchEvent(new CustomEvent('change', { detail: { paint } }))
     }, { once: true })
   }
 
   /**
-   * @param {PlainObject} svgCanvas
-   * @param {PlainObject} selectedElement
-   * @param {bool} apply
+   * @param {import('@svgedit/svgcanvas').default} svgCanvas
+   * @param {Element|null|undefined} selectedElement
+   * @param {boolean} [apply]
    * @returns {void}
    */
   update (svgCanvas, selectedElement, apply) {
-    const paint = this.paintBox.update(svgCanvas, selectedElement)
+    const paint = this.requirePaintBox().update(svgCanvas, selectedElement)
     if (paint && apply) {
       this.setPaint(paint)
       this.dispatchEvent(new CustomEvent('change', { detail: { paint } }))
@@ -369,11 +378,11 @@ export class SeColorPicker extends HTMLElement {
   }
 
   /**
-   * @param {PlainObject} paint
+   * @param {Paint} paint
    * @returns {void}
    */
   setPaint (paint) {
-    this.paintBox.setPaint(paint)
+    this.requirePaintBox().setPaint(paint)
   }
 
   /**

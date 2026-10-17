@@ -499,7 +499,7 @@ export const buildEditorShortcuts = (/** @type {EditorInstance} */ editor) => [
     label,
     enabled: () => (editor.svgCanvas.getSelectedElements().some(Boolean) ? true : 'Select a shape first'),
     fn: () => {
-      editor.topPanel.clickSelectSame({ detail: { value: criterion } })
+      editor.topPanel.clickSelectSame(new CustomEvent('change', { detail: { value: criterion } }))
     }
   })),
   {

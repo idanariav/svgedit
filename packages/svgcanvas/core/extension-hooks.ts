@@ -101,7 +101,7 @@ export interface SavedDocumentPayload {
 
 /**
  * Hook name -> payload type. Hooks documented `undefined` are dispatched without a
- * payload (`vars` is `undefined`); `langChanged` receives the new language code.
+ * payload (`vars` is `undefined`).
  */
 export interface ExtensionHookPayloads {
   mouseDown: MouseDownPayload
@@ -118,8 +118,6 @@ export interface ExtensionHookPayloads {
   elementRenamed: ElementRenamedPayload
   layersChanged: undefined
   layerVisChanged: undefined
-  /** the new language code */
-  langChanged: string
   afterClear: undefined
   beforeClear: undefined
   onOpenedDocument: OpenedDocumentPayload
@@ -131,7 +129,6 @@ export const EXTENSION_HOOKS: ReadonlyArray<keyof ExtensionHookPayloads> = Objec
   'zoomChanged', 'IDsUpdated', 'canvasUpdated', 'toolButtonStateUpdate',
   'selectedChanged', 'elementTransition', 'elementChanged', 'elementRenamed',
   'layersChanged', 'layerVisChanged',
-  'langChanged',
   'afterClear', 'beforeClear', 'onOpenedDocument', 'onSavedDocument'
 ] as const)
 

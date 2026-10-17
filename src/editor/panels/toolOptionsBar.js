@@ -58,7 +58,7 @@ const fillTray = (editor, tray, options, signature) => {
  */
 const buildControl = (editor, o) => {
   const { svgCanvas } = editor
-  const send = (/** @type {number | boolean} */ value) => {
+  const send = (/** @type {number | string | boolean} */ value) => {
     svgCanvas.setToolOption(o.id, value)
     refreshToolOptions(editor)
   }
@@ -90,7 +90,7 @@ const buildControl = (editor, o) => {
   spin.dataset.option = o.id
   spin.setAttribute('label', o.label)
   if (o.title) spin.setAttribute('title', o.title)
-  for (const [attr, v] of [['min', o.min], ['max', o.max], ['step', o.step], ['value', o.value]]) {
+  for (const [attr, v] of /** @type {Array<[string, unknown]>} */ ([['min', o.min], ['max', o.max], ['step', o.step], ['value', o.value]])) {
     if (v !== undefined) spin.setAttribute(attr, String(v))
   }
   spin.addEventListener('change', (e) => {

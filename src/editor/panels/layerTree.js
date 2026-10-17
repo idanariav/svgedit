@@ -25,6 +25,15 @@ import {
 import { fetchSvgEl } from '../components/svgIconLoader.js'
 import { LayerKeyboard } from './layerKeyboard.js'
 
+/**
+ * @typedef {{el: Element, depth: number, group: boolean, expanded: boolean}} ObjectRow an object (or group) to list
+ * @typedef {{more: Element, hidden: number, depth: number}} MoreRow the "N more…" row of a truncated parent
+ * @typedef {HTMLTableRowElement & {_el: Element, _depth: number}} ObjectTr the row `objectRow` builds
+ * @typedef {HTMLTableRowElement & {_more: Element, _depth: number}} MoreTr the row `moreRow` builds
+ * @typedef {{parent: Element, before: Node|null, mode: string, tr: Element}} DropTarget where a drag would land
+ * @typedef {{tr: Element, movers: Element[], drop: DropTarget|null}} Drag a drag in progress
+ */
+
 /** Children listed per parent before "N more…". */
 export const ROW_LIMIT = 200
 const DRAG_THRESHOLD = 4
@@ -34,8 +43,8 @@ const DRAG_THRESHOLD = 4
  * @param {Element} parent a layer or an expanded group
  * @param {number} depth
  * @param {{isExpanded: (el: Element) => boolean, limitOf: (el: Element) => number}} ctx
- * @param {object[]} [out]
- * @returns {object[]} `{el, depth, group, expanded}` per object, `{more, hidden, depth}` per truncated parent
+ * @param {Array<ObjectRow|MoreRow>} [out]
+ * @returns {Array<ObjectRow|MoreRow>} `{el, depth, group, expanded}` per object, `{more, hidden, depth}` per truncated parent
  */
 export const objectRows = (parent, depth, ctx, out = []) => {
   const kids = Array.from(parent.children).filter(isPanelObject).reverse()
@@ -66,6 +75,7 @@ export class LayerTree {
     this.expanded = new Map()
     /** @type {Map<Element, number>} children shown per parent */
     this.limits = new Map()
+    /** @type {WeakMap<object, number>} */
     this.ids = new WeakMap()
     this.nextId = 1
     this.sig = ''
@@ -73,6 +83,7 @@ export class LayerTree {
     this.raf = 0
     /** @type {Element|null} the last plainly clicked object, the anchor of a Shift range */
     this.anchor = null
+    /** @type {Drag|null} */
     this.drag = null
     this.keyboard = new LayerKeyboard(this)
     this.observer = typeof MutationObserver === 'function' ? new MutationObserver(() => this.schedule()) : null
@@ -80,16 +91,23 @@ export class LayerTree {
 
   get canvas () { return this.editor.svgCanvas }
   get table () { return this.editor.$id('layerlist') }
-  t (key, opts) { return this.editor.i18next.t(key, opts) }
+  /** The layers table, which must be there. @returns {HTMLTableElement} */
+  requireTable () { return this.editor.$req('layerlist') }
+  /**
+   * @param {string} key
+   * @param {Record<string, unknown>} [opts]
+   * @returns {string}
+   */
+  t (key, opts) { return /** @type {string} */ (this.editor.i18next.t(key, opts)) }
 
   /** Wire the table's events once. @returns {void} */
   attach () {
-    const table = this.table
-    table.addEventListener('click', (evt) => this.onClick(evt))
-    table.addEventListener('dblclick', (/** @type {{ target: Element; }} */ evt) => this.onDblClick(evt))
-    table.addEventListener('pointerdown', (evt) => this.onPointerDown(evt))
+    const table = this.requireTable()
+    table.addEventListener('click', (evt) => this.onClick(/** @type {MouseEvent} */ (evt)))
+    table.addEventListener('dblclick', (evt) => this.onDblClick(evt))
+    table.addEventListener('pointerdown', (evt) => this.onPointerDown(/** @type {PointerEvent} */ (evt)))
     this.keyboard.attach()
-    this.canvas.bind('selected', (_win, elems) => this.reveal(elems))
+    this.canvas.bind('selected', (_win, /** @type {Element[]} */ elems) => this.reveal(elems))
     this.observe()
   }
 
@@ -120,26 +138,30 @@ export class LayerTree {
 * @param {object} el
 */
   uid (el) {
-    if (!this.ids.has(el)) this.ids.set(el, this.nextId++)
-    return this.ids.get(el)
+    let id = this.ids.get(el)
+    if (id === undefined) {
+      id = this.nextId++
+      this.ids.set(el, id)
+    }
+    return id
   }
 
   /**
 * Layers start open (at most `ROW_LIMIT` rows each); groups start closed.
-* @param {ParentNode} el
+* @param {Element} el
 */
   isOpen (el) {
     return this.expanded.get(el) ?? true
   }
 
   /** @returns {HTMLElement[]} the layer rows, top first */
-  layerRows () { return Array.from(this.table.querySelectorAll('tbody > tr.layer')) }
+  layerRows () { return /** @type {HTMLElement[]} */ (Array.from(this.requireTable().querySelectorAll('tbody > tr.layer'))) }
 
   /**
 * @param {Element | null} tr
 */
   layerOf (tr) {
-    const name = tr.querySelector('td.layername')?.textContent
+    const name = tr?.querySelector('td.layername')?.textContent
     return name ? this.canvas.getCurrentDrawing().getLayerByName(name) : null
   }
 
@@ -163,19 +185,19 @@ export class LayerTree {
       return { tr, layer, open, rows }
     })
     const sig = plan.map(({ layer, open, rows }) =>
-      `${layer ? this.uid(layer) : '-'}${open ? '+' : '.'}` + rows.map((r) => r.more
+      `${layer ? this.uid(layer) : '-'}${open ? '+' : '.'}` + rows.map((r) => 'more' in r
         ? `M${r.hidden}`
         : `${this.uid(r.el)}:${r.depth}${r.group ? 'g' : ''}${r.expanded ? '+' : ''}${isObjectHidden(r.el) ? 'h' : ''}${hasLockMark(r.el) ? 'l' : ''}${isObjectLocked(r.el) ? 'L' : ''}:${r.el.getAttribute('data-name') ?? ''}`
       ).join(',')
     ).join('|')
     if (sig !== this.sig) {
       this.sig = sig
-      this.table.querySelectorAll('tr.object, tr.objmore').forEach((tr) => tr.remove())
+      table.querySelectorAll('tr.object, tr.objmore').forEach((tr) => tr.remove())
       for (const { tr, layer, open, rows } of plan) {
         tr.querySelector('td.layertoggle')?.classList.toggle('open', open)
         if (!layer) continue
         const frag = document.createDocumentFragment()
-        for (const row of rows) frag.appendChild(row.more ? this.moreRow(row) : this.objectRow(row))
+        for (const row of rows) frag.appendChild('more' in row ? this.moreRow(row) : this.objectRow(row))
         tr.after(frag)
       }
     }
@@ -185,12 +207,16 @@ export class LayerTree {
   /** Highlight the rows of the selected objects. @returns {void} */
   markSelection () {
     const selected = new Set(this.canvas.getSelectedElements().filter(Boolean))
-    this.table.querySelectorAll('tr.object').forEach((tr) => {
-      tr.classList.toggle('objsel', selected.has(tr._el))
+    this.requireTable().querySelectorAll('tr.object').forEach((tr) => {
+      tr.classList.toggle('objsel', selected.has(/** @type {ObjectTr} */ (tr)._el))
     })
     this.keyboard.mark()
   }
 
+  /**
+   * @param {Element} el
+   * @returns {string}
+   */
   label (el) {
     const named = el.getAttribute('data-name')
     if (named) return named
@@ -207,8 +233,12 @@ export class LayerTree {
     }
   }
 
+  /**
+   * @param {ObjectRow} row
+   * @returns {ObjectTr}
+   */
   objectRow ({ el, depth, group, expanded }) {
-    const tr = document.createElement('tr')
+    const tr = /** @type {ObjectTr} */ (document.createElement('tr'))
     tr._el = el
     tr._depth = depth
     const hidden = isObjectHidden(el)
@@ -246,8 +276,12 @@ export class LayerTree {
     return tr
   }
 
+  /**
+   * @param {MoreRow} row
+   * @returns {MoreTr}
+   */
   moreRow ({ more, hidden, depth }) {
-    const tr = document.createElement('tr')
+    const tr = /** @type {MoreTr} */ (document.createElement('tr'))
     tr.className = 'objmore'
     tr._more = more
     tr._depth = depth
@@ -268,8 +302,8 @@ export class LayerTree {
    */
   enter (el) {
     const c = this.canvas
-    let layer = el.parentNode
-    while (layer && !c.isLayer(layer)) layer = layer.parentNode
+    let layer = /** @type {Element|null} */ (el.parentNode)
+    while (layer && !c.isLayer(layer)) layer = /** @type {Element|null} */ (layer.parentNode)
     if (!layer) return
     const drawing = c.getCurrentDrawing()
     if (drawing.getCurrentLayer() !== layer) {
@@ -277,7 +311,7 @@ export class LayerTree {
       const name = layer.querySelector(':scope > title')?.textContent
       if (name) c.setCurrentLayer(name)
     }
-    const parent = el.parentNode
+    const parent = /** @type {Element} */ (el.parentNode)
     if (parent === layer) {
       if (c.getCurrentGroup()) c.leaveContext()
     } else if (c.getCurrentGroup() !== parent) {
@@ -304,7 +338,7 @@ export class LayerTree {
    * @returns {Element[]}
    */
   rangeBetween (a, b) {
-    const kids = Array.from(a.parentNode.children).filter(isPanelObject)
+    const kids = Array.from(/** @type {Element} */ (a.parentNode).children).filter(isPanelObject)
     const i = kids.indexOf(a)
     const j = kids.indexOf(b)
     if (i < 0 || j < 0) return [b]
@@ -313,6 +347,10 @@ export class LayerTree {
 
   // ── Events ───────────────────────────────────────────────────────────────
 
+  /**
+   * @param {MouseEvent} evt
+   * @returns {void}
+   */
   onClick (evt) {
     const target = /** @type {Element} */ (evt.target)
     const layerToggle = target.closest('td.layertoggle')
@@ -321,13 +359,13 @@ export class LayerTree {
       if (layer) this.setOpen(layer, !this.isOpen(layer))
       return
     }
-    const more = /** @type {HTMLElement|null} */ (target.closest('tr.objmore'))
+    const more = /** @type {MoreTr|null} */ (target.closest('tr.objmore'))
     if (more) {
       this.limits.set(more._more, (this.limits.get(more._more) ?? ROW_LIMIT) + ROW_LIMIT)
       this.invalidate()
       return
     }
-    const tr = /** @type {HTMLElement|null} */ (target.closest('tr.object'))
+    const tr = /** @type {ObjectTr|null} */ (target.closest('tr.object'))
     if (!tr || target.closest('input')) return
     const el = tr._el
     const c = this.canvas
@@ -373,12 +411,12 @@ export class LayerTree {
   }
 
   /**
-* @param {{ target: Element; }} evt
+* @param {Event} evt
 */
   onDblClick (evt) {
     const label = /** @type {Element} */ (evt.target).closest('tr.object .objlabel')
     if (!label) return
-    const tr = /** @type {HTMLElement|null} */ (/** @type {Element} */ (label.closest('tr.object')))
+    const tr = /** @type {ObjectTr} */ (label.closest('tr.object'))
     const el = tr._el
     const input = document.createElement('input')
     input.type = 'text'
@@ -414,19 +452,27 @@ export class LayerTree {
     const open = (/** @type {Element} */ node) => {
       if (this.expanded.get(node) !== true) { this.expanded.set(node, true); changed = true }
     }
-    let p = el.parentNode
+    let p = /** @type {Element|null} */ (el.parentNode)
     while (p && !this.canvas.isLayer(p)) {
       open(p)
-      p = p.parentNode
+      p = /** @type {Element|null} */ (p.parentNode)
     }
     if (!p) return null
     if (!this.isOpen(p)) open(p) // a layer is open unless it was closed
     // A deep object may sit past a "N more…" cut.
-    const parent = el.parentNode
+    const parent = /** @type {Element} */ (el.parentNode)
     const kids = Array.from(parent.children).filter(isPanelObject)
     const fromTop = kids.length - kids.indexOf(el)
     if (fromTop > (this.limits.get(parent) ?? ROW_LIMIT)) { this.limits.set(parent, fromTop); changed = true }
     return changed
+  }
+
+  /**
+   * @param {Element} el
+   * @returns {ObjectTr|undefined} the row listing `el`
+   */
+  rowOf (el) {
+    return /** @type {ObjectTr[]} */ (Array.from(this.requireTable().querySelectorAll('tr.object'))).find((r) => r._el === el)
   }
 
   /**
@@ -437,10 +483,10 @@ export class LayerTree {
    */
   reveal (elems) {
     const el = (elems ?? []).filter(Boolean)[0]
-    if (!el || !isPanelObject(el) || this.table.offsetParent === null) return
+    if (!el || !isPanelObject(el) || this.requireTable().offsetParent === null) return
     if (this.expandTo(el)) this.invalidate()
     else this.markSelection()
-    const tr = Array.from(this.table.querySelectorAll('tr.object')).find((r) => r._el === el)
+    const tr = this.rowOf(el)
     tr?.scrollIntoView?.({ block: 'nearest' })
   }
 
@@ -456,7 +502,7 @@ export class LayerTree {
     this.editor.rightPanel.activateTab('layers')
     this.dirty = true
     this.refresh()
-    const tr = Array.from(this.table.querySelectorAll('tr.object')).find((r) => r._el === el)
+    const tr = this.rowOf(el)
     if (!tr) return false
     tr.scrollIntoView?.({ block: 'nearest' })
     tr.classList.add('objflash')
@@ -466,88 +512,99 @@ export class LayerTree {
 
   // ── Drag to reorder / re-parent ──────────────────────────────────────────
 
+  /**
+   * @param {PointerEvent} evt
+   * @returns {void}
+   */
   onPointerDown (evt) {
     if (evt.button !== 0) return
     const target = /** @type {Element} */ (evt.target)
-    const tr = /** @type {HTMLElement|null} */ (target.closest('tr.object'))
+    const tr = /** @type {ObjectTr|null} */ (target.closest('tr.object'))
     if (!tr || target.closest('td.objvis, td.objlock, .disclosure, input')) return
     const start = { x: evt.clientX, y: evt.clientY }
-    const move = (e) => {
+    const move = (/** @type {PointerEvent} */ e) => {
       if (!this.drag) {
         if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_THRESHOLD) return
         this.beginDrag(tr)
       }
       this.dragOver(e)
     }
-    const end = (e) => {
+    const end = (/** @type {{ type: string }} */ e) => {
       document.removeEventListener('pointermove', move)
       document.removeEventListener('pointerup', end)
       document.removeEventListener('keydown', key, true)
       if (this.drag) this.finishDrag(e.type === 'pointerup')
     }
-    const key = (/** @type {{ key: string; stopPropagation: () => void; }} */ e) => { if (e.key === 'Escape') { e.stopPropagation(); end({ type: 'cancel' }) } }
+    const key = (/** @type {KeyboardEvent} */ e) => { if (e.key === 'Escape') { e.stopPropagation(); end({ type: 'cancel' }) } }
     document.addEventListener('pointermove', move)
     document.addEventListener('pointerup', end)
     document.addEventListener('keydown', key, true)
   }
 
   /**
-* @param {Element} tr
+* @param {ObjectTr} tr
 */
   beginDrag (tr) {
     const el = tr._el
     const selected = this.canvas.getSelectedElements().filter(Boolean)
     this.drag = { tr, movers: selected.includes(el) ? selected : [el], drop: null }
     tr.classList.add('objdragging')
-    this.table.classList.add('tree-dragging')
+    this.requireTable().classList.add('tree-dragging')
   }
 
   /**
    * Where a drop at `y` over row `tr` would put the dragged objects.
    * @param {Element} tr
    * @param {number} y
-   * @returns {{parent: Element, before: Node|null, mode: string, tr: Element}|null}
+   * @returns {DropTarget|null}
    */
   dropAt (tr, y) {
+    const { drag } = this
+    if (!drag) return null
+    /** @type {DropTarget|null} */
     let found = null
     if (tr.classList.contains('layer')) {
       const layer = this.layerOf(tr)
       if (layer) found = { parent: layer, before: null, mode: 'into', tr }
     } else if (tr.classList.contains('object')) {
-      const el = tr._el
+      const el = /** @type {ObjectTr} */ (tr)._el
       const box = tr.getBoundingClientRect()
       const f = (y - box.top) / (box.height || 1)
       const canEnter = isExpandableGroup(el)
       if (canEnter && f > 0.25 && f < 0.75) found = { parent: el, before: null, mode: 'into', tr }
       // Rows run front to back, so the row above is later in the document.
-      else if (f < 0.5) found = { parent: el.parentNode, before: el.nextSibling, mode: 'above', tr }
-      else found = { parent: el.parentNode, before: el, mode: 'below', tr }
+      else if (f < 0.5) found = { parent: /** @type {Element} */ (el.parentNode), before: el.nextSibling, mode: 'above', tr }
+      else found = { parent: /** @type {Element} */ (el.parentNode), before: el, mode: 'below', tr }
     }
     if (!found) return null
-    return this.canvas.objectMoveIssue(this.drag.movers, found.parent, found.before) ? null : found
+    return this.canvas.objectMoveIssue(drag.movers, found.parent, found.before) ? null : found
   }
 
   /**
 * @param {{ clientX: number; clientY: number; }} evt
 */
   dragOver (evt) {
+    const { drag } = this
+    if (!drag) return
     const under = document.elementFromPoint(evt.clientX, evt.clientY)
     const tr = under?.closest?.('#layerlist tr.layer, #layerlist tr.object')
-    this.table.querySelectorAll('.drop-above, .drop-below, .drop-into').forEach((r) =>
+    this.requireTable().querySelectorAll('.drop-above, .drop-below, .drop-into').forEach((r) =>
       r.classList.remove('drop-above', 'drop-below', 'drop-into'))
-    this.drag.drop = tr ? this.dropAt(tr, evt.clientY) : null
-    if (this.drag.drop) this.drag.drop.tr.classList.add(`drop-${this.drag.drop.mode}`)
+    drag.drop = tr ? this.dropAt(tr, evt.clientY) : null
+    if (drag.drop) drag.drop.tr.classList.add(`drop-${drag.drop.mode}`)
   }
 
   /**
 * @param {boolean} commit
 */
   finishDrag (commit) {
+    if (!this.drag) return
     const { drop, movers, tr } = this.drag
     this.drag = null
     tr.classList.remove('objdragging')
-    this.table.classList.remove('tree-dragging')
-    this.table.querySelectorAll('.drop-above, .drop-below, .drop-into').forEach((r) =>
+    const table = this.requireTable()
+    table.classList.remove('tree-dragging')
+    table.querySelectorAll('.drop-above, .drop-below, .drop-into').forEach((r) =>
       r.classList.remove('drop-above', 'drop-below', 'drop-into'))
     if (commit && drop && this.canvas.moveObjects(movers, drop.parent, drop.before)) {
       this.expanded.set(drop.parent, true)

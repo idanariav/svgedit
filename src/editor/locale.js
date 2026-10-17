@@ -13,11 +13,11 @@ import i18next from 'i18next'
 /**
  * The string keys of the object are two-letter language codes.
  * @tutorial LocaleDocs
- * @typedef {PlainObject<string, string|module:locale.LocaleStrings|module:locale.LocaleArray>} module:locale.LocaleStrings
+ * @typedef {Object<string, *>} LocaleStrings strings, or nested objects / arrays of them
  */
 // keyed to an array of objects with "id" and "title" or "textContent" properties
 /**
- * @typedef {PlainObject<string, string>} module:locale.LocaleSelectorValue
+ * @typedef {Object<string, string>} LocaleSelectorValue
  */
 
 /** @type {string} */
@@ -26,8 +26,8 @@ let langParam = ''
 /**
 * The "data" property is generally set to an an array of objects with
 *   "id" and "title" or "textContent" properties.
-* @typedef {PlainObject} module:locale.AddLangExtensionLocaleData
-* @property {module:locale.LocaleStrings[]} data See {@tutorial LocaleDocs}
+* @typedef {object} AddLangExtensionLocaleData
+* @property {LocaleStrings[]} data See {@tutorial LocaleDocs}
 */
 
 /**
@@ -36,12 +36,12 @@ let langParam = ''
 /**
  * @function module:locale.LocaleEditorInit#addLangData
  * @param {string} langParam
- * @returns {module:locale.AddLangExtensionLocaleData}
+ * @returns {AddLangExtensionLocaleData}
 */
 /**
-* @typedef {PlainObject} module:locale.LangAndData
+* @typedef {object} LangAndData
 * @property {string} langParam
-* @property {module:locale.LocaleStrings} langData
+* @property {LocaleStrings} langData
 */
 
 /**
@@ -51,15 +51,14 @@ let langParam = ''
  * @param {string[]} goodLangs
  * @fires module:svgcanvas.SvgCanvas#event:ext_addLangData
  * @fires module:svgcanvas.SvgCanvas#event:ext_langReady
- * @fires module:svgcanvas.SvgCanvas#event:ext_langChanged
  * @returns {Promise<{langParam: string, i18next: import('i18next').i18n}>} The language in use and the i18next instance loaded with it
 */
 
 export const putLocale = async function (givenParam, goodLangs) {
   if (givenParam) {
     langParam = givenParam
-  } else if (navigator.userLanguage) { // Explorer
-    langParam = navigator.userLanguage
+  } else if (/** @type {Navigator & {userLanguage?: string}} */ (navigator).userLanguage) { // Explorer
+    langParam = /** @type {string} */ (/** @type {Navigator & {userLanguage?: string}} */ (navigator).userLanguage)
   } else if (navigator.language) { // FF, Opera, ...
     langParam = navigator.language
   }

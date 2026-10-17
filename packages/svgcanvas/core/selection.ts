@@ -50,7 +50,7 @@ export interface SelectionApi {
   groupSvgElem(elem: Element): void
   prepareSvg(newDoc: XMLDocument): void
   recalculateAllSelectedDimensions(): void
-  setRotationAngle(val: number, preventUndo?: boolean): void
+  setRotationAngle(val: number | string, preventUndo?: boolean): void
   updateGroupSelector(elem?: Element): void
 }
 

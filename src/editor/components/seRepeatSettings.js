@@ -184,6 +184,12 @@ const TEMPLATE_HTML = `
  * `svgCanvas.repeatSelection(params)` on Apply (both provided by ext-repeat).
  */
 class SeRepeatSettings extends SeSettingsPopover {
+  /** @type {string} */ _mode
+  /** @type {'canvas'|'selection'|'custom'} */ _center
+  /** @type {number|null} */ _centerX
+  /** @type {number|null} */ _centerY
+  /** @type {{mode: string, count: string|number, sweep: string|number}|null} the in-progress fields while the user picks a centre */ _pendingReopen
+
   constructor () {
     super(TEMPLATE_HTML)
     this._mode = 'radial'
@@ -232,9 +238,10 @@ class SeRepeatSettings extends SeSettingsPopover {
   }
 
   _updateCenterReadout () {
+    const { _centerX: x, _centerY: y } = this
     this.$centerReadout.textContent =
-      Number.isFinite(this._centerX) && Number.isFinite(this._centerY)
-        ? `${Math.round(this._centerX)}, ${Math.round(this._centerY)}`
+      typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y)
+        ? `${Math.round(x)}, ${Math.round(y)}`
         : 'not set'
   }
 
@@ -262,7 +269,7 @@ class SeRepeatSettings extends SeSettingsPopover {
     })
   }
 
-  _setCenter (/** @type {{x: number, y: number}|null} */ center) {
+  _setCenter (/** @type {'canvas'|'selection'|'custom'} */ center) {
     this._center = center
     this.$centerCanvas.setAttribute('aria-pressed', String(center === 'canvas'))
     this.$centerSelection.setAttribute('aria-pressed', String(center === 'selection'))
@@ -289,7 +296,7 @@ class SeRepeatSettings extends SeSettingsPopover {
     }
 
     // Seed from an existing repeat on the selection so Apply re-edits it.
-    const existing = requireOwnerEditor(this).svgCanvas.getRepeatParams?.()
+    const existing = /** @type {Record<string, *>|null|undefined} */ (requireOwnerEditor(this).svgCanvas.getRepeatParams?.())
     if (existing) {
       this._setMode(existing.mode)
       if (existing.mode === 'radial') {

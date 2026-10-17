@@ -64,7 +64,8 @@ describe('HotkeyManager over the command registry', () => {
     }
     selected.push(document.createElement('div'))
     editor.commands.run('select_same_fillstroke')
-    expect(clickSelectSame).toHaveBeenCalledWith({ detail: { value: 'fillstroke' } })
+    expect(clickSelectSame).toHaveBeenCalledTimes(1)
+    expect(clickSelectSame.mock.calls[0][0].detail).toEqual({ value: 'fillstroke' })
   })
 
   it('registerEl creates an adapter command that clicks the element', () => {

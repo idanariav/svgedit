@@ -8,12 +8,14 @@ import { createSlider } from './shared/Slider.js'
 import { createHsvBox } from './shared/HsvBox.js'
 import { paintToState } from '../PaintModel.js'
 
+/** @typedef {import('../PaintModel.js').GradientStop} GradientStop */
+
 const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg>'
 
 /**
- * @param {object} paint
- * @param {object} i18next
- * @returns {HTMLElement}
+ * @param {import('@svgedit/svgcanvas/core/paint.ts').default|null} paint
+ * @param {import('i18next').i18n|null|undefined} i18next
+ * @returns {import('../PaintModel.js').PaintPanel}
  */
 export function createLinearPanel (paint, i18next) {
   const t = (/** @type {string} */ key) => {
@@ -21,6 +23,7 @@ export function createLinearPanel (paint, i18next) {
   }
 
   const state = paintToState(paint)
+  /** @type {{mode: 'two'|'mono'|'multi', stops: GradientStop[], angle: number, spreadMethod: string, alpha: number, monoMode: string}} */
   let panelState = {
     mode: (state.tab === 'linear' ? state.mode : 'two') || 'two',
     stops: (state.tab === 'linear' ? state.stops : null) || [
@@ -33,7 +36,7 @@ export function createLinearPanel (paint, i18next) {
     monoMode: state.monoMode || 'white'
   }
 
-  const panel = document.createElement('div')
+  const panel = /** @type {import('../PaintModel.js').PaintPanel} */ (document.createElement('div'))
   panel.className = 'cp-body cp-body-grad'
 
   // ── Left column ────────────────────────────────────────────────────────────
@@ -43,6 +46,7 @@ export function createLinearPanel (paint, i18next) {
   // Mode toggle
   const modeToggle = document.createElement('div')
   modeToggle.className = 'cp-mode'
+  /** @type {Array<{key: 'two'|'mono'|'multi', label: string}>} */
   const modes = [
     { key: 'two', label: t('config.gradient_mode_two') || 'Two color' },
     { key: 'mono', label: t('config.gradient_mode_mono') || 'Mono' },
@@ -62,7 +66,7 @@ export function createLinearPanel (paint, i18next) {
   const previewWrap = document.createElement('div')
   previewWrap.className = 'cp-preview-big'
   previewWrap.innerHTML = '<div class="cp-preview-chk" style="position:absolute;inset:0;background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;"></div><div class="cp-preview-fill" style="position:absolute;inset:0;"></div>'
-  const previewFill = previewWrap.querySelector('.cp-preview-fill')
+  const previewFill = /** @type {HTMLElement} */ (previewWrap.querySelector('.cp-preview-fill'))
   leftCol.appendChild(previewWrap)
 
   // StopBar
@@ -122,7 +126,7 @@ export function createLinearPanel (paint, i18next) {
   selectBtn.appendChild(spreadSelect)
   spreadSelect.addEventListener('change', () => {
     panelState.spreadMethod = spreadSelect.value
-    selectWrap.querySelector('.cp-select-val').textContent = spreadSelect.value
+    ;/** @type {HTMLElement} */ (selectWrap.querySelector('.cp-select-val')).textContent = spreadSelect.value
   })
   settingsSection.appendChild(selectWrap)
 
@@ -134,7 +138,7 @@ export function createLinearPanel (paint, i18next) {
     value: panelState.alpha,
     unit: '%'
   })
-  opacSlider.addEventListener('change', (/** @type {CustomEvent} */ e) => { panelState.alpha = e.detail.value })
+  opacSlider.addEventListener('change', (e) => { panelState.alpha = /** @type {CustomEvent} */ (e).detail.value })
   settingsSection.appendChild(opacSlider)
   bottomRow.appendChild(settingsSection)
 
@@ -153,9 +157,9 @@ export function createLinearPanel (paint, i18next) {
       </div>
     </div>
   `
-  monoSection.querySelectorAll('[data-mono]').forEach(btn => {
+  ;/** @type {NodeListOf<HTMLElement>} */ (monoSection.querySelectorAll('[data-mono]')).forEach(btn => {
     btn.addEventListener('click', () => {
-      panelState.monoMode = btn.dataset.mono
+      panelState.monoMode = btn.dataset.mono ?? 'white'
       monoSection.querySelectorAll('[data-mono]').forEach(b => b.classList.toggle('is-active', b === btn))
       _updatePreview()
     })
@@ -201,7 +205,7 @@ export function createLinearPanel (paint, i18next) {
   }
 
   /**
-* @param {string} newMode
+* @param {'two'|'mono'|'multi'} newMode
 */
   function setMode (newMode) {
     panelState.mode = newMode
@@ -213,14 +217,14 @@ export function createLinearPanel (paint, i18next) {
     _updatePreview()
   }
 
-  stopBar.addEventListener('stops-change', (/** @type {CustomEvent} */ e) => {
-    panelState.stops = e.detail.stops
+  stopBar.addEventListener('stops-change', (e) => {
+    panelState.stops = /** @type {CustomEvent} */ (e).detail.stops
     _updatePreview()
   })
 
   // Build/rebuild the inline HsvBox in the colors column for a given stop.
   /**
-* @param {string | number} idx
+* @param {number} idx
 */
   function _mountStopEditor (idx) {
     const stop = panelState.stops[idx]
@@ -228,7 +232,8 @@ export function createLinearPanel (paint, i18next) {
     stopColorSection.innerHTML = ''
     stopHsvBox = createHsvBox(stop.color, stop.alpha)
     stopColorSection.appendChild(stopHsvBox)
-    stopHsvBox.addEventListener('color-change', (/** @type {CustomEvent} */ ce) => {
+    stopHsvBox.addEventListener('color-change', (event) => {
+      const ce = /** @type {CustomEvent} */ (event)
       const sidx = stopBar.getSelectedIndex()
       if (sidx >= 0 && sidx < panelState.stops.length) {
         panelState.stops[sidx].color = ce.detail.hex
@@ -239,10 +244,10 @@ export function createLinearPanel (paint, i18next) {
     })
   }
 
-  stopBar.addEventListener('stop-select', (/** @type {CustomEvent} */ e) => _mountStopEditor(e.detail.index))
+  stopBar.addEventListener('stop-select', (e) => _mountStopEditor(/** @type {CustomEvent} */ (e).detail.index))
 
-  dial.addEventListener('change', (/** @type {CustomEvent} */ e) => {
-    panelState.angle = e.detail.angle
+  dial.addEventListener('change', (e) => {
+    panelState.angle = /** @type {CustomEvent} */ (e).detail.angle
     _updatePreview()
   })
 
@@ -287,7 +292,7 @@ export function createLinearPanel (paint, i18next) {
       dial.setAngle(panelState.angle)
       opacSlider.setValue(panelState.alpha)
       spreadSelect.value = panelState.spreadMethod
-      selectWrap.querySelector('.cp-select-val').textContent = panelState.spreadMethod
+      ;/** @type {HTMLElement} */ (selectWrap.querySelector('.cp-select-val')).textContent = panelState.spreadMethod
       monoSection.style.display = panelState.mode === 'mono' ? '' : 'none'
       setMode(panelState.mode)
       _updatePreview()

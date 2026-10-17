@@ -21,6 +21,7 @@ import { GROUP_ORDER } from './Hotkeys.js'
  * Icons for actions that have no toolbar button of their own (keyboard-only
  * shortcuts and the paste/fit entries below), so every context-menu row has one.
  */
+/** @type {Record<string, string>} */
 const ACTION_ICONS = {
   paste: 'paste.svg',
   paste_in_place: 'paste_in_place.svg',
@@ -33,11 +34,21 @@ const ACTION_ICONS = {
 }
 
 /**
+ * @typedef {object} ValueControl a stateful control the quick-action menu renders as a live widget
+ * @property {string} group
+ * @property {string} labelKey
+ * @property {string} src
+ * @property {(editor?: EditorInstance) => HTMLElement} create a fresh widget
+ * @property {(el: *, editor: EditorInstance) => void} seed set it from the selection
+ * @property {(editor: EditorInstance) => EventListener} onChange the handler of its `change` event
+ */
+
+/**
  * Build a colour-picker value-control descriptor.
  * @param {('fill'|'stroke')} type
  * @param {string} labelKey
  * @param {string} src
- * @returns {object}
+ * @returns {ValueControl}
  */
 const makeColorControl = (type, labelKey, src) => ({
   group: 'Style',
@@ -49,7 +60,7 @@ const makeColorControl = (type, labelKey, src) => ({
     el.setAttribute('src', src)
     return el
   },
-  seed: (el, /** @type {EditorInstance} */ editor) => {
+  seed: (/** @type {*} */ el, /** @type {EditorInstance} */ editor) => {
     el.init(editor.i18next)
     el.update(editor.svgCanvas, editor.selectedElement)
   },
@@ -63,6 +74,7 @@ const makeColorControl = (type, labelKey, src) => ({
  * selection, and routes its `change` through the same `BottomPanel` handler the
  * real panel control uses.
  */
+/** @type {Record<string, ValueControl>} */
 export const VALUE_CONTROLS = {
   stroke_width: {
     group: 'Style',
@@ -76,9 +88,9 @@ export const VALUE_CONTROLS = {
       el.setAttribute('src', 'stroke-width.svg')
       return el
     },
-    seed: (el, /** @type {EditorInstance} */ editor) => {
+    seed: (/** @type {HTMLInputElement} */ el, /** @type {EditorInstance} */ editor) => {
       const sel = editor.selectedElement
-      el.value = (sel && sel.getAttribute('stroke-width')) || 1
+      el.value = String((sel && sel.getAttribute('stroke-width')) || 1)
     },
     onChange: (/** @type {EditorInstance} */ editor) => (e) => editor.bottomPanel.changeStrokeWidth(e)
   },
@@ -120,10 +132,12 @@ export const getFavoriteMeta = (editor, id) => {
  * @returns {Array<{group:string, actions:Array<{id:string, label:string}>}>}
  */
 export const buildFavoritesCatalog = (editor) => {
+  /** @type {Map<string, Array<{id: string, label: string}>>} */
   const groups = new Map()
-  const push = (group, entry) => {
-    if (!groups.has(group)) groups.set(group, [])
-    groups.get(group).push(entry)
+  const push = (/** @type {string} */ group, /** @type {{id: string, label: string}} */ entry) => {
+    const list = groups.get(group) ?? []
+    list.push(entry)
+    groups.set(group, list)
   }
   for (const g of editor.hotkeys.listForUi()) {
     for (const a of g.actions) push(g.group, { id: a.id, label: a.label })
@@ -140,7 +154,7 @@ export const buildFavoritesCatalog = (editor) => {
   })
   return ordered.map((group) => ({
     group,
-    actions: groups.get(group).sort((a, b) => a.label.localeCompare(b.label))
+    actions: (groups.get(group) ?? []).sort((a, b) => a.label.localeCompare(b.label))
   }))
 }
 

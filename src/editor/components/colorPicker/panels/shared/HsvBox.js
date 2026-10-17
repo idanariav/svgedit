@@ -29,12 +29,14 @@ const PRESETS = [
   '#737373', '#5C5C5C', '#454545', '#2E2E2E', '#171717', '#000000'
 ]
 
+/** @typedef {HTMLDivElement & { hex: string, alpha: number, setHex(h:string):void, setAlpha(a:number):void }} HsvBoxElement */
+
 /**
  * Create an HSV color picker widget.
  * @param {string} initialHex  6-char hex without #
  * @param {number} initialAlpha  0-100
- * @param {string} [currentHex]  original/current color for the split preview
- * @returns {HTMLElement & { hex: string, alpha: number, setHex(h:string):void, setAlpha(a:number):void }}
+ * @param {string|null} [currentHex]  original/current color for the split preview
+ * @returns {HsvBoxElement}
  */
 export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null) {
   const safeHex = /^[0-9a-fA-F]{6}$/.test(initialHex) ? initialHex : '2962ff'
@@ -46,7 +48,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   const origHex = currentHex || safeHex
 
   // ── DOM structure ──────────────────────────────────────────────────────────
-  const container = document.createElement('div')
+  const container = /** @type {HsvBoxElement} */ (document.createElement('div'))
   container.style.cssText = 'display:flex;flex:1;min-width:0;gap:22px;align-items:flex-start;'
   container.innerHTML = `
     <div class="cp-canvas-col">
@@ -108,12 +110,12 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   `
 
   // ── Element refs ───────────────────────────────────────────────────────────
-  const hsvBox = container.querySelector('.cp-hsv')
+  const hsvBox = /** @type {HTMLElement} */ (container.querySelector('.cp-hsv'))
   const hsvHue = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-hue'))
   const hsvDot = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hsv-dot'))
-  const hueStrip = container.querySelector('.cp-hue')
+  const hueStrip = /** @type {HTMLElement} */ (container.querySelector('.cp-hue'))
   const hueMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-hue-marker'))
-  const alphaStrip = container.querySelector('.cp-alpha')
+  const alphaStrip = /** @type {HTMLElement} */ (container.querySelector('.cp-alpha'))
   const alphaGrad = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-grad'))
   const alphaMarker = /** @type {HTMLDivElement} */ (container.querySelector('.cp-alpha-marker'))
   const currentFill = /** @type {HTMLElement} */ (container.querySelector('[data-role="current-fill"]'))
@@ -121,16 +123,17 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   const presetGrid = /** @type {HTMLDivElement} */ (container.querySelector('.cp-preset'))
 
   // Input refs by field name
+  /** @type {Record<string, HTMLInputElement|null>} */
   const inputs = {}
-  container.querySelectorAll('.cp-num').forEach(label => {
-    const field = label.dataset.field
+  ;/** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll('.cp-num')).forEach(label => {
+    const field = String(label.dataset.field)
     inputs[field] = label.querySelector('input')
   })
 
   // ── Preset palette ─────────────────────────────────────────────────────────
   presetGrid.className = 'cp-preset'
   PRESETS.forEach(color => {
-    const btn = /** @type {HTMLElement} */ (document.createElement('button'))
+    const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = 'cp-preset-swatch'
     btn.style.background = color
@@ -167,17 +170,17 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     newFill.style.background = rgbaFull
 
     // Inputs
-    if (inputs.h && document.activeElement !== inputs.h) inputs.h.value = h
-    if (inputs.s && document.activeElement !== inputs.s) inputs.s.value = s
-    if (inputs.v && document.activeElement !== inputs.v) inputs.v.value = v
-    if (inputs.r && document.activeElement !== inputs.r) inputs.r.value = r
-    if (inputs.g && document.activeElement !== inputs.g) inputs.g.value = g
-    if (inputs.b && document.activeElement !== inputs.b) inputs.b.value = b
-    if (inputs.a && document.activeElement !== inputs.a) inputs.a.value = a
-    if (inputs.hex && document.activeElement !== inputs.hex) inputs.hex.value = hex
+    if (inputs.h && document.activeElement !== inputs.h) inputs.h.value = String(h)
+    if (inputs.s && document.activeElement !== inputs.s) inputs.s.value = String(s)
+    if (inputs.v && document.activeElement !== inputs.v) inputs.v.value = String(v)
+    if (inputs.r && document.activeElement !== inputs.r) inputs.r.value = String(r)
+    if (inputs.g && document.activeElement !== inputs.g) inputs.g.value = String(g)
+    if (inputs.b && document.activeElement !== inputs.b) inputs.b.value = String(b)
+    if (inputs.a && document.activeElement !== inputs.a) inputs.a.value = String(a)
+    if (inputs.hex && document.activeElement !== inputs.hex) inputs.hex.value = String(hex)
 
     // Selected preset highlight
-    presetGrid.querySelectorAll('.cp-preset-swatch').forEach(btn => {
+    ;/** @type {NodeListOf<HTMLElement>} */ (presetGrid.querySelectorAll('.cp-preset-swatch')).forEach(btn => {
       btn.classList.toggle('is-selected', btn.title.toLowerCase() === '#' + hex.toLowerCase())
     })
   }
@@ -206,19 +209,23 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   }
 
   // ── Drag helpers ───────────────────────────────────────────────────────────
+  /**
+   * @param {HTMLElement} el
+   * @param {(e: PointerEvent) => void} onMove
+   */
   function makeDrag (el, onMove) {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       el.setPointerCapture(e.pointerId)
       onMove(e)
-      const move = (me) => { onMove(me); _emit() }
+      const move = (/** @type {PointerEvent} */ me) => { onMove(me); _emit() }
       el.addEventListener('pointermove', move)
       el.addEventListener('pointerup', () => el.removeEventListener('pointermove', move), { once: true })
     })
   }
 
   // HSV box drag
-  makeDrag(hsvBox, (/** @type {{ clientX: number; clientY: number; }} */ e) => {
+  makeDrag(hsvBox, (e) => {
     const rect = hsvBox.getBoundingClientRect()
     state.s = Math.round(Math.min(100, Math.max(0, (e.clientX - rect.left) / rect.width * 100)))
     state.v = Math.round(Math.min(100, Math.max(0, (1 - (e.clientY - rect.top) / rect.height) * 100)))
@@ -227,7 +234,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // Hue strip drag
-  makeDrag(hueStrip, (/** @type {{ clientY: number; }} */ e) => {
+  makeDrag(hueStrip, (e) => {
     const rect = hueStrip.getBoundingClientRect()
     state.h = Math.round(Math.min(360, Math.max(0, (e.clientY - rect.top) / rect.height * 360)))
     state.hex = hsvToHex(state.h, state.s, state.v)
@@ -235,14 +242,14 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // Alpha strip drag
-  makeDrag(alphaStrip, (/** @type {{ clientX: number; }} */ e) => {
+  makeDrag(alphaStrip, (e) => {
     const rect = alphaStrip.getBoundingClientRect()
     state.a = Math.round(Math.min(100, Math.max(0, (e.clientX - rect.left) / rect.width * 100)))
     _updateVisuals()
   })
 
   // HSV box keyboard navigation
-  hsvBox.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
+  hsvBox.addEventListener('keydown', (e) => {
     const step = e.key.startsWith('Page') ? 10 : 1
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       state.s = Math.min(100, Math.max(0, state.s + (e.key === 'ArrowRight' ? step : -step)))
@@ -254,7 +261,7 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     _updateVisuals(); _emit()
   })
 
-  hueStrip.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
+  hueStrip.addEventListener('keydown', (e) => {
     const step = e.key.startsWith('Page') ? 36 : 1
     if (e.key === 'ArrowUp') { state.h = Math.max(0, state.h - step) } else if (e.key === 'ArrowDown') { state.h = Math.min(360, state.h + step) } else { return }
     e.preventDefault()
@@ -263,6 +270,12 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
   })
 
   // ── Number input wiring ────────────────────────────────────────────────────
+  /**
+   * @param {string} field the `data-field` of the input
+   * @param {(text: string) => *} parse
+   * @param {(raw: *) => *} clamp
+   * @param {(value: *) => void} apply
+   */
   function wireInput (field, parse, clamp, apply) {
     const input = inputs[field]
     if (!input) return
@@ -311,13 +324,14 @@ export function createHsvBox (initialHex, initialAlpha = 100, currentHex = null)
     v => v, // clamp is identity; parse already validates length
     (/** @type {string} */ v) => { state.hex = v; _syncHsvFromHex() }
   )
-  inputs.hex?.addEventListener('paste', (/** @type {{ clipboardData: { getData: (arg0: string) => string; }; preventDefault: () => void; }} */ e) => {
+  const hexInput = inputs.hex
+  hexInput?.addEventListener('paste', (e) => {
     const text = e.clipboardData?.getData('text') ?? ''
     const clean = text.replace(/#/g, '').slice(0, 6)
     if (!clean) return
     e.preventDefault()
-    inputs.hex.value = clean
-    inputs.hex.dispatchEvent(new Event('input'))
+    hexInput.value = clean
+    hexInput.dispatchEvent(new Event('input'))
   })
 
   // ── Public API ─────────────────────────────────────────────────────────────

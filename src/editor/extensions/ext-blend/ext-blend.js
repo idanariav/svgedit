@@ -47,7 +47,7 @@ export default {
     const tr = (/** @type {string} */ key) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selected = () => svgCanvas.getSelectedElements().filter(Boolean)
-    const blendedSelection = () => (selected().length ? svgCanvas.getBlendGroup(selected()[0]) : null)
+    const blendedSelection = () => (selected().length ? svgCanvas.getBlendGroup(selected()[0]) : null) ?? undefined
 
     /** The spacing the options bar shows: the selected blend's, else what new blends start with. */
     const current = () => svgCanvas.getBlend(blendedSelection()) ?? svgCanvas.getBlendDefaults()
@@ -96,13 +96,13 @@ export default {
         marker.setAttribute('vector-effect', 'non-scaling-stroke')
         marker.setAttribute('pointer-events', 'none')
       }
-      const box = first.getBBox()
-      marker.setAttribute('x', box.x)
-      marker.setAttribute('y', box.y)
-      marker.setAttribute('width', box.width)
-      marker.setAttribute('height', box.height)
+      const box = /** @type {SVGGraphicsElement} */ (first).getBBox()
+      marker.setAttribute('x', String(box.x))
+      marker.setAttribute('y', String(box.y))
+      marker.setAttribute('width', String(box.width))
+      marker.setAttribute('height', String(box.height))
       // The overlay is in document units: carry the shape's own transforms over.
-      const to = first.getCTM(); const root = svgCanvas.getSvgContent().getCTM()
+      const to = /** @type {SVGGraphicsElement} */ (first).getCTM(); const root = svgCanvas.getSvgContent().getCTM()
       if (to && root) {
         const m = root.inverse().multiply(to)
         marker.setAttribute('transform', `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`)
@@ -179,7 +179,7 @@ export default {
       // The spine buttons show for a blend; Replace needs a path selected with it (a disabled button says so in its command).
       $req(`${P}-spine-actions`).style.display = group || svgCanvas.canReplaceBlendSpine() ? '' : 'none'
       for (const [id, ok] of [['replace-spine', svgCanvas.canReplaceBlendSpine()], ['reverse-spine', !!group && !!svgCanvas.getBlendSpine()], ['detach-spine', !!group && !!svgCanvas.getBlendSpine()]]) {
-        $req(`${P}-${id}`).disabled = !ok
+        ;/** @type {HTMLButtonElement} */ ($req(`${P}-${id}`)).disabled = !ok
       }
       const aligned = group ? svgCanvas.getBlendAlign(group) : null
       $req(`${P}-align-row`).style.display = aligned === null ? 'none' : ''
@@ -236,16 +236,16 @@ export default {
         const designTab = $id('tab_design')
         const objectPanel = designTab?.querySelector('.selected_panel')
         if (designTab && objectPanel) designTab.insertBefore(template.content, objectPanel)
-        else (designTab || $id('tools_top')).appendChild(template.content)
+        else (designTab || $req('tools_top')).appendChild(template.content)
 
         for (const c of modeChoices()) $req(`${P}-mode`).addOption(c.value, c.label)
-        const onChange = (id, read) => $req(`${P}-${id}`).addEventListener('change', (e) => {
-          setSpacing(read(e.target))
+        const onChange = (/** @type {string} */ id, /** @type {(field: HTMLInputElement) => Record<string, unknown>} */ read) => $req(`${P}-${id}`).addEventListener('change', (e) => {
+          setSpacing(read(/** @type {HTMLInputElement} */ (e.target)))
           refresh()
         })
         onChange('mode', (t) => ({ mode: t.value }))
-        onChange('steps', (/** @type {{ value: string; }} */ t) => ({ steps: parseFloat(t.value) || 1 }))
-        onChange('distance', (/** @type {{ value: string; }} */ t) => ({ distance: parseFloat(t.value) || 1 }))
+        onChange('steps', (t) => ({ steps: parseFloat(t.value) || 1 }))
+        onChange('distance', (t) => ({ distance: parseFloat(t.value) || 1 }))
 
         const run = (/** @type {string} */ id) => svgEditor.commands.run(id)
         $req(`${P}-make`).addEventListener('click', () => run('blend_make'))
@@ -284,7 +284,7 @@ export default {
       modeChange () {
         refresh()
       },
-      elementChanged (opts) {
+      elementChanged (/** @type {{elems: Element[]}} */ opts) {
         // The steps follow their keys (also after an undo of a key edit).
         let changed = false
         for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshBlend(el) || changed

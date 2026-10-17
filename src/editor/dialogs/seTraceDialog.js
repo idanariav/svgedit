@@ -15,6 +15,8 @@ template.innerHTML = traceDialogHTML
  * the trace. The handler can drive busy/error state via `setBusy()`/`showError()`.
  */
 export class SeTraceDialog extends HTMLElement {
+  /** @type {Element|undefined} the `<image>` to trace (set by `RightPanel.openTraceDialog`) */ _targetImage
+
   constructor () {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })

@@ -12,7 +12,7 @@ import { getActiveRoot } from './domScope.js'
  *
  * Hosts can also toggle the class directly without going through the menu.
  *
- * @param {boolean} on - `true` for tablet mode, `false` for desktop
+ * @param {boolean|string} on - `true` for tablet mode, `false` for desktop (the stored pref is a string, see `isTabletMode`)
  * @param {Element} [rootEl] - optional override; defaults to the active editor
  *   (or the first `.svg_editor` in the document if none is active yet)
  */

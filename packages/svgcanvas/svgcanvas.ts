@@ -1651,12 +1651,13 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
    * native `EventTarget` this class extends (previously a single-slot
    * registry where a later `bind()` silently clobbered an earlier one).
    * @param ev String indicating the name of the event
-   * @param f The callback function to bind to the event
+   * @param f The callback function to bind to the event; its second parameter is the payload `call(ev, arg)` passes
+   *   (there is no per-event payload table: the handler states the type it expects)
    */
-  bind (ev: string, f: (win: Window, arg: unknown) => unknown): void {
+  bind<Arg = unknown> (ev: string, f: (win: Window, arg: Arg) => unknown): void {
     this.addEventListener(ev, (e: Event) => {
       const { detail } = e as CustomEvent<CallDetail>
-      detail.result = f(window, detail.arg)
+      detail.result = f(window, detail.arg as Arg)
     })
   }
 

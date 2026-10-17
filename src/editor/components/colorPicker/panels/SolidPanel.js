@@ -6,8 +6,8 @@ import { createHsvBox } from './shared/HsvBox.js'
 import { paintToState } from '../PaintModel.js'
 
 /**
- * @param {import('@svgedit/svgcanvas/core/paint.ts').default} paint
- * @returns {HTMLElement & { getPaintState():object, setFromPaint(p:object):void, setFromHex(hex:string):void }}
+ * @param {import('@svgedit/svgcanvas/core/paint.ts').default|null} paint
+ * @returns {import('../PaintModel.js').PaintPanel}
  */
 export function createSolidPanel (paint) {
   const state = paintToState(paint)
@@ -17,7 +17,7 @@ export function createSolidPanel (paint) {
 
   const hsvBox = createHsvBox(hex, alpha, origHex)
 
-  const panel = /** @type {HTMLDivElement & { getPaintState():object, setFromPaint(p:object):void, setFromHex(hex:string):void }} */ (document.createElement('div'))
+  const panel = /** @type {import('../PaintModel.js').PaintPanel} */ (document.createElement('div'))
   panel.className = 'cp-body cp-body-solid'
   panel.appendChild(hsvBox)
 

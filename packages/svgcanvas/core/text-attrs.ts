@@ -41,13 +41,13 @@ export interface TextAttrsApi {
   setWordSpacing(value: number | string): void
   setTextLength(value: number | string): void
   setLengthAdjust(value: string): void
-  setTextPerspectiveX(val: number): void
-  setTextPerspectiveY(val: number): void
+  setTextPerspectiveX(val: number | string): void
+  setTextPerspectiveY(val: number | string): void
   getTextPerspectiveX(elem: Element): number
   getTextPerspectiveY(elem: Element): number
   setFontFamily(val: string): void
   setFontColor(val: string): void
-  setFontSize(val: number): void
+  setFontSize(val: number | string): void
   getText(): string
   getTextWithNewlines(elem: Element): string
   setMultilineText(elem: Element, value: string): void
@@ -413,13 +413,13 @@ export const createTextAttrs = (canvas: SvgCanvas): TextAttrsApi => {
  * Set horizontal perspective (rotateY) on selected text elements.
  * @param val - Degrees; positive = right side closer
  */
-  const setTextPerspectiveXMethod = (val: number): void => applyTextPerspective('x', val)
+  const setTextPerspectiveXMethod = (val: number | string): void => applyTextPerspective('x', val)
 
   /**
  * Set vertical perspective (rotateX) on selected text elements.
  * @param val - Degrees; positive = bottom closer
  */
-  const setTextPerspectiveYMethod = (val: number): void => applyTextPerspective('y', val)
+  const setTextPerspectiveYMethod = (val: number | string): void => applyTextPerspective('y', val)
 
   /**
  * Get current horizontal perspective value from element.
@@ -468,7 +468,7 @@ export const createTextAttrs = (canvas: SvgCanvas): TextAttrsApi => {
 * Applies the given font size to the selected element.
 * @param val - number with the new font size
 */
-  const setFontSizeMethod = (val: number): void => {
+  const setFontSizeMethod = (val: number | string): void => {
     const textElements = getSelectedTextElements()
     const changedTextElements = getChangedTextElements(textElements, 'font-size', val)
     svgCanvas.setCurText('font_size', val)

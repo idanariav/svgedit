@@ -20,24 +20,23 @@
 /**
  * Signature depends on what the user adds; in the case of our uses with
  * SVGEditor, no parameters are passed nor anything expected for a return.
- * @callback module:contextmenu.MenuItemAction
- * @param {...args} args
- * @returns {any}
-*/
+ * @typedef {(...args: *[]) => *} MenuItemAction
+ */
 
 /**
-* @typedef {PlainObject} module:contextmenu.MenuItem
-* @property {string} id
-* @property {string} label
-* @property {module:contextmenu.MenuItemAction} action
-*/
+ * @typedef {object} MenuItem
+ * @property {string} id
+ * @property {string} label
+ * @property {MenuItemAction} action
+ * @property {string} [shortcut]
+ */
 
 /**
-* @param {module:contextmenu.MenuItem} menuItem
+* @param {MenuItem} menuItem
 * @returns {boolean}
 */
 const menuItemIsValid = function (menuItem) {
-  return menuItem && menuItem.id && menuItem.label && menuItem.action && typeof menuItem.action === 'function'
+  return Boolean(menuItem && menuItem.id && menuItem.label && menuItem.action && typeof menuItem.action === 'function')
 }
 
 /**
@@ -45,19 +44,20 @@ const menuItemIsValid = function (menuItem) {
  *   this editor's own container (defaults to a bare document.getElementById
  *   for standalone/single-editor use, e.g. tests).
  * @returns {{
- *   add: function(module:contextmenu.MenuItem): void,
- *   hasCustomHandler: function(string): boolean,
- *   getCustomHandler: function(string): module:contextmenu.MenuItemAction,
- *   injectExtendedContextMenuItemsIntoDom: function(): void,
- *   resetCustomMenus: function(): void
+ *   add: (menuItem: MenuItem) => void,
+ *   hasCustomHandler: (handlerKey: string) => boolean,
+ *   getCustomHandler: (handlerKey: string) => MenuItemAction,
+ *   injectExtendedContextMenuItemsIntoDom: () => void,
+ *   resetCustomMenus: () => void
  * }}
  */
 export const createContextMenu = ($id = (id) => document.getElementById(id)) => {
+  /** @type {Record<string, MenuItem>} */
   let contextMenuExtensions = {}
 
   /**
   * @function module:contextmenu.add
-  * @param {module:contextmenu.MenuItem} menuItem
+  * @param {MenuItem} menuItem
   * @throws {Error|TypeError}
   * @returns {void}
   */
@@ -89,25 +89,26 @@ export const createContextMenu = ($id = (id) => document.getElementById(id)) => 
   /**
   * @function module:contextmenu.getCustomHandler
   * @param {string} handlerKey
-  * @returns {module:contextmenu.MenuItemAction}
+  * @returns {MenuItemAction}
   */
   const getCustomHandler = function (handlerKey) {
     return contextMenuExtensions[handlerKey].action
   }
 
   /**
-  * @param {module:contextmenu.MenuItem} menuItem
+  * @param {MenuItem} menuItem
   * @returns {void}
   */
   const injectExtendedContextMenuItemIntoDom = function (menuItem) {
     const cmenuCanvas = $id('cmenu_canvas')
+    if (!cmenuCanvas) return
     if (!Object.keys(contextMenuExtensions).length) {
       // all menuItems appear at the bottom of the menu in their own container.
       // if this is the first extension menu we need to add the separator.
-      cmenuCanvas.appendChild('<li class=\'separator\'>')
+      cmenuCanvas.insertAdjacentHTML('beforeend', '<li class=\'separator\'>')
     }
     const shortcut = menuItem.shortcut || ''
-    cmenuCanvas.appendChild(`
+    cmenuCanvas.insertAdjacentHTML('beforeend', `
       <li class='disabled'><a href='#${menuItem.id}'>${menuItem.label}<span class='shortcut'>${shortcut}</span></a></li>`)
   }
 

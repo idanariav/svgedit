@@ -328,7 +328,7 @@ export const skeletonGraph = (skel, w, h) => {
   /** @type {Node[]} */
   const nodes = []
   const nodeOf = new Map()
-  const addNode = (members, junction) => {
+  const addNode = (/** @type {number[]} */ members, /** @type {boolean} */ junction) => {
     const id = nodes.length
     let x = 0
     let y = 0
@@ -406,11 +406,13 @@ export const skeletonGraph = (skel, w, h) => {
     const points = []
     const seeds = []
     let prev = -1
+    /** @type {number|undefined} */
     let cur = i
     while (cur !== undefined && !visited.has(cur)) {
       visited.add(cur)
       points.push(center(cur, w))
       seeds.push(cur)
+      /** @type {number|undefined} */
       const next = neigh(cur).find((j) => j !== prev && !visited.has(j))
       prev = cur
       cur = next
@@ -421,14 +423,14 @@ export const skeletonGraph = (skel, w, h) => {
 }
 
 /** Length of a polyline. */
-const lengthOf = (pts) => {
+const lengthOf = (/** @type {{x: number, y: number}[]} */ pts) => {
   let l = 0
   for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
   return l
 }
 
 /** The polyline of an edge, node centres included. */
-const edgePoints = (nodes, e) => [{ x: nodes[e.a].x, y: nodes[e.a].y }, ...e.inner, { x: nodes[e.b].x, y: nodes[e.b].y }]
+const edgePoints = (/** @type {Node[]} */ nodes, /** @type {Edge} */ e) => [{ x: nodes[e.a].x, y: nodes[e.a].y }, ...e.inner, { x: nodes[e.b].x, y: nodes[e.b].y }]
 
 /**
  * Drop specks and short side branches, then join the runs on either side of a junction that no longer
@@ -440,14 +442,15 @@ const edgePoints = (nodes, e) => [{ x: nodes[e.a].x, y: nodes[e.a].y }, ...e.inn
  */
 export const pruneGraph = (nodes, edges, opts) => {
   const deg = new Array(nodes.length).fill(0)
+  /** @type {Set<Edge>[]} */
   const incident = nodes.map(() => new Set())
-  const add = (e) => {
+  const add = (/** @type {Edge} */ e) => {
     deg[e.a]++
     deg[e.b]++
     incident[e.a].add(e)
     incident[e.b].add(e)
   }
-  const kill = (e) => {
+  const kill = (/** @type {Edge} */ e) => {
     e.alive = false
     deg[e.a]--
     deg[e.b]--
@@ -472,7 +475,7 @@ export const pruneGraph = (nodes, edges, opts) => {
       if (!node.junction || deg[n] !== 2 || incident[n].size !== 2) return
       const [e1, e2] = [...incident[n]]
       /** The run, turned so that it ends at `n`. */
-      const toward = (e) => (e.b === n
+      const toward = (/** @type {Edge} */ e) => (e.b === n
         ? { from: e.a, inner: e.inner, seeds: e.seeds }
         : { from: e.b, inner: [...e.inner].reverse(), seeds: [...e.seeds].reverse() })
       const first = toward(e1)
@@ -511,6 +514,7 @@ export const pruneGraph = (nodes, edges, opts) => {
 const assignInk = (lineInk, rgb, w, h, seeds) => {
   const owner = new Int32Array(w * h).fill(-1)
   const core = new Uint8Array(w * h)
+  /** @type {number[]} */
   const queue = []
   seeds.forEach((list, id) => {
     for (const i of list) {

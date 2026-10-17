@@ -57,6 +57,7 @@ export default {
     /**
 * @type {string | Node | null}
 */
+    /** @type {HTMLDivElement|null} */
     let hintEl = null
 
     // Overlay: a zoom-scaled group inside an svg aligned with #svgcontent.
@@ -94,13 +95,13 @@ export default {
         <span class="sb-hint-count"></span>
         <button type="button" class="sb-hint-done">${svgEditor.i18next.t(`${name}:done`)}</button>
       `
-      hintEl.querySelector('.sb-hint-done').addEventListener('click', () => svgCanvas.setMode('select'))
+      hintEl.querySelector('.sb-hint-done')?.addEventListener('click', () => svgCanvas.setMode('select'))
       svgEditor.$svgEditor.append(hintEl)
       return hintEl
     }
 
     const updateHintCount = (/** @type {number} */ n) => {
-      ensureHint().querySelector('.sb-hint-count').textContent =
+      ;/** @type {Element} */ (ensureHint().querySelector('.sb-hint-count')).textContent =
         n > 0 ? svgEditor.i18next.t(`${name}:picked`, { count: n }) : ''
     }
 

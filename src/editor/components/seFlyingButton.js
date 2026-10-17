@@ -10,6 +10,8 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  * @class FlyingButton
  */
 export class FlyingButton extends HTMLElement {
+  /** @type {Element|undefined} the sub-tool the button stands for (the first until one is picked) */ activeSlot
+
   /**
     * @function constructor
     */
@@ -30,7 +32,7 @@ export class FlyingButton extends HTMLElement {
     this.$menu = /** @type {HTMLDivElement} */ (this._shadowRoot.querySelector('.menu'))
     // the last element of the div is the slot
     // we retrieve all elements added in the slot (i.e. se-buttons)
-    this.$elements = this.$menu.lastElementChild.assignedElements()
+    this.$elements = /** @type {HTMLSlotElement} */ (this.$menu.lastElementChild).assignedElements()
   }
 
   /**
@@ -249,7 +251,7 @@ export class FlyingButton extends HTMLElement {
     if (value) {
       this.setAttribute('pressed', 'true')
     } else {
-      this.removeAttribute('pressed', '')
+      this.removeAttribute('pressed')
       // close also the menu if open
       this.removeAttribute('opened')
     }
@@ -293,14 +295,13 @@ export class FlyingButton extends HTMLElement {
     if (value) {
       this.setAttribute('disabled', 'true')
     } else {
-      this.removeAttribute('disabled', '')
+      this.removeAttribute('disabled')
     }
   }
 
   /**
-* @function connectedCallback
-* @returns {void}
 * @param {string} src
+* @returns {Promise<void>}
 */
   async _loadIcon (src) {
     if (!src) return
@@ -354,7 +355,7 @@ export class FlyingButton extends HTMLElement {
         this.opened = false
       }
     }, { signal: this._globalAbort.signal })
-    this.activeSlot = /** @type {HTMLSlotElement} */ (/** @type {HTMLSlotElement} */ (this.shadowRoot.querySelector('slot'))).assignedElements()[0]
+    this.activeSlot = /** @type {HTMLSlotElement} */ (this._shadowRoot.querySelector('slot')).assignedElements()[0]
     // A static-icon flyout (see the 'src' case above) already has its fixed
     // face icon loaded — don't let the first sub-tool's icon override it.
     if (!this.staticIcon) {
@@ -363,21 +364,22 @@ export class FlyingButton extends HTMLElement {
     }
 
     // capture click event on the button to manage the logic
-    const onClickHandler = (/** @type {{ stopPropagation: () => void; target: unknown; }} */ ev) => {
+    const onClickHandler = (/** @type {Event} */ ev) => {
       ev.stopPropagation()
-      switch (ev.target.nodeName) {
+      const target = /** @type {HTMLElement} */ (ev.target)
+      switch (target.nodeName) {
         case 'SE-FLYINGBUTTON':
           if (this.pressed) {
             this.setAttribute('opened', 'opened')
           } else {
-            this.activeSlot.click()
+            ;/** @type {HTMLElement} */ (this.activeSlot).click()
             this.setAttribute('pressed', 'pressed')
           }
           break
         case 'SE-BUTTON': {
-          const newSrc = ev.target.getAttribute('src')
+          const newSrc = target.getAttribute('src')
           if (newSrc && !this.staticIcon) this._loadIcon(newSrc)
-          this.activeSlot = ev.target
+          this.activeSlot = target
           this.setAttribute('pressed', 'pressed')
           this.$menu.classList.remove('open')
           break
@@ -397,7 +399,7 @@ export class FlyingButton extends HTMLElement {
           }
           break
         default:
-          logError('unknown nodeName for: ' + ev.target.className, ev.target, 'seFlyingButton')
+          logError('unknown nodeName for: ' + target.className, target, 'seFlyingButton')
       }
     }
     $click(this, onClickHandler)

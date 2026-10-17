@@ -117,7 +117,7 @@ export const isTypingTarget = () => {
  * see pasteFallbackArmer.js — on hosts that never dispatch a native `paste`
  * DOM event, such as Obsidian/Electron).
  * @param {Element} container
- * @param {EventTarget} target
+ * @param {EventTarget|null} target
  * @returns {boolean}
  */
 export const ownsKeyEvent = (container, target) => {

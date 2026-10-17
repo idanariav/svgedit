@@ -156,7 +156,7 @@ export default {
       },
 
       pointerDown (ctx, ev) {
-        targets = pickTargets(ev).map(prepare).filter(Boolean)
+        targets = pickTargets(ev).flatMap((el) => prepare(el) ?? [])
         last = { x: ev.screenX, y: ev.screenY }
         brush(last, last)
         moveRing(ctx, ev)

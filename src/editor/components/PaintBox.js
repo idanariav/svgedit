@@ -5,10 +5,17 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
  *
  */
 class PaintBox {
+  /** @type {SVGRectElement} the swatch */ rect
+  /** @type {SVGDefsElement} */ defs
+  /** @type {SVGGradientElement} the swatch's gradient (a placeholder until a gradient is set) */ grad
+  /** @type {string} `'fill'`, `'stroke'` or `'background'` */ type
+  /** @type {Paint|null} */ paint = null
+  /** @type {string|null} */ _paintColor = null
+  /** @type {number} */ _paintOpacity = 1
+
   /**
-* @param {string | Element | external}  :jQuery} container
-* @param {"fill"} type
 * @param {HTMLDivElement} container
+* @param {string} type
 */
   constructor (container, type) {
     // set up gradients to be used for the buttons
@@ -25,15 +32,15 @@ class PaintBox {
     docElem = document.importNode(docElem, true)
     container.appendChild(docElem)
 
-    this.rect = docElem.firstElementChild
+    this.rect = /** @type {SVGRectElement} */ (docElem.firstElementChild)
     this.defs = docElem.getElementsByTagName('defs')[0]
-    this.grad = this.defs.firstElementChild
+    this.grad = /** @type {SVGGradientElement} */ (this.defs.firstElementChild)
     // this.paint = new $.jGraduate.Paint({solidColor: color});
     this.type = type
   }
 
   /**
-     * @param {module:jGraduate~Paint} paint
+     * @param {Paint} paint
      * @returns {void}
      */
   setPaint (paint) {
@@ -50,7 +57,7 @@ class PaintBox {
       case 'linearGradient':
       case 'radialGradient': {
         this.grad.remove()
-        this.grad = paint[ptype]
+        this.grad = /** @type {SVGGradientElement} */ (paint[ptype])
         this.defs.appendChild(this.grad)
         const id = this.grad.id = 'gradbox_' + this.type
         fillAttr = 'url(#' + id + ')'
@@ -59,22 +66,23 @@ class PaintBox {
     }
 
     this.rect.setAttribute('fill', fillAttr)
-    this.rect.setAttribute('opacity', opac)
+    this.rect.setAttribute('opacity', String(opac))
   }
 
   /**
-   * @param {PlainObject} svgCanvas
+   * @param {import('@svgedit/svgcanvas').default} svgCanvas
   * @param {string} color
   * @param {number} opac
   * @param {string} type
-  * @returns {module:jGraduate~Paint}
+  * @returns {Paint}
   */
   static getPaint (svgCanvas, color, opac, type) {
     // update the editor's fill paint
+    /** @type {Record<string, unknown>} */
     const opts = { alpha: opac }
     if (color.startsWith('url(#')) {
       let refElem = svgCanvas.getRefElem(color)
-      refElem = (refElem) ? refElem.cloneNode(true) : svgCanvas.$qa('#' + type + '_color defs *')[0]
+      refElem = (refElem) ? /** @type {Element} */ (refElem.cloneNode(true)) : svgCanvas.$qa('#' + type + '_color defs *')[0]
       if (!refElem) {
         logError(`the color ${color} is referenced by an url that can't be identified - using 'none'`, undefined, 'PaintBox')
         opts.solidColor = 'none'
@@ -84,13 +92,13 @@ class PaintBox {
     } else if (color.startsWith('#')) {
       opts.solidColor = color.substr(1)
     }
-    return new Paint(opts)
+    return new Paint(/** @type {import('@svgedit/svgcanvas/core/paint.ts').PaintOptions} */ (opts))
   }
 
   /**
-     * @param {PlainObject} svgcanvas
-     * @param {PlainObject} selectedElement
-     * @returns {any}
+     * @param {import('@svgedit/svgcanvas').default} svgcanvas
+     * @param {Element|null|undefined} selectedElement
+     * @returns {Paint|null}
      */
   update (svgcanvas, selectedElement) {
     if (!selectedElement) { return null }
@@ -128,7 +136,7 @@ class PaintBox {
         this._paintOpacity = 1
         break
       } default: {
-        this._paintOpacity = Number.parseFloat(selectedElement.getAttribute(type + '-opacity'))
+        this._paintOpacity = Number.parseFloat(selectedElement.getAttribute(type + '-opacity') ?? '')
         if (Number.isNaN(this._paintOpacity)) {
           this._paintOpacity = 1.0
         }

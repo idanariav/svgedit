@@ -23,6 +23,12 @@ const ACTIONS = [
  * @property {object} i18next
  */
 export class SeEyedropperMenu extends HTMLElement {
+  /** @type {import('i18next').i18n|null} */ _i18next
+  /** @type {Record<string, Function|undefined>} */ _callbacks
+  /** @type {((e: MouseEvent) => void)|null} */ _outsideClickHandler
+  /** @type {((e: KeyboardEvent) => void)|null} */ _keyHandler
+  /** @type {HTMLUListElement} */ $menu
+
   constructor () {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
@@ -80,7 +86,7 @@ export class SeEyedropperMenu extends HTMLElement {
 */
   _runAction (id) {
     const action = ACTIONS.find((a) => a.id === id)
-    if (this._disabled.has(id)) return
+    if (!action || this._disabled.has(id)) return
     this.close()
     this._callbacks[action.callback]?.()
   }
@@ -96,9 +102,9 @@ export class SeEyedropperMenu extends HTMLElement {
   open (clientX, clientY, callbacks = {}, options = {}) {
     this._callbacks = callbacks
     this._disabled = new Set(options.disabled ?? [])
-    this._shadowRoot.querySelectorAll('a[data-action]').forEach((/** @type {HTMLElement} */ a) => {
-      const off = this._disabled.has(a.dataset.action)
-      a.parentElement.classList.toggle('disabled', off)
+    ;/** @type {NodeListOf<HTMLElement>} */ (this._shadowRoot.querySelectorAll('a[data-action]')).forEach((a) => {
+      const off = this._disabled.has(String(a.dataset.action))
+      a.parentElement?.classList.toggle('disabled', off)
       a.setAttribute('aria-disabled', String(off))
     })
     this.classList.add('is-open')
@@ -108,7 +114,7 @@ export class SeEyedropperMenu extends HTMLElement {
       if (e.composedPath().includes(this)) return
       this.close()
     }
-    this._keyHandler = (/** @type {{ key: string; preventDefault: () => void; }} */ e) => {
+    this._keyHandler = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this.close()
@@ -116,8 +122,8 @@ export class SeEyedropperMenu extends HTMLElement {
     }
     // Deferred so the click that opened the menu doesn't immediately close it.
     setTimeout(() => {
-      document.addEventListener('mousedown', this._outsideClickHandler)
-      document.addEventListener('keydown', this._keyHandler)
+      if (this._outsideClickHandler) document.addEventListener('mousedown', this._outsideClickHandler)
+      if (this._keyHandler) document.addEventListener('keydown', this._keyHandler)
     }, 0)
   }
 

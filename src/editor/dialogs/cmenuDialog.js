@@ -34,6 +34,9 @@ const ALWAYS_ENABLED = new Set([
  * @class SeCMenuDialog
  */
 export class SeCMenuDialog extends HTMLElement {
+  /** @type {HTMLElement|null} */ _workarea
+  /** @type {((e: KeyboardEvent) => void)|undefined} */ _onKeydown
+
   /**
     * @function constructor
     */
@@ -64,21 +67,22 @@ export class SeCMenuDialog extends HTMLElement {
   connectedCallback () {
     const current = this
     // Now attached: bind to this editor's own workarea (see domScope.js).
-    this._workarea = closestRoot(this).querySelector('[id="workarea"]')
-    const onMenuOpenHandler = (/** @type {{ preventDefault: () => void; clientX: number; clientY: number; }} */ e) => {
+    const workarea = /** @type {HTMLElement} */ (closestRoot(this).querySelector('[id="workarea"]'))
+    this._workarea = workarea
+    const onMenuOpenHandler = (/** @type {MouseEvent} */ e) => {
       e.preventDefault()
       syncDialogTheme(current)
       current._build()
       positionContextMenu(current.$dialog, e.clientX, e.clientY)
     }
-    const onMenuCloseHandler = (/** @type {{ button: number; }} */ e) => {
+    const onMenuCloseHandler = (/** @type {MouseEvent} */ e) => {
       // Right-clicks (button 2) reposition rather than close.
       if (e.button !== 2) current._hide()
     }
-    this._workarea.addEventListener('contextmenu', onMenuOpenHandler)
-    this._workarea.addEventListener('mousedown', onMenuCloseHandler)
+    workarea.addEventListener('contextmenu', onMenuOpenHandler)
+    workarea.addEventListener('mousedown', onMenuCloseHandler)
     // Escape dismisses an open menu (capture, so it wins over other Escape handlers).
-    this._onKeydown = (/** @type {{ key: string; stopPropagation: () => void; }} */ e) => {
+    this._onKeydown = (e) => {
       if (e.key === 'Escape' && current.$dialog.style.display === 'block') {
         current._hide()
         e.stopPropagation()
@@ -123,9 +127,13 @@ export class SeCMenuDialog extends HTMLElement {
 
   /**
    * A one-shot trigger row (icon + label).
+   * @param {EditorInstance} editor
+   * @param {string} id
+   * @param {NonNullable<ReturnType<typeof getFavoriteMeta>>} meta
+   * @param {boolean} disabled
    * @returns {HTMLLIElement}
    */
-  _triggerRow (/** @type {EditorInstance} */ editor, id, meta, disabled) {
+  _triggerRow (editor, id, meta, disabled) {
     const li = document.createElement('li')
     if (disabled) li.classList.add('disabled')
     const a = document.createElement('a')
@@ -156,9 +164,13 @@ export class SeCMenuDialog extends HTMLElement {
 
   /**
    * A value-control row hosting a live widget seeded from the selection.
+   * @param {EditorInstance} editor
+   * @param {string} id
+   * @param {NonNullable<ReturnType<typeof getFavoriteMeta>>} meta
+   * @param {boolean} disabled
    * @returns {HTMLLIElement}
    */
-  _valueRow (/** @type {EditorInstance} */ editor, id, meta, disabled) {
+  _valueRow (editor, id, meta, disabled) {
     const li = document.createElement('li')
     li.className = 'qa-value'
     if (disabled) li.classList.add('disabled')
@@ -183,6 +195,8 @@ export class SeCMenuDialog extends HTMLElement {
 
   /**
    * Inject an inline icon (cached) into a row's icon slot.
+   * @param {HTMLElement} host
+   * @param {string} src
    * @returns {Promise<void>}
    */
   async _loadIcon (host, src) {

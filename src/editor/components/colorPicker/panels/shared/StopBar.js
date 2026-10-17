@@ -15,16 +15,16 @@ const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 </svg>`
 
 /**
- * @param {{color:string,position:number,alpha:number}[]} initialStops
+ * @param {import('../../PaintModel.js').GradientStop[]} initialStops
  * @param {'two'|'mono'|'multi'} initialMode
- * @returns {HTMLElement}
+ * @returns {import('../../PaintModel.js').StopBarElement}
  */
 export function createStopBar (initialStops, initialMode = 'two') {
   let stops = initialStops.map(s => ({ ...s }))
   let mode = initialMode
   let selectedIndex = 0
 
-  const container = document.createElement('div')
+  const container = /** @type {import('../../PaintModel.js').StopBarElement} */ (document.createElement('div'))
   container.className = 'cp-stopbar-wrap'
   container.innerHTML = `
     <div class="cp-stopbar">
@@ -40,8 +40,8 @@ export function createStopBar (initialStops, initialMode = 'two') {
 
   const stopsContainer = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-stops'))
   const trackFill = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stopbar-track-fill'))
-  const addBtn = container.querySelector('.cp-stopbar-add')
-  const stopList = container.querySelector('.cp-stop-list')
+  const addBtn = /** @type {HTMLButtonElement} */ (container.querySelector('.cp-stopbar-add'))
+  const stopList = /** @type {HTMLDivElement} */ (container.querySelector('.cp-stop-list'))
 
   function _gradientCSS () {
     if (!stops.length) return 'transparent'
@@ -100,7 +100,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
         if (e.button !== 0) return
         e.preventDefault()
         chip.setPointerCapture(e.pointerId)
-        const bar = stopsContainer.parentElement
+        const bar = /** @type {HTMLElement} */ (stopsContainer.parentElement)
         const rect = bar.getBoundingClientRect()
         const padding = 8 // matches CSS padding: 0 8px on .cp-stopbar
         chip.addEventListener('pointermove', (me) => {
@@ -216,7 +216,7 @@ export function createStopBar (initialStops, initialMode = 'two') {
 
   container.getSelectedIndex = () => selectedIndex
 
-  container.setMode = (/** @type {string} */ newMode) => {
+  container.setMode = (newMode) => {
     mode = newMode
     _render()
   }

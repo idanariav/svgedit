@@ -222,13 +222,14 @@ Per module: `git mv x.js x.ts`, move the JSDoc types into syntax (TypeScript's o
 no enums or parameter properties, and no hand-written declaration file describes the canvas any more (R2).
 Retire the d.ts and the drift test only with R2.
 
-**The editor (2026-10-17).** `src/editor` is JavaScript with JSDoc, 179 files. Under `strict` it had 5,862 errors in 159 files (almost all
+**The editor (2026-10-17).** `src/editor` is JavaScript with JSDoc, 222 files (locale data included). Under `strict` it had 5,862 errors in 159 files (almost all
 DOM typing), so it is typed by a ratchet instead of a conversion: `scripts/check-editor-strict.mjs` (`pretest`; `src/editor/tsconfig.strict.json`)
 runs `tsc --strict` over everything and fails on any error in a file listed in `src/editor/strict-files.json`. A file joins the list in the commit
 that makes it clean, and the list only grows; `node scripts/check-editor-strict.mjs --report` prints the error count per file, fewest first.
-95 of 179 files are on the list; about 2,700 errors remain in the other 84, concentrated in `EditorStartup.js`, `Editor.js` and the big
-components/dialogs (`seShapeLibrary`, `seClassSelect`, `RadialPanel`, `HsvBox`, `addToShapeLibrary`) and the extensions (`ext-repeat`, `ext-polystar`,
-`ext-connector`, `ext-gradient-tool`, …). What made the first 3,000 cheap, and is what the rest should use:
+182 of 222 files are on the list; about 1,300 errors remain in the other 40, concentrated in the extensions (`ext-repeat`, `ext-polystar`,
+`ext-shape-family`, `ext-gradient-tool`, `ext-width-tool`, `ext-markers`, `ext-connector`, …) and a few components/dialogs (`seClassSelect`, `seRecolorDialog`,
+`addToShapeLibrary`). `Editor.js`, `EditorStartup.js`, `TopPanel`, `RightPanel`, `TabletShell`, `layerTree`, `seShapeLibrary` and the colour picker are clean.
+What made the first 3,000 cheap, and is what the rest should use:
 - `$id('x')` returns the element type of that id (`src/editor/ui-ids.d.ts`, generated from the panels' HTML and the templates inside the JS sources by
   `npm run gen-ui-ids`; `tests/unit/ui-ids.test.js` fails when it is stale); `$req('x')` is the non-null form for an element that must exist.
 - `querySelector('se-…')` and `HTMLElementTagNameMap['se-…']` are typed through `src/editor/element-tags.d.ts` (kept in step with the
@@ -240,9 +241,15 @@ components/dialogs (`seShapeLibrary`, `seClassSelect`, `RadialPanel`, `HsvBox`, 
   wrote a few `import("packages/…")` paths and duplicate `@param`s that had to be fixed by hand).
 - Pitfall: a statement that starts with a cast, `/** @type {T} */ (x).y = …`, parses as a call of the line above in a semicolon-free file; start it
   with `;`.
-- Not done: `EditorStartup` calls members that only its subclass `Editor` defines (18 `configObj`, the panels, `updateCanvas`, …); the clean
-  fix is one class (or an explicit interface) rather than casts. After the ratchet reaches the big files, the conversion to `.ts` is mechanical
-  (`annotateWithTypeFromJSDoc`), as it was for the engine.
+- The `Editor` / `EditorStartup` split: `EditorStartup` is the base class that builds the editor in `init()`, and that code calls members only the
+  subclass `Editor` defines. `init()` and `extAndLocaleFunc()` are annotated `@this {EditorInstance}` (the subclass) rather than the base calling through
+  casts, the members both classes set late are declared as typed class fields (`workarea`, `$svgEditor`, `canvMenu`, …), and the strict config turns
+  `strictPropertyInitialization` off for that reason (a constructor, then an async `init()`). Merging the two classes would be cleaner still.
+- `svgCanvas.bind(event, handler)` is generic in the payload (`bind<Arg>`): the handler states the type of the argument it expects; there is no
+  per-event payload table (the extension hooks have one, `extension-hooks.ts`).
+- Typing found real faults (see `techdebt.md`, "Latent faults the editor ratchet surfaced"): methods that did not exist (`Editor.setLang`, `getButtonData`,
+  `changeZoom`), a `confirm` that was never awaited, an `appendChild(string)`. A dead hook (`langChanged`) went with the method that fired it.
+- After the ratchet reaches the remaining files, the conversion to `.ts` is mechanical (`annotateWithTypeFromJSDoc`), as it was for the engine.
 
 Size: M for the toolchain (done), L for the conversion (small per module).
 

@@ -141,10 +141,10 @@ class BottomPanel {
   }
 
   /**
-* @param {{ currentTarget: { value: string; }; }} evt
+* @param {Event} evt
 */
   handleOpacity (evt) {
-    const val = Number.parseInt(evt.currentTarget.value.split('%')[0])
+    const val = Number.parseInt(/** @type {HTMLInputElement} */ (evt.currentTarget).value.split('%')[0])
     this.editor.svgCanvas.setOpacity(val / 100)
   }
 

@@ -31,6 +31,8 @@ export const SESSION_ONLY_PREFS = new Set(['bkgd_color', 'bkgd_url', 'bkgd_gradi
  * @class configObj
  */
 export default class ConfigObj {
+  /** @type {boolean} Whether the preferences dialog is open (the editor sets it). */ preferences
+
   /**
    * @param {EditorInstance} editor
    */
@@ -46,6 +48,7 @@ export default class ConfigObj {
       * @property {boolean} [export_notice_done=false] Used to track alert status
       * @todo `save_notice_done` and `export_notice_done` should be changed to flags rather than preferences
     */
+    /** @type {Record<string, any>} */
     this.defaultPrefs = {
       // EDITOR OPTIONS (DIALOG)
       /**
@@ -141,6 +144,7 @@ export default class ConfigObj {
       return url.endsWith('/') ? url.slice(0, -1) : url
     })()
 
+    /** @type {Record<string, any>} */
     this.defaultConfig = {
       canvasName: 'default',
       canvas_expansion: 3,
@@ -208,6 +212,7 @@ export default class ConfigObj {
       userDataAdapter: null // Optional host storage adapter for custom palette + user shapes; see userDataAdapter.js. Falls back to localStorage when null.
     }
 
+    /** @type {Record<string, any>} */
     this.curPrefs = {}
     // Note: The difference between Prefs and Config is that Prefs
     //   can be changed in the UI and are stored in the browser,
@@ -294,7 +299,7 @@ export default class ConfigObj {
       curConfig.extensions = [...this.defaultExtensions]
     }
     if (curConfig.disabledFeatures?.length) {
-      const off = new Set(curConfig.disabledFeatures.map((name) => (name.startsWith('ext-') ? name : `ext-${name}`)))
+      const off = new Set(curConfig.disabledFeatures.map((/** @type {string} */ name) => (name.startsWith('ext-') ? name : `ext-${name}`)))
       curConfig.extensions = curConfig.extensions.filter((/** @type {string} */ name) => !off.has(name))
     }
     // Export updated config
@@ -309,7 +314,8 @@ export default class ConfigObj {
     * @returns {void}
   */
   loadContentAndPrefs () {
-    if (!this.editor.storage) {
+    const { storage } = this.editor
+    if (!storage) {
       return
     }
 
@@ -317,7 +323,7 @@ export default class ConfigObj {
     Object.keys(this.defaultPrefs).forEach((key) => {
       if (SESSION_ONLY_PREFS.has(key)) { return }
       const storeKey = 'svg-edit-' + key
-      const val = this.editor.storage.getItem(storeKey)
+      const val = storage.getItem(storeKey)
       if (val) {
         this.defaultPrefs[key] = String(val) // Convert to string for FF (.value fails in Webkit)
       }
@@ -328,9 +334,8 @@ export default class ConfigObj {
   * Allows setting of preferences or configuration (including extensions).
   * @function module:SVGEditor.setConfig
   * @param {module:SVGEditor.Config|module:SVGEditor.Prefs} opts The preferences or configuration (including extensions). See the tutorial on {@tutorial ConfigOptions} for info on config and preferences.
-  * @param {PlainObject} [cfgCfg] Describes configuration which applies to the
-  *    particular batch of supplied options
-  * @param {boolean} [cfgCfg.allowInitialUserOverride=false] Set to true if you wish
+  * @param {{allowInitialUserOverride?: boolean}} [cfgCfg] Describes configuration which applies to the
+  *    particular batch of supplied options; `allowInitialUserOverride` (default `false`): set to true if you wish
   *  to let previously stored preferences (and the user) override the value
   *  you supply as the default; note that it will be too late if you make
   *  such calls in extension code because preference storage will already
@@ -427,7 +432,7 @@ export default class ConfigObj {
   load () {
     this.setupCurConfig()
     this.loadContentAndPrefs()
-    this.setupCurPrefs(this.editor)
+    this.setupCurPrefs()
     this.seedGridConfigFromPrefs()
     this.seedPencilConfigFromPrefs()
   }

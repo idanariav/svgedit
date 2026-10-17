@@ -72,6 +72,8 @@ export interface PathActionsApi {
   fixEnd: (elem: Element) => void
   convertPath: (pth: SVGPathElement, toRel: boolean) => string
   opencloseSubPath: () => void
+  smoothSelectedNodes: () => void
+  addSubPath: (on: boolean) => void
   hover: (mouseX: number | null, mouseY: number | null, mode?: string) => void
 }
 

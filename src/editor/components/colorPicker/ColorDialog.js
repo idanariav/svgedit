@@ -21,6 +21,21 @@ const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
  * @property {object} i18next
  */
 export class SeColorDialog extends HTMLElement {
+  /** @type {import('@svgedit/svgcanvas/core/paint.ts').default|null} */ _paint
+  /** @type {string} */ _type
+  /** @type {import('i18next').i18n|null} */ _i18next
+  /** @type {import('./PaintModel.js').PaintPanel|null} the open tab */ _currentPanel
+  /** @type {string} */ _activeTab
+  /** @type {Element|null|undefined} */ _anchor
+  /** @type {boolean} opens as a popover next to the anchor */ _popover
+  /** @type {boolean} a colour was changed since opening */ _dirty
+  /** @type {boolean} the eyedropper is picking */ _picking
+  /** @type {MutationObserver|null} */ _themeObserver
+  /** @type {((e: KeyboardEvent) => void)|null} */ _keyHandler
+  /** @type {((e: PointerEvent) => void)|null} */ _outsideHandler
+  /** @type {(() => void)|null} */ _resizeHandler
+  /** @type {ResizeObserver|null} */ _sizeObserver
+
   constructor () {
     super()
     this._shadowRoot = this.attachShadow({ mode: 'open' })
@@ -200,8 +215,8 @@ export class SeColorDialog extends HTMLElement {
     `
 
     // Wire tab buttons
-    this._shadowRoot.querySelectorAll('.cp-tab').forEach(btn => {
-      btn.addEventListener('click', () => this._switchTab(btn.dataset.tab))
+    ;/** @type {NodeListOf<HTMLElement>} */ (this._shadowRoot.querySelectorAll('.cp-tab')).forEach(btn => {
+      btn.addEventListener('click', () => this._switchTab(String(btn.dataset.tab)))
     })
 
     // Wire eyedropper button and load icon
@@ -253,10 +268,10 @@ export class SeColorDialog extends HTMLElement {
     this._activeTab = tab
 
     // Update tab button states
-    this._shadowRoot.querySelectorAll('.cp-tab').forEach(btn => {
+    ;/** @type {NodeListOf<HTMLElement>} */ (this._shadowRoot.querySelectorAll('.cp-tab')).forEach(btn => {
       const active = btn.dataset.tab === tab
       btn.classList.toggle('is-active', active)
-      btn.setAttribute('aria-selected', active)
+      btn.setAttribute('aria-selected', String(active))
     })
 
     // Create the appropriate panel
@@ -319,11 +334,11 @@ export class SeColorDialog extends HTMLElement {
 
   // ── Keyboard ───────────────────────────────────────────────────────────────
   _bindKeys () {
-    this._keyHandler = (/** @type {{ key: string; preventDefault: () => void; composedPath: () => { tagName: string; }[]; }} */ e) => {
+    this._keyHandler = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this._onCancel()
-      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some(/** @type {{ tagName: string; }} */ (/** @type {{ tagName: string; }} */ n) => n.tagName === 'INPUT' || n.tagName === 'BUTTON')) {
+      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some((n) => /** @type {Element} */ (n).tagName === 'INPUT' || /** @type {Element} */ (n).tagName === 'BUTTON')) {
         // Enter inside a field commits that field; elsewhere it commits the popover.
         e.preventDefault()
         this._commit()

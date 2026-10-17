@@ -96,7 +96,7 @@ export const insertImageFromHref = (/** @type {EditorInstance} */ editor, href, 
 
   // Probe the image to learn its natural dimensions before inserting.
   const img = new Image()
-  img.style.opacity = 0
+  img.style.opacity = '0'
   img.addEventListener('load', () => {
     const imgWidth = img.offsetWidth || img.naturalWidth || img.width || 100
     const imgHeight = img.offsetHeight || img.naturalHeight || img.height || 100
@@ -147,8 +147,8 @@ export const insertSvgElements = (/** @type {EditorInstance} */ editor, svgStrin
   const root = parsed.documentElement
   if (!root || root.getElementsByTagName('parsererror').length) return
   // Source intrinsic size, used to fit the import onto opts.fitTo when present.
-  const srcW = parseFloat(root.getAttribute('width')) || 0
-  const srcH = parseFloat(root.getAttribute('height')) || 0
+  const srcW = parseFloat(root.getAttribute('width') ?? '') || 0
+  const srcH = parseFloat(root.getAttribute('height') ?? '') || 0
 
   // Split the source into defs/paint-server content (goes to <defs>) and
   // drawable top-level elements (go to the layer). `<defs>` may sit at the root
@@ -161,14 +161,14 @@ export const insertSvgElements = (/** @type {EditorInstance} */ editor, svgStrin
 * @type {Element[]}
 */
   const drawNodes = []
-  const collectDefs = (/** @type {HTMLElement} */ container) => {
+  const collectDefs = (/** @type {Element} */ container) => {
     Array.from(container.children).forEach((node) => {
       if (node.localName === 'defs') {
         Array.from(node.children).forEach((d) => defsNodes.push(d))
       }
     })
   }
-  const collectDrawables = (/** @type {HTMLElement} */ container) => {
+  const collectDrawables = (/** @type {Element} */ container) => {
     Array.from(container.children).forEach((node) => {
       const tag = node.localName
       if (tag === 'title' || tag === 'metadata' || tag === 'defs') return
@@ -207,7 +207,7 @@ export const insertSvgElements = (/** @type {EditorInstance} */ editor, svgStrin
   const canvasDefs = svgCanvas.findDefs()
   defsNodes.forEach((node) => canvasDefs.appendChild(node))
 
-  const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+  const layer = /** @type {Element} */ (svgCanvas.getCurrentDrawing().getCurrentLayer())
   drawNodes.forEach((node) => {
     layer.appendChild(node)
     if (opts.vaultLink) node.setAttribute('data-vault-link', opts.vaultLink)

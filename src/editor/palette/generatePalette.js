@@ -22,6 +22,8 @@ import {
   harmonizeVarianceMin
 } from './paletteObjectives.js'
 
+/** @typedef {import('./paletteObjectives.js').Candidate} Candidate */
+
 export { DEFAULT_TARGET_HUES, DEFAULT_PREFERRED_CHROMA }
 
 const L_MIN = 0.05
@@ -59,11 +61,11 @@ export function buildHueCurve (h, backgroundHex, preferredChroma = DEFAULT_PREFE
  * fails. For Charts/Illustrations (which need a diverse spread of (L,C)
  * options to search over, not just the single best), an evenly-spaced
  * sample across the qualifying range is kept instead of a score-ranked top-N.
- * @param {Array<object>} curve
+ * @param {Candidate[]} curve
  * @param {number} hueMaxChroma
  * @param {number} minContrast
  * @param {{purpose: string, hueName: string, size?: number}} context
- * @returns {{shortlist: object[], meetsFloor: boolean}}
+ * @returns {{shortlist: Candidate[], meetsFloor: boolean}}
  */
 export function shortlistCandidates (curve, hueMaxChroma, minContrast, context) {
   const { purpose, hueName, size = SHORTLIST_SIZE } = context
@@ -87,9 +89,9 @@ export function shortlistCandidates (curve, hueMaxChroma, minContrast, context) 
 }
 
 /**
- * @param {object[]} pool
+ * @param {Candidate[]} pool
  * @param {number} size
- * @returns {object[]}
+ * @returns {Candidate[]}
  */
 function evenlySpaced (pool, size) {
   if (pool.length <= size) return pool
@@ -120,7 +122,7 @@ export function generatePalette ({
   outputFormat = 'hex',
   targetHues = DEFAULT_TARGET_HUES,
   preferredChroma = DEFAULT_PREFERRED_CHROMA
-} = {}) {
+}) {
   if (outputFormat !== 'hex' && outputFormat !== 'oklch') {
     throw new Error(`generatePalette: invalid outputFormat "${outputFormat}", expected "hex" or "oklch"`)
   }
@@ -134,9 +136,10 @@ export function generatePalette ({
 */
   const hueMaxChromas = []
   /**
-* @type {object[][]}
+* @type {Candidate[][]}
 */
   const shortlists = []
+  /** @type {boolean[]} */
   const meetsFloorFlags = []
 
   targetHues.forEach(({ h, name }) => {

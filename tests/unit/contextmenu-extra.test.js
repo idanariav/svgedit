@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 
 import { createContextMenu } from '../../src/editor/contextmenu.js'
 
@@ -23,21 +23,23 @@ describe('contextmenu helpers', () => {
 
   it('injects extensions into the context menu DOM', () => {
     const { add, injectExtendedContextMenuItemsIntoDom } = contextmenu
-    const host = document.getElementById('cmenu_canvas')
-    const appended = []
-    host.appendChild = vi.fn((value) => {
-      appended.push(value)
-      return value
-    })
+    const host = /** @type {HTMLElement} */ (document.getElementById('cmenu_canvas'))
     add({ id: 'alpha', label: 'Alpha', action: () => {}, shortcut: 'Ctrl+A' })
     add({ id: 'beta', label: 'Beta', action: () => {} })
 
     injectExtendedContextMenuItemsIntoDom()
 
-    expect(host.appendChild).toHaveBeenCalledTimes(2)
-    expect(appended[0]).toContain('#alpha')
-    expect(appended[0]).toContain('Ctrl+A')
-    expect(appended[1]).toContain('#beta')
+    const items = host.querySelectorAll('li.disabled a')
+    expect(items).toHaveLength(2)
+    expect(items[0].getAttribute('href')).toBe('#alpha')
+    expect(items[0].textContent).toBe('AlphaCtrl+A')
+    expect(items[1].getAttribute('href')).toBe('#beta')
+  })
+
+  it('injects nothing, without throwing, when the menu list is not in the document', () => {
+    document.body.innerHTML = ''
+    contextmenu.add({ id: 'alpha', label: 'Alpha', action: () => {} })
+    expect(() => contextmenu.injectExtendedContextMenuItemsIntoDom()).not.toThrow()
   })
 
   it('scopes registries per instance instead of sharing module state', () => {

@@ -47,9 +47,7 @@ export default {
     const selection = () => svgCanvas.getSelectedElements().filter(Boolean)
     const sole = () => (selection().length === 1 ? selection()[0] : null)
 
-    /**
-* @type {string | Node | null}
-*/
+    /** @type {HTMLElementTagNameMap['se-params-dialog']|null} */
     let dialog = null
     const dialogElement = () => {
       if (!dialog) {
@@ -63,10 +61,11 @@ export default {
     /**
      * Open the form and keep one preview transaction in step with it.
      * @param {string} kind `each` | `grid`
-     * @param {object[]} fields
-     * @param {(values: object) => void} apply runs the operation (inside the preview transaction)
+     * @param {Array<Omit<import('../../dialogs/seParamsDialog.js').ParamField, 'label'>>} fields
+     * @param {(values: Record<string, *>) => void} apply runs the operation (inside the preview transaction)
      */
     const openForm = (kind, fields, apply) => {
+      /** @type {{commit(): unknown, cancel(): void}|null} */
       let tx = null
       const rollBack = () => {
         tx?.cancel()
@@ -79,7 +78,7 @@ export default {
         cancelLabel: label('cancel'),
         fields: fields.map((f) => ({ ...f, label: label(f.id) })),
         /**
-* @param {object} values
+* @param {Record<string, *>} values
 */
         onChange (values) {
           rollBack()
@@ -97,7 +96,7 @@ export default {
     const transformEach = () => {
       if (!selection().length) return
       const seed = Math.floor(Math.random() * 2 ** 31)
-      const num = (/** @type {string} */ id, /** @type {number} */ value, extra = {}) => ({ id, type: 'number', value, step: 1, ...extra })
+      const num = (/** @type {string} */ id, /** @type {number} */ value, extra = {}) => ({ id, type: /** @type {'number'} */ ('number'), value, step: 1, ...extra })
       openForm('each', [
         num('scaleH', 100, { min: 0 }),
         num('scaleV', 100, { min: 0 }),
@@ -114,7 +113,7 @@ export default {
 
     const splitIntoGrid = () => {
       if (!canSplitIntoGrid(sole())) return
-      const num = (/** @type {string} */ id, /** @type {number} */ value, /** @type {number} */ min) => ({ id, type: 'number', value, min, step: 1 })
+      const num = (/** @type {string} */ id, /** @type {number} */ value, /** @type {number} */ min) => ({ id, type: /** @type {'number'} */ ('number'), value, min, step: 1 })
       openForm('grid', [
         num('rows', 2, 1),
         num('cols', 2, 1),

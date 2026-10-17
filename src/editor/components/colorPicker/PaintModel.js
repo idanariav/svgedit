@@ -5,6 +5,43 @@
 
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 
+/**
+ * @typedef {{color: string, position: number, alpha: number}} GradientStop `color` is hex without `#`, `position` and `alpha` 0-100
+ */
+
+/**
+ * What the colour dialog edits: one shape for its three tabs, with the fields of the tab in use set.
+ * @typedef {object} PaintState
+ * @property {'solid'|'linear'|'radial'} tab
+ * @property {string} [hex] solid: the colour, hex without `#`
+ * @property {string} [solidColor] solid: wins over `hex` when set
+ * @property {number} [alpha] 0-100
+ * @property {'two'|'multi'|'mono'} [mode] gradient: how the stops are edited
+ * @property {GradientStop[]} [stops]
+ * @property {string|null} [monoColor] gradient, mono mode
+ * @property {string} [monoMode] gradient, mono mode: what the second stop is (`'white'`, `'black'`, else fade)
+ * @property {string} [spreadMethod] `'pad'`, `'reflect'` or `'repeat'`
+ * @property {number} [angle] degrees; linear: the dial, radial: the rotation
+ * @property {number} [cx] radial centre, 0-1
+ * @property {number} [cy]
+ * @property {number} [fx] radial focal point, 0-1
+ * @property {number} [fy]
+ * @property {number} [r] radial radius, percent
+ * @property {number} [ellip] radial squash, percent (100 = circle)
+ * @property {boolean} [matchCenter] radial: the focal point follows the centre
+ */
+
+/**
+ * @typedef {HTMLDivElement & { getPaintState(): PaintState, setFromPaint(p: Paint): void, setFromHex(hex: string): void }} PaintPanel
+ *   a tab of the colour dialog (solid / linear / radial)
+ */
+
+/**
+ * @typedef {HTMLDivElement & { getStops(): GradientStop[], setStops(stops: GradientStop[]): void, getSelectedIndex(): number,
+ *   setSelectedStop(idx: number, colorHex: string, alpha?: number): void, setMode(mode: 'two'|'mono'|'multi'): void }} StopBarElement
+ *   the gradient stop bar and its stop list
+ */
+
 // ─── Color math ─────────────────────────────────────────────────────────────
 
 /** @param {number} h 0-360  @param {number} s 0-100  @param {number} v 0-100 */
@@ -156,8 +193,8 @@ export function angleToCoords (angleDeg) {
  * @param {{x1:string|number,y1:string|number,x2:string|number,y2:string|number}} coords
  */
 export function coordsToAngle ({ x1, y1, x2, y2 }) {
-  const dx = parseFloat(x1) - parseFloat(x2)
-  const dy = parseFloat(y2) - parseFloat(y1)
+  const dx = parseFloat(String(x1)) - parseFloat(String(x2))
+  const dy = parseFloat(String(y2)) - parseFloat(String(y1))
   let angle = Math.atan2(dx, dy) * (180 / Math.PI)
   if (angle < 0) angle += 360
   return Math.round(angle)
@@ -204,7 +241,8 @@ function extractStops (el) {
 
 /**
  * Convert a Paint object to internal dialog state.
- * @param {Paint} paint
+ * @param {Paint|null|undefined} paint nothing reads as the default solid colour
+ * @returns {PaintState}
  */
 export function paintToState (paint) {
   if (!paint || paint.type === 'none' || paint.type === 'solidColor') {
@@ -288,7 +326,13 @@ export function paintToState (paint) {
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
-/** Build a `<stop>` SVG element */
+/**
+ * Build a `<stop>` SVG element
+ * @param {Document} doc
+ * @param {string} color hex without `#`
+ * @param {number} position 0-100
+ * @param {number} alpha 0-100
+ */
 function makeStop (doc, color, position, alpha) {
   const stop = doc.createElementNS(SVG_NS, 'stop')
   stop.setAttribute('offset', (position / 100).toFixed(4))
@@ -298,7 +342,7 @@ function makeStop (doc, color, position, alpha) {
 
 /**
  * Convert dialog state to a Paint object.
- * @param {object} state
+ * @param {PaintState} state
  */
 export function stateToPaint (state) {
   if (state.tab === 'solid') {
@@ -365,8 +409,8 @@ export function stateToPaint (state) {
   }
 
   if (isLinear) {
-    return new Paint({ linearGradient: el, alpha: state.alpha ?? 100 })
+    return new Paint({ linearGradient: /** @type {SVGLinearGradientElement} */ (el), alpha: state.alpha ?? 100 })
   } else {
-    return new Paint({ radialGradient: el, alpha: state.alpha ?? 100 })
+    return new Paint({ radialGradient: /** @type {SVGRadialGradientElement} */ (el), alpha: state.alpha ?? 100 })
   }
 }

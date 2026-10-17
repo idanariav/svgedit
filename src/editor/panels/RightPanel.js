@@ -29,6 +29,8 @@ const renderLockIcon = (span, locked) => {
 }
 
 class RightPanel {
+  /** @type {Element|null} the user group the Objects section names (see `updateObjectList`) */ _groupContext = null
+
   /**
    * @param {EditorInstance} editor
    */
@@ -47,10 +49,10 @@ class RightPanel {
    */
   activateTab (name) {
     this.activeTab = name
-    this.editor.$qa('#sidepanel_tabs .sidepanel_tab').forEach(/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; dataset: { tab: string; }; }} */ (/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; dataset: { tab: string; }; }} */ btn) => {
+    ;/** @type {HTMLElement[]} */ (this.editor.$qa('#sidepanel_tabs .sidepanel_tab')).forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.tab === name)
     })
-    this.editor.$qa('#sidepanel_content .sidepanel_tabpanel').forEach(/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; id: string; }} */ (/** @type {{ classList: { toggle: (arg0: string, arg1: boolean) => void; }; id: string; }} */ panel) => {
+    ;/** @type {HTMLElement[]} */ (this.editor.$qa('#sidepanel_content .sidepanel_tabpanel')).forEach((panel) => {
       panel.classList.toggle('active', panel.id === `tab_${name}`)
     })
     // The object rows are not kept current while the tab is hidden.
@@ -116,28 +118,29 @@ class RightPanel {
     const menuMore = document.createElement('se-cmenu-layers')
     menuMore.setAttribute('id', 'se-cmenu-layers-more')
     menuMore.value = 'layer_moreopts'
-    menuMore.setAttribute('leftclick', true)
+    menuMore.setAttribute('leftclick', 'true')
     this.editor.$container.append(menuMore)
     menuMore.init(i18next)
     const menuLayerBox = document.createElement('se-cmenu-layers')
     menuLayerBox.setAttribute('id', 'se-cmenu-layers-list')
     menuLayerBox.value = 'layerlist'
-    menuLayerBox.setAttribute('leftclick', false)
+    menuLayerBox.setAttribute('leftclick', 'false')
     this.editor.$container.append(menuLayerBox)
     menuLayerBox.init(i18next)
     this.layerTree.attach()
     this.layerGestures.attach()
     $req('se-cmenu-layers-more').addEventListener('change', this.lmenuFunc.bind(this))
     $req('se-cmenu-layers-list').addEventListener('change', (e) => { this.lmenuFunc(e) })
-    $click($id('sidepanel_handle'), () => {
+    $click($req('sidepanel_handle'), () => {
       // A manual toggle means the user has an opinion: never auto-open again.
       this.editor.configObj.pref('sidePanelManual', true, true)
       this.toggleSidePanel()
     })
     // "Convert to editable SVG" (image trace): the `tool_trace_image` command opens
     // the options dialog (openTraceDialog); the trace runs when the user confirms.
-    const traceDialog = $id('se-trace-dialog')
-    traceDialog?.addEventListener('change', async (e) => {
+    const traceDialog = /** @type {HTMLElementTagNameMap['se-trace-dialog']|null} */ ($id('se-trace-dialog'))
+    traceDialog?.addEventListener('change', async (event) => {
+      const e = /** @type {CustomEvent} */ (event)
       if (e.detail?.trigger !== 'ok') return
       const img = traceDialog._targetImage
       if (!img) return
@@ -149,12 +152,12 @@ class RightPanel {
         })
         traceDialog.setAttribute('dialog', 'close')
       } catch (err) {
-        traceDialog.showError(err.message)
+        traceDialog.showError(err instanceof Error ? err.message : String(err))
       }
     })
     // Tab bar (Design / Text / Effects / Layers)
-    this.editor.$qa('#sidepanel_tabs .sidepanel_tab').forEach((/** @type {EventTarget} */ btn) => {
-      $click(btn, () => this.activateTab(btn.dataset.tab))
+    ;/** @type {HTMLElement[]} */ (this.editor.$qa('#sidepanel_tabs .sidepanel_tab')).forEach((btn) => {
+      $click(btn, () => this.activateTab(String(btn.dataset.tab)))
     })
     this.activateTab(this.activeTab)
     this.toggleSidePanel(this.editor.configObj.curConfig.showlayers)
@@ -162,10 +165,10 @@ class RightPanel {
 
     // Group name input in objects panel — renames the group context, not necessarily
     // the currently selected element (which may be a child of the group).
-    $id('group_name_input')?.addEventListener('change', (/** @type {{ target: { value: string; }; }} */ evt) => {
+    $id('group_name_input')?.addEventListener('change', (evt) => {
       const g = this._groupContext
       if (!g) return
-      g.setAttribute('data-name', evt.target.value)
+      g.setAttribute('data-name', /** @type {HTMLInputElement} */ (evt.target).value)
     })
   }
 
@@ -178,7 +181,7 @@ class RightPanel {
   autoOpenOnFirstSelection () {
     const { configObj, svgCanvas, $svgEditor } = this.editor
     let pending = true
-    svgCanvas.bind('selected', (_win, elems) => {
+    svgCanvas.bind('selected', (_win, /** @type {Element[]|undefined} */ elems) => {
       if (!pending || !elems?.some(Boolean)) return
       pending = false
       const manual = String(configObj.pref('sidePanelManual')) === 'true'
@@ -235,7 +238,7 @@ class RightPanel {
    * @returns {void}
    */
   openTraceDialog () {
-    const traceDialog = this.editor.$id('se-trace-dialog')
+    const traceDialog = /** @type {HTMLElementTagNameMap['se-trace-dialog']} */ (this.editor.$req('se-trace-dialog'))
     const sel = this.editor.svgCanvas.getSelectedElements().filter(Boolean)
     if (sel[0]?.tagName !== 'image') return
     traceDialog._targetImage = sel[0]
@@ -243,7 +246,7 @@ class RightPanel {
   }
 
   /**
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async newLayer () {
     const newName = await this.promptUniqueLayerName()
@@ -258,7 +261,7 @@ class RightPanel {
   /**
    * Create a new layer and move the currently selected elements onto it,
    * combining the "new layer" and "move elements to" actions into one step.
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async moveSelectedToNewLayer () {
     const newName = await this.promptUniqueLayerName()
@@ -293,13 +296,13 @@ class RightPanel {
       Array.prototype.forEach.call(elements, function (el) {
         el.classList.remove('layersel')
       })
-      this.editor.$qq('#layerlist tr.layer').classList.add('layersel')
+      ;/** @type {Element} */ (this.editor.$qq('#layerlist tr.layer')).classList.add('layersel')
     }
   }
 
   /**
    *
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async cloneLayer () {
     const name =
@@ -323,9 +326,13 @@ class RightPanel {
     this.populateLayers()
   }
 
+  /**
+   * @param {Element|null} el a layer row
+   * @returns {number} its position among the layer rows
+   */
   index (el) {
     if (!el) return -1
-    return Array.from(this.editor.$qq('#layerlist tbody').children).filter(tr => !tr.classList.contains('object') && !tr.classList.contains('objmore')).indexOf(el)
+    return Array.from(/** @type {Element} */ (this.editor.$qq('#layerlist tbody')).children).filter(tr => !tr.classList.contains('object') && !tr.classList.contains('objmore')).indexOf(el)
   }
 
   /**
@@ -357,7 +364,7 @@ class RightPanel {
   }
 
   /**
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async layerRename () {
     const ele = this.editor.$qq('#layerlist tr.layersel td.layername')
@@ -413,7 +420,7 @@ class RightPanel {
     const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     this.editor.svgCanvas.clearSelection()
     const self = this
-    const layerlist = $req('layerlist').querySelector('tbody')
+    const layerlist = /** @type {HTMLTableSectionElement} */ ($req('layerlist').querySelector('tbody'))
     while (layerlist.firstChild) { layerlist.removeChild(layerlist.firstChild) }
 
     $req('selLayerNames').setAttribute('options', '')
@@ -519,12 +526,13 @@ class RightPanel {
     const nelements = $req('layerlist').querySelectorAll('td.layername')
     Array.from(nelements).forEach(function (element) {
       element.addEventListener('mouseup', function (evt) {
+        const cell = /** @type {HTMLElement} */ (evt.currentTarget)
         const trElements = $req('layerlist').querySelectorAll('tr.layer')
         Array.from(trElements).forEach(function (element) {
           element.classList.remove('layersel')
         })
-        evt.currentTarget.parentNode.classList.add('layersel')
-        self.editor.svgCanvas.setCurrentLayer(evt.currentTarget.textContent)
+        ;/** @type {HTMLElement} */ (cell.parentNode).classList.add('layersel')
+        self.editor.svgCanvas.setCurrentLayer(String(cell.textContent))
         self.layerTree.invalidate()
         // run extension when different layer is selected from listener
         self.editor.svgCanvas.runExtensions(
@@ -532,8 +540,8 @@ class RightPanel {
         )
         evt.preventDefault()
       })
-      element.addEventListener('mouseup', (/** @type {{ currentTarget: { textContent: string | undefined; }; }} */ evt) => {
-        self.toggleHighlightLayer(evt.currentTarget.textContent)
+      element.addEventListener('mouseup', (evt) => {
+        self.toggleHighlightLayer(/** @type {HTMLElement} */ (evt.currentTarget).textContent ?? undefined)
       })
       element.addEventListener('mouseout', (_evt) => {
         self.toggleHighlightLayer()
@@ -542,8 +550,8 @@ class RightPanel {
     const elements = $req('layerlist').querySelectorAll('td.layervis')
     Array.from(elements).forEach(function (element) {
       $click(element, function (evt) {
-        const ele = /** @type {Node} */ (evt.currentTarget).parentNode.querySelector('td.layername')
-        const name = (ele) ? ele.textContent : ''
+        const ele = /** @type {Element} */ (/** @type {Node} */ (evt.currentTarget).parentNode).querySelector('td.layername')
+        const name = (ele) ? String(ele.textContent) : ''
         const vis = /** @type {Element} */ (evt.currentTarget).classList.contains('layerinvis')
         self.applyLayerVisibility({ [name]: vis })
       })
@@ -551,8 +559,8 @@ class RightPanel {
     const lockElements = $req('layerlist').querySelectorAll('td.layerlock')
     Array.from(lockElements).forEach(function (element) {
       $click(element, function (evt) {
-        const ele = /** @type {Node} */ (evt.currentTarget).parentNode.querySelector('td.layername')
-        const name = (ele) ? ele.textContent : ''
+        const ele = /** @type {Element} */ (/** @type {Node} */ (evt.currentTarget).parentNode).querySelector('td.layername')
+        const name = (ele) ? String(ele.textContent) : ''
         const locked = /** @type {Element} */ (evt.currentTarget).classList.contains('locked')
         self.applyLayerLock({ [name]: !locked })
       })
@@ -560,9 +568,9 @@ class RightPanel {
     const commentElements = $req('layerlist').querySelectorAll('td.layercomment')
     Array.from(commentElements).forEach(function (element) {
       $click(element, function (evt) {
-        const row = /** @type {Node} */ (evt.currentTarget).parentNode
+        const row = /** @type {Element} */ (/** @type {Node} */ (evt.currentTarget).parentNode)
         const ele = row.querySelector('td.layername')
-        const name = (ele) ? ele.textContent : ''
+        const name = (ele) ? String(ele.textContent) : ''
         const wasComment = /** @type {Element} */ (evt.currentTarget).classList.contains('commented')
         self.editor.svgCanvas.setLayerComment(name, !wasComment)
         ;/** @type {Element} */ (evt.currentTarget).classList.toggle('commented')
@@ -689,7 +697,7 @@ class RightPanel {
     // Layers are <g> elements that are direct children of the SVG drawing root.
     // User groups are any other <g> elements nested inside a layer.
     const svgContent = this.editor.svgCanvas.getSvgContent()
-    const isLayerGroup = (/** @type {Element} */ el) => el?.tagName === 'g' && el.parentElement === svgContent
+    const isLayerGroup = (/** @type {Element} */ el) => el?.tagName === 'g' && el.parentNode === svgContent
 
     // Walk up from elem to find the nearest ancestor that is a user group.
     // Returns the group element, or null if no group context exists.
@@ -698,7 +706,7 @@ class RightPanel {
       // If the element itself is a non-layer group, that is our context.
       if (el.tagName === 'g' && !isLayerGroup(el)) return el
       // Otherwise walk up to find a parent group that is not a layer.
-      let parent = el.parentElement
+      let parent = /** @type {Element|null} */ (el.parentElement)
       while (parent && parent !== svgContent) {
         if (parent.tagName === 'g' && !isLayerGroup(parent)) return parent
         parent = parent.parentElement
