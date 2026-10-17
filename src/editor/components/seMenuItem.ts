@@ -69,7 +69,7 @@ export class SeMenuItem extends HTMLElement {
   $iconWrap: HTMLSpanElement
   $label: HTMLSpanElement
   $shortcut: HTMLSpanElement
-  imgPath: any
+  imgPath: unknown
 
   /**
     * @function constructor
@@ -91,7 +91,7 @@ export class SeMenuItem extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['label', 'src']
   }
 

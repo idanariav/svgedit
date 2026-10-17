@@ -11,7 +11,7 @@
 
 const modules = import.meta.glob('./*/ext-*.{js,ts}', { eager: true })
 
-const registry: Record<string, any> = {}
+const registry: Record<string, unknown> = {}
 for (const [path, mod] of Object.entries(modules)) {
   // './ext-shapes/ext-shapes.js' -> 'ext-shapes'
   const match = path.match(/\.\/([^/]+)\//)
@@ -23,7 +23,7 @@ for (const [path, mod] of Object.entries(modules)) {
  * @param name e.g. 'ext-shapes'
  * @returns the extension module (with a `default` export)
  */
-export function getExtension (name: string): any | undefined {
+export function getExtension (name: string): unknown | undefined {
   return registry[name]
 }
 

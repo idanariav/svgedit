@@ -106,7 +106,7 @@ export class SeList extends HTMLElement {
   $label: HTMLLabelElement
   $selection: HTMLDivElement
   items: NodeListOf<SeListItem>
-  imgPath: any
+  imgPath: unknown
   $optionsContainer: HTMLDivElement
   staticIcon: boolean
   trackSelection: boolean
@@ -220,7 +220,7 @@ export class SeList extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['label', 'width', 'height', 'title', 'value']
   }
 

@@ -262,7 +262,7 @@ export function createHsvBox (initialHex: string, initialAlpha: number = 100, cu
 
   // ── Number input wiring ────────────────────────────────────────────────────
   /** @param field the `data-field` of the input */
-  function wireInput (field: string, parse: (text: string) => any, clamp: (raw: any) => any, apply: (value: any) => void) {
+  function wireInput (field: string, parse: (text: string) => unknown, clamp: (raw: any) => unknown, apply: (value: any) => void) {
     const input = inputs[field]
     if (!input) return
     input.addEventListener('input', () => {

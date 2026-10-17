@@ -20,61 +20,61 @@ import { canDeleteLayer, canMoveLayerDown, canMoveLayerUp, hasClipOrMask, needsS
 export type CommandRegistry = import('./commands.ts').CommandRegistry
 
 /** @returns node editing needs the path editor open */
-const inPathEdit = (editor: any): true | string => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
+const inPathEdit = (editor: EditorInstance): true | string => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
 
 /** Elements Convert to Path leaves alone: nothing to convert (already a path) or no outline to take (image, text, group, use). */
 const NOT_CONVERTIBLE = ['image', 'text', 'path', 'g', 'use']
 
 /** The one selected element, if exactly one is selected. */
-const soleSelected = (editor: any): Element | null => {
+const soleSelected = (editor: EditorInstance): Element | null => {
   const list = editor.svgCanvas.getSelectedElements().filter(Boolean)
   return list.length === 1 ? list[0] : null
 }
 
 /** @returns Convert to Path needs a shape that is not yet a path */
-const convertible = (editor: any): true | string => {
+const convertible = (editor: EditorInstance): true | string => {
   const el = soleSelected(editor)
   return el && !NOT_CONVERTIBLE.includes(el.tagName.toLowerCase()) ? true : 'Select one shape (not a path, text, image or group)'
 }
 
 /** @returns Stroke to Path needs a visible stroke on a shape that is not a path */
-const strokeToPathable = (editor: any): true | string => {
+const strokeToPathable = (editor: EditorInstance): true | string => {
   const el = soleSelected(editor)
   return el && el.tagName.toLowerCase() !== 'path' && editor.svgCanvas.hasVisibleStroke(el) ? true : 'Select one shape with a visible stroke'
 }
 
 /** @returns Fit Dashes works on whatever of the selection can be fitted, or undoes a fit */
-const dashFittable = (editor: any): true | string => {
+const dashFittable = (editor: EditorInstance): true | string => {
   const list = editor.svgCanvas.getSelectedElements().filter(Boolean)
   if (!list.length) return 'Select a line, circle, ellipse or path first'
   if (editor.svgCanvas.isDashFitted(list)) return true
   const issues = list.map((el: Element) => editor.svgCanvas.dashFitIssue(el))
-  return issues.includes(null) ? true : issues[0]
+  return issues.includes(null) ? true : (issues[0] as string)
 }
 
-const textSelected = (editor: any): true | string => editor.topPanel.anyTextSelected ? true : 'Select some text'
+const textSelected = (editor: EditorInstance): true | string => editor.topPanel.anyTextSelected ? true : 'Select some text'
 
 /** Both fill and stroke are `none`: nothing a path or text tool draws would be visible. */
-const bareFillAndStroke = (editor: any): boolean =>
+const bareFillAndStroke = (editor: EditorInstance): boolean =>
   editor.svgCanvas.getColor('fill') === 'none' && editor.svgCanvas.getColor('stroke') === 'none'
 
 /** @returns Unlink works on a group, a hyperlink or a linked copy */
-const unlinkable = (editor: any): true | string => {
+const unlinkable = (editor: EditorInstance): true | string => {
   const list = selectedOf(editor)
   return list.length === 1 && ['use', 'g', 'a'].includes(list[0].tagName.toLowerCase()) ? true : 'Select a group or a linked copy'
 }
 
 /** @returns Crop needs one image the canvas can crop */
-const croppable = (editor: any): true | string => {
+const croppable = (editor: EditorInstance): true | string => {
   const list = selectedOf(editor)
   return list.length === 1 && editor.svgCanvas.imageCrop.isEligible(list[0]) ? true : 'Select one image'
 }
 
 /** @returns Apply / Cancel exist only while a crop session is open */
-const cropping = (editor: any): true | string => editor.svgCanvas.imageCrop.isCropping() ? true : 'Start cropping an image first'
+const cropping = (editor: EditorInstance): true | string => editor.svgCanvas.imageCrop.isCropping() ? true : 'Start cropping an image first'
 
 /** @returns Trace needs one selected image */
-const traceable = (editor: any): true | string => {
+const traceable = (editor: EditorInstance): true | string => {
   const list = selectedOf(editor)
   return list.length === 1 && list[0].tagName === 'image' ? true : 'Select one image'
 }
@@ -126,7 +126,7 @@ const LABELS: Record<string, string> = {
 }
 
 /** the layer buttons that depend on where the current layer sits */
-const LAYER_GATES: Record<string, (editor: any) => true | string> = { layer_delete: canDeleteLayer, layer_up: canMoveLayerUp, layer_down: canMoveLayerDown }
+const LAYER_GATES: Record<string, (editor: EditorInstance) => true | string> = { layer_delete: canDeleteLayer, layer_up: canMoveLayerUp, layer_down: canMoveLayerDown }
 
 /** Mode buttons: pressing one highlights it in the left panel and switches the canvas mode. */
 const MODE_BUTTONS = [
@@ -157,7 +157,7 @@ const TOP_PANEL = [
   ['tool_node_smooth', 'Path', 'smoothPathNode', { enabled: inPathEdit }],
   ['tool_node_clone', 'Path', 'clonePathNode', { enabled: inPathEdit }],
   ['tool_node_delete', 'Path', 'deletePathNode', {
-    enabled: (editor: any) => {
+    enabled: (editor: EditorInstance) => {
       const open = inPathEdit(editor)
       if (open !== true) return open
       return editor.topPanel.path?.canDeleteNodes ? true : 'A path needs at least two nodes'
@@ -189,7 +189,7 @@ const TEXT_DECORATIONS = [
  * @param id the button's id (a persisted command id: never rename)
  * @param mode the canvas mode the tool uses
  */
-export const registerModeCommand = (editor: any, id: string, mode: string, { label = id, group = 'Tools', onEnter, enabled }: { label?: string, group?: string, onEnter?: () => void, enabled?: (editor: any) => true | string } = {}): void => {
+export const registerModeCommand = (editor: EditorInstance, id: string, mode: string, { label = id, group = 'Tools', onEnter, enabled }: { label?: string, group?: string, onEnter?: () => void, enabled?: (editor: EditorInstance) => true | string } = {}): void => {
   editor.commands.register({
     id,
     label,
@@ -208,7 +208,7 @@ export const registerModeCommand = (editor: any, id: string, mode: string, { lab
 export const registerPanelCommands = (commands: CommandRegistry): void => {
   // Left panel tools. The stroke / fill gating is what BottomPanel.updateToolButtonState
   // does to the buttons.
-  const modeGate: Record<string, (editor: any) => true | string> = {
+  const modeGate: Record<string, (editor: EditorInstance) => true | string> = {
     tool_fhpath: (editor) => editor.svgCanvas.getColor('stroke') === 'none' ? 'Needs a stroke' : true,
     tool_line: (editor) => editor.svgCanvas.getColor('stroke') === 'none' ? 'Needs a stroke' : true,
     tool_text: (editor) => bareFillAndStroke(editor) ? 'Needs a fill or a stroke' : true,
@@ -221,7 +221,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
       group: 'Tools',
       pd: true,
       enabled: modeGate[id],
-      run: (editor: any) => editor.leftPanel[method]()
+      run: (editor: EditorInstance) => (editor.leftPanel as unknown as Record<string, () => void>)[method]()
     })
   }
   commands.register({
@@ -239,7 +239,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
       label: LABELS[id] ?? id,
       group,
       pd: true,
-      run: (editor: any) => editor.topPanel[method](),
+      run: (editor: EditorInstance) => (editor.topPanel as unknown as Record<string, () => void>)[method](),
       ...extra
     })
   }
@@ -271,7 +271,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
       group: 'Edit',
       pd: true,
       alias: true,
-      enabled: (editor: any) => commands.isEnabled(target),
+      enabled: (editor: EditorInstance) => commands.isEnabled(target),
       run: (editor) => commands.run(target)
     })
   }
@@ -283,7 +283,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     ['layer_up', (editor) => editor.rightPanel.moveLayer(-1)],
     ['layer_down', (editor) => editor.rightPanel.moveLayer(1)],
     ['layer_rename', (editor) => editor.rightPanel.layerRename()]
-  ] as Array<[string, (editor: any) => any]>)) {
+  ] as Array<[string, (editor: EditorInstance) => unknown]>)) {
     commands.register({ id, label: LABELS[id] ?? id, group: 'Layers', pd: true, enabled: LAYER_GATES[id], run })
   }
   commands.register({
@@ -291,15 +291,15 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     label: LABELS.layer_template,
     group: 'Layers',
     pd: true,
-    run: (editor: any) => editor.rightPanel.toggleLayerTemplate()
+    run: (editor: EditorInstance) => editor.rightPanel.toggleLayerTemplate()
   })
   commands.register({
     id: 'layer_locate',
     label: LABELS.layer_locate,
     group: 'Layers',
     pd: true,
-    enabled: (editor: any) => soleSelected(editor) ? true : 'Select one object first',
-    run: (editor: any) => editor.rightPanel.layerTree.locate(soleSelected(editor))
+    enabled: (editor: EditorInstance) => soleSelected(editor) ? true : 'Select one object first',
+    run: (editor: EditorInstance) => editor.rightPanel.layerTree.locate(soleSelected(editor) as Element)
   })
 
   // Main menu.
@@ -333,7 +333,7 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     group: 'Tools',
     pd: true,
     interactive: true,
-    run: (editor) => editor.$req('se-command-search-dialog').open()
+    run: (editor) => (editor.$req('se-command-search-dialog') as import('./dialogs/commandSearchDialog.ts').SeCommandSearchDialog).open()
   })
   commands.register({
     id: 'tool_hotkeys',

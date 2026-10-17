@@ -37,7 +37,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -163,13 +163,13 @@ export default {
 
     // ---- overlay ---------------------------------------------------------------
 
-    const mk = (tag: string, attrs: Record<string, any>) => {
+    const mk = (tag: string, attrs: Record<string, unknown>) => {
       const e = document.createElementNS(SVG_NS, tag)
       for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
       return e
     }
 
-    const diamond = (p: { x: number; y: number; }, s: number, attrs: Record<string, any>) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
+    const diamond = (p: { x: number; y: number; }, s: number, attrs: Record<string, unknown>) => mk('path', { d: `M${p.x},${p.y - s} L${p.x + s},${p.y} L${p.x},${p.y + s} L${p.x - s},${p.y} Z`, 'vector-effect': 'non-scaling-stroke', ...attrs })
 
     const draw = (ctx: import('@svgedit/svgcanvas').ToolContext) => {
       ctx.clearOverlays()

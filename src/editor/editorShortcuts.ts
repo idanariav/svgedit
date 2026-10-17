@@ -13,7 +13,7 @@
 import { canAlign, canDelete, canRotate, hasObjects, needsSelection, needsTwoShapes, needsTwoSiblings } from './commandGates.ts'
 
 /** @returns node editing needs the path editor open */
-const inPathEdit = (editor: any): true | string => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
+const inPathEdit = (editor: EditorInstance): true | string => editor.svgCanvas.getMode() === 'pathedit' ? true : 'Edit a path’s nodes first'
 
 /**
  * `enabled` gates by command id (see commandGates.js): the precondition each handler

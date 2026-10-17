@@ -80,7 +80,7 @@ export class SeListItem extends HTMLElement {
   $menuitem: HTMLElement
   $iconWrap: HTMLSpanElement
   $labelText: HTMLSpanElement
-  imgPath: any
+  imgPath: unknown
 
   constructor () {
     super()

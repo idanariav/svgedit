@@ -35,7 +35,7 @@ export class SeText extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['text', 'value', 'style', 'title', 'id']
   }
 

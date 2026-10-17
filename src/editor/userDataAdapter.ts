@@ -63,26 +63,26 @@
  */
 
 export interface UserDataAdapter {
-  getPalette?: () => any
-  setPalette?: (overrides: any) => void
-  getUserShapes?: () => any
-  setUserShapes?: (store: any) => void
+  getPalette?: () => unknown
+  setPalette?: (overrides: unknown) => void
+  getUserShapes?: () => unknown
+  setUserShapes?: (store: unknown) => void
   getHotkeys?: () => any
-  setHotkeys?: (overrides: any) => void
-  getClasses?: () => any
-  setClasses?: (classes: any) => void
+  setHotkeys?: (overrides: unknown) => void
+  getClasses?: () => unknown
+  setClasses?: (classes: unknown) => void
   getDefaultClasses?: () => any
-  setDefaultClasses?: (defaults: any) => void
-  getCanvasPresets?: () => any
-  setCanvasPresets?: (presets: any) => void
-  getCanvasLayouts?: () => any
-  setCanvasLayouts?: (layouts: any) => void
+  setDefaultClasses?: (defaults: unknown) => void
+  getCanvasPresets?: () => unknown
+  setCanvasPresets?: (presets: unknown) => void
+  getCanvasLayouts?: () => unknown
+  setCanvasLayouts?: (layouts: unknown) => void
   getFonts?: () => Promise<any>
   saveFont?: (family: string, woff2Base64: string) => Promise<void>
   getBrushes?: () => any
-  setBrushes?: (slots: any) => void
+  setBrushes?: (slots: unknown) => void
   getToolOrder?: () => any
-  setToolOrder?: (order: any) => void
+  setToolOrder?: (order: unknown) => void
   getFavorites?: () => string[]
   setFavorites?: (ids: string[]) => void
 }

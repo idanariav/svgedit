@@ -20,7 +20,7 @@ export const BRUSH_SLOT_COUNT = 5
  * Read the raw slot map from storage.
  * @returns Sparse map, keys `0`-`4`.
  */
-export const loadBrushSlots = (): Record<number, Record<string, any>> => {
+export const loadBrushSlots = (): Record<number, Record<string, unknown>> => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     const parsed = adapter.getBrushes?.()
@@ -36,7 +36,7 @@ export const loadBrushSlots = (): Record<number, Record<string, any>> => {
   }
 }
 
-const writeBrushSlots = (slots: Record<number, any>) => {
+const writeBrushSlots = (slots: Record<number, unknown>) => {
   const adapter = getUserDataAdapter()
   if (adapter) {
     adapter.setBrushes?.(slots)
@@ -57,7 +57,7 @@ const writeBrushSlots = (slots: Record<number, any>) => {
  * @param index - 0-4.
  * @returns The saved brush params, or null if the slot is empty.
  */
-export const getBrushSlot = (index: number): Record<string, any> | null => loadBrushSlots()[index] ?? null
+export const getBrushSlot = (index: number): Record<string, unknown> | null => loadBrushSlots()[index] ?? null
 
 /**
  * Save (or overwrite) a brush preset into a slot.

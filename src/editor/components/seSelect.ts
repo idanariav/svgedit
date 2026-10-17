@@ -104,7 +104,7 @@ export class SeSelect extends HTMLElement {
   $label: HTMLLabelElement
   $iconWrap: HTMLSpanElement
   $wrap: HTMLDivElement
-  imgPath: any
+  imgPath: unknown
 
   /**
     * @function constructor
@@ -124,7 +124,7 @@ export class SeSelect extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['label', 'src', 'width', 'height', 'options', 'values', 'title', 'disabled']
   }
 

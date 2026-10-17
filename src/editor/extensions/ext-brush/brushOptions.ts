@@ -20,15 +20,15 @@ const FIELDS = [
 const KEYS = FIELDS.map(([key]) => key)
 
 /** @returns whether both brushes have the same value for every parameter */
-export const sameBrush = (a: Record<string, any> | null | undefined, b: Record<string, any> | null | undefined): boolean => Boolean(a) && Boolean(b) && KEYS.every((k) => Number(a?.[k]) === Number(b?.[k]))
+export const sameBrush = (a: Record<string, unknown> | null | undefined, b: Record<string, unknown> | null | undefined): boolean => Boolean(a) && Boolean(b) && KEYS.every((k) => Number(a?.[k]) === Number(b?.[k]))
 
 export interface BrushDeps {
   slotCount: number
   /** the live brush */
   getParams: () => Record<string, any>
-  setParams: (params: Record<string, any>) => void
+  setParams: (params: Record<string, unknown>) => void
   getSlot: (i: number) => Record<string, any> | null
-  saveSlot: (i: number, params: Record<string, any>) => void
+  saveSlot: (i: number, params: Record<string, unknown>) => void
   deleteSlot: (i: number) => void
   renameSlot: (i: number, name: string) => void
   askName: (i: number, current: string) => Promise<string | null>
@@ -39,7 +39,7 @@ export const createBrushOptions = (deps: BrushDeps): { options: () => import('@s
   let lastSlot = null as number | null
   let showMore = false
 
-  const slotState = (i: number, live: Record<string, any>, anyActive: boolean) => {
+  const slotState = (i: number, live: Record<string, unknown>, anyActive: boolean) => {
     const saved = deps.getSlot(i)
     if (!saved) return 'empty'
     if (sameBrush(saved, live)) return 'active'
@@ -82,7 +82,7 @@ export const createBrushOptions = (deps: BrushDeps): { options: () => import('@s
   }
 
   /** @returns only the brush parameters (a slot also carries its name) */
-  const pick = (from: Record<string, any>): Record<string, any> => Object.fromEntries(KEYS.filter((k) => from[k] !== undefined).map((k) => [k, from[k]]))
+  const pick = (from: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(KEYS.filter((k) => from[k] !== undefined).map((k) => [k, from[k]]))
 
   const setOption = (id: string, value: number | string | boolean) => {
     if (id === 'slot') {

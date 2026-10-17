@@ -36,7 +36,7 @@ const DIM_OPACITY = 0.35
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)

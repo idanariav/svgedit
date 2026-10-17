@@ -68,7 +68,7 @@ export class SEInput extends HTMLElement {
   _shadowRoot: ShadowRoot
   $div: HTMLDivElement
   $label: HTMLLabelElement
-  $event: CustomEvent<any>
+  $event: CustomEvent<unknown>
   $input: HTMLInputElement
 
   /**
@@ -90,7 +90,7 @@ export class SEInput extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['value', 'label', 'src', 'size', 'title']
   }
 

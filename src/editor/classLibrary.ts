@@ -123,7 +123,7 @@ export const getClass = (name: string): ClassPreset | undefined => getClasses().
  * Upsert a preset by name — an existing preset with the same name is replaced,
  * enabling "update". Returns the stored preset.
  */
-export const saveClass = (preset: ClassPreset): any => {
+export const saveClass = (preset: ClassPreset): unknown => {
   const classes = getClasses()
   const idx = classes.findIndex(c => c.name === preset.name)
   if (idx >= 0) {

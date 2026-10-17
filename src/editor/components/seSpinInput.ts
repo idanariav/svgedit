@@ -146,11 +146,11 @@ export class SESpinInput extends HTMLElement {
   $div: HTMLDivElement
   $iconWrap: HTMLSpanElement
   $label: HTMLLabelElement
-  $event: CustomEvent<any>
+  $event: CustomEvent<unknown>
   $input: HTMLInputElement
   $upBtn: HTMLButtonElement
   $downBtn: HTMLButtonElement
-  imgPath: any
+  imgPath: unknown
   _stepValue: number
   _justScrubbed: boolean
 
@@ -198,7 +198,7 @@ export class SESpinInput extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['value', 'label', 'src', 'size', 'min', 'max', 'step', 'title']
   }
 

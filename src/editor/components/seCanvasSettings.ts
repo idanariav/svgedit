@@ -27,7 +27,7 @@ const DEFAULT_PRESETS = [
 const STORAGE_KEY = 'svg-edit-canvas-presets'
 
 /** Keep only well-formed preset entries (finite positive w/h, string ratio). */
-const sanitizePresets = (arr: any): Array<{ ratio: string, w: number, h: number }> =>
+const sanitizePresets = (arr: unknown): Array<{ ratio: string, w: number, h: number }> =>
   (Array.isArray(arr) ? arr : [])
     .filter(p =>
       p && typeof p.ratio === 'string' &&

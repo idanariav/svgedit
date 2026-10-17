@@ -58,7 +58,7 @@ export class SeExportDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['dialog', 'common-ok', 'common-cancel', 'ui-export_type_label']
   }
 

@@ -56,7 +56,7 @@ export class LayerKeyboard {
   active: any
 
   /** @param tree the LayerTree this drives */
-  constructor (tree: any) {
+  constructor (tree: unknown) {
     this.tree = tree
     /** the active row's layer / object element, or `{more: parent}` for a "N more…" row */
     this.active = null
@@ -98,7 +98,7 @@ export class LayerKeyboard {
   }
 
   /** @returns index of the active row, -1 when it has none */
-  indexOfActive (rows: any[]): number {
+  indexOfActive (rows: unknown[]): number {
     const a = this.active
     if (!a) return -1
     return rows.findIndex((tr) => {

@@ -17,7 +17,7 @@
  * @author Adam Bender
  */
 
-export type MenuItemAction = (...args: any[]) => any
+export type MenuItemAction = (...args: unknown[]) => unknown
 /**
  * Signature depends on what the user adds; in the case of our uses with
  * SVGEditor, no parameters are passed nor anything expected for a return.

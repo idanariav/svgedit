@@ -34,7 +34,7 @@ const MAX_SAMPLES = 2000
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -125,7 +125,7 @@ export const strokeTouches = (el: Element, samples: { x: number, y: number }[], 
  * What to draw for a recognized shape, as `addSVGElementsFromJson` takes it
  * (minus id and paint).
  */
-export const describeShape = (shape: import('@svgedit/svgcanvas/core/shape-recognize.ts').Recognized): { element: string, attr: any, open?: boolean } | null => {
+export const describeShape = (shape: import('@svgedit/svgcanvas/core/shape-recognize.ts').Recognized): { element: string, attr: unknown, open?: boolean } | null => {
   const rotate = (rotation: number, cx: number, cy: number) => (rotation ? { transform: `rotate(${rotation} ${round(cx)} ${round(cy)})` } : {})
   switch (shape.type) {
     case 'line':

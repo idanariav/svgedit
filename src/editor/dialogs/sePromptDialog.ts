@@ -22,7 +22,7 @@ export class SePromptDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['title', 'close']
   }
 
@@ -61,7 +61,7 @@ export class SePromptDialog extends HTMLElement {
   }
 
   /** @function get */
-  get close (): any {
+  get close (): unknown {
     return this.getAttribute('close')
   }
 

@@ -63,7 +63,7 @@ export class SeImgPropDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['title', 'width', 'height', 'save', 'dialog', 'embed', 'common-ok',
       'common-cancel', 'config-image_props', 'config-doc_title', 'config-doc_dims',
       'common-width', 'common-height', 'config-select_predefined',

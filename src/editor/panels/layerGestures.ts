@@ -32,11 +32,11 @@ const CELLS = 'td.layervis, td.layerlock, td.objvis, td.objlock'
  * @param clicked the key of the clicked row
  * @returns key → new `on`
  */
-export const planOthers = (rows: Array<{ key: any, on: boolean, skip?: boolean }>, clicked: any, revealClicked: boolean = false): Array<[any, boolean]> => {
+export const planOthers = (rows: Array<{ key: unknown, on: boolean, skip?: boolean }>, clicked: unknown, revealClicked: boolean = false): Array<[any, boolean]> => {
   const others = rows.filter((r) => r.key !== clicked && !r.skip)
   if (!others.length) return []
   const turnOn = others.some((r) => !r.on)
-  const out: Array<[any, boolean]> = others.filter((r) => r.on !== turnOn).map((r) => [r.key, turnOn])
+  const out: Array<[unknown, boolean]> = others.filter((r) => r.on !== turnOn).map((r) => [r.key, turnOn])
   if (revealClicked && rows.find((r) => r.key === clicked)?.on) out.push([clicked, false])
   return out
 }
@@ -57,7 +57,7 @@ export const layerDropIndex = (names: string[], dragged: string, target: string,
 
 export class LayerGestures {
   editor: EditorInstance
-  drag: any
+  drag: unknown
 
   constructor (editor: EditorInstance) {
     this.editor = editor

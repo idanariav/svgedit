@@ -11,7 +11,7 @@
 
 import { canPaste, needsSelection } from './commandGates.ts'
 
-const hasSelection = (editor: any): true | string => (editor.selectedElement || editor.multiselected) ? true : 'No selection'
+const hasSelection = (editor: EditorInstance): true | string => (editor.selectedElement || editor.multiselected) ? true : 'No selection'
 
 export const registerCoreCommands = (commands: import('./commands.ts').CommandRegistry): void => {
   commands.register({
@@ -49,7 +49,7 @@ export const registerCoreCommands = (commands: import('./commands.ts').CommandRe
     run: (editor) => editor.svgCanvas.ungroupSelectedElement()
   })
   // Layers-panel object state, from the canvas (Illustrator's Cmd+2 / Cmd+3 family).
-  const objectState: Array<[string, string, string, (editor: any) => true | string, (editor: any) => any]> = [
+  const objectState: Array<[string, string, string, (editor: EditorInstance) => true | string, (editor: EditorInstance) => unknown]> = [
     ['object_lock_selection', 'mod+2', 'tools.lock_selection', needsSelection,
       (editor) => editor.svgCanvas.setObjectsLocked(editor.svgCanvas.getSelectedElements().filter(Boolean), true)],
     ['object_unlock_all', 'mod+alt+2', 'tools.unlock_all',

@@ -50,14 +50,14 @@ const SHAPES = ['path', 'rect', 'ellipse', 'circle', 'line', 'polyline', 'polygo
 
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
   }
 }
 
-const mk = (tag: string, attrs: Record<string, any>) => {
+const mk = (tag: string, attrs: Record<string, unknown>) => {
   const e = document.createElementNS(SVG_NS, tag)
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
   return e

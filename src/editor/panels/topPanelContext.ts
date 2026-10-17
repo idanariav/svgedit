@@ -225,7 +225,7 @@ export const updateContextPanel = (topPanel: import('./TopPanel.ts').default): v
               const bv = animated.baseVal.value
               attrVal = topPanel.editor.svgCanvas.convertUnit(bv)
             }
-            ;(($req(`${tagName}_${item}`) as unknown) as { value: any }).value = attrVal ? round1(Number(attrVal)) : 0
+            ;(($req(`${tagName}_${item}`) as unknown) as { value: unknown }).value = attrVal ? round1(Number(attrVal)) : 0
           })
 
           if (tagName === 'image') {

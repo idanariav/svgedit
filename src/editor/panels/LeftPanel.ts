@@ -143,7 +143,7 @@ or the se-flyingbutton host for a shape variant)
  * @param id the button's id (a persisted command id: never rename)
  * @param mode the canvas mode the tool uses
    */
-  addModeCommand (id: string, mode: string, opts?: { label?: string, group?: string, onEnter?: () => void, enabled?: (editor: any) => true | string }): void {
+  addModeCommand (id: string, mode: string, opts?: { label?: string, group?: string, onEnter?: () => void, enabled?: (editor: EditorInstance) => true | string }): void {
     registerModeCommand(this.editor, id, mode, opts)
   }
 

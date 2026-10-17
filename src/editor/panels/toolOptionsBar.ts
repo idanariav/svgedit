@@ -24,7 +24,7 @@ export const refreshToolOptions = (editor: EditorInstance): void => {
  * @param options the visible options
  * @param signature changes when the set of controls has to be rebuilt
  */
-const fillTray = (editor: any, tray: HTMLElement, options: import('@svgedit/svgcanvas').ToolOption[], signature: string): void => {
+const fillTray = (editor: EditorInstance, tray: HTMLElement, options: import('@svgedit/svgcanvas').ToolOption[], signature: string): void => {
   if (!options.length) {
     tray.style.display = 'none'
     tray.replaceChildren()
@@ -56,7 +56,7 @@ const paintChoice = (btn: HTMLButtonElement, c: { value: string, label: string, 
   btn.setAttribute('aria-pressed', String(c.state === 'active'))
 }
 
-const buildControl = (editor: any, o: import('@svgedit/svgcanvas').ToolOption): HTMLElement => {
+const buildControl = (editor: EditorInstance, o: import('@svgedit/svgcanvas').ToolOption): HTMLElement => {
   const { svgCanvas } = editor
   const send = (value: number | string | boolean) => {
     svgCanvas.setToolOption(o.id, value)

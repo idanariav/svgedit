@@ -109,7 +109,7 @@ export class SeColorPicker extends HTMLElement {
   $block: HTMLDivElement
   $swatch: HTMLDivElement
   $picker: HTMLDivElement
-  imgPath: any
+  imgPath: unknown
 
   /** made when the element is connected */ paintBox: PaintBox | null
   i18next: import('i18next').i18n | null
@@ -157,7 +157,7 @@ export class SeColorPicker extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['label', 'src', 'type', 'config-change_xxx_color']
   }
 

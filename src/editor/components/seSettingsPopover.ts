@@ -37,7 +37,7 @@ import { requireOwnerEditor } from '../domScope.ts'
 export class SeSettingsPopover extends HTMLElement {
   _skipToggleSync: boolean
   _shadowRoot: ShadowRoot
-  imgPath: any
+  imgPath: unknown
   $icon: HTMLSpanElement
   $trigger: HTMLElement
   $popup: HTMLDivElement

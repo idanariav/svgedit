@@ -26,7 +26,7 @@ const name = 'connector'
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -457,7 +457,7 @@ export default {
      * routeConnector — recompute a legacy polyline's geometry from both bboxes.
  * @param line - The connector polyline.
      */
-    const routeConnector = (line: Element, startBB: any, endBB: any): void => {
+    const routeConnector = (line: Element, startBB: unknown, endBB: unknown): void => {
       if (!startBB || !endBB) return
       const pts = computeConnectorPoints(startBB, endBB, line)
       // An aligned polyline is trimmed from its real ends.

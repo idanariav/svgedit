@@ -23,7 +23,7 @@ const LAYER_PREFIX = 'Layout: '
 /**
  * Keep only well-formed layout entries.
  * */
-const sanitizeLayouts = (arr: any): Array<{ name: string, w: number, h: number, bg: string, svg: string }> =>
+const sanitizeLayouts = (arr: unknown): Array<{ name: string, w: number, h: number, bg: string, svg: string }> =>
   (Array.isArray(arr) ? arr : [])
     .filter(l =>
       l && typeof l.name === 'string' && l.name.trim() &&

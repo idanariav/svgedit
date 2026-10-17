@@ -416,7 +416,7 @@ export default class HotkeyManager {
     for (const a of this.actions.values()) {
       if (a.alias) continue
       if (!groups.has(a.group)) groups.set(a.group, [])
-      ;(groups.get(a.group) as Array<any>).push({
+      ;(groups.get(a.group) as Array<unknown>).push({
         id: a.id,
         label: this.labelFor(a),
         keys: this.effectiveKeys(a.id),

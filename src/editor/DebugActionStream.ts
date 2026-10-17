@@ -46,7 +46,7 @@ const describeDrawing = (svgCanvas: any): object => {
  * snapshots) should write through, so one numbering covers the whole log.
  * @param sink the host's `(event, detail)` log
  */
-export const attachDebugActionStream = (editor: any, sink: (event: string, detail?: object) => void): { emit: (event: string, detail?: object) => void, stop: () => void } => {
+export const attachDebugActionStream = (editor: EditorInstance, sink: (event: string, detail?: object) => void): { emit: (event: string, detail?: object) => void, stop: () => void } => {
   const { svgCanvas } = editor
   const t0 = Date.now()
   let seq = 0

@@ -94,7 +94,7 @@ export class ToolButton extends HTMLElement {
   _shadowRoot: ShadowRoot
   $div: HTMLDivElement
   $iconWrap: HTMLSpanElement
-  imgPath: any
+  imgPath: unknown
   _unsubscribeHotkeys: (() => void) | undefined
 
   /**
@@ -126,7 +126,7 @@ export class ToolButton extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['title', 'src', 'pressed', 'locked', 'disabled', 'disabled-reason', 'size', 'style']
   }
 

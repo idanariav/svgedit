@@ -52,7 +52,7 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['dialog', 'value', 'applysec', 'copysec', 'tools-source_save', 'common-cancel', 'notification-source_dialog_note', 'config-done']
   }
 

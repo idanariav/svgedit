@@ -8,10 +8,10 @@
  * @module commandGates
  */
 
-export type Gate = (editor: any) => true | string
+export type Gate = (editor: EditorInstance) => true | string
 
 /** @returns the selected elements (never holes) */
-export const selectedOf = (editor: any): Element[] => editor.svgCanvas.getSelectedElements().filter(Boolean)
+export const selectedOf = (editor: EditorInstance): Element[] => editor.svgCanvas.getSelectedElements().filter(Boolean)
 
 export const needsSelection: Gate = (editor) => selectedOf(editor).length ? true : 'Select something first'
 

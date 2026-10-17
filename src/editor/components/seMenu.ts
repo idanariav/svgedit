@@ -93,7 +93,7 @@ export class SeMenu extends HTMLElement {
   $toggle: HTMLButtonElement
   $popup: HTMLDivElement
   $label: HTMLButtonElement
-  imgPath: any
+  imgPath: unknown
   _closeOnItemClick: ((e: Event) => void) | undefined
   _positionPopup: (() => void) | undefined
 
@@ -150,7 +150,7 @@ export class SeMenu extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['label', 'src']
   }
 

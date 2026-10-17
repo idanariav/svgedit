@@ -59,7 +59,7 @@ export class SeEditPrefsDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     // eslint-disable-next-line max-len
     return ['dialog', 'showrulers', 'baseunit', 'theme', 'common-ok', 'common-cancel', 'config-editor_prefs', 'config-theme', 'config-show_rulers', 'config-base_unit', 'config-scrub_fields', 'config-select_same_tolerance', 'config-pencil_stabilization', 'config-pencil_fidelity']
   }

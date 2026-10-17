@@ -18,7 +18,7 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
  * @class ToolOverflow
  */
 export class ToolOverflow extends HTMLElement {
-  imgPath: any
+  imgPath: unknown
   template: any
   _shadowRoot: ShadowRoot
   $button: HTMLDivElement
@@ -56,7 +56,7 @@ export class ToolOverflow extends HTMLElement {
    * @function createTemplate
  * @returns template
    */
-  createTemplate (): any {
+  createTemplate (): unknown {
     const template = document.createElement('template')
     template.innerHTML = `
       <style>
@@ -163,7 +163,7 @@ export class ToolOverflow extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['title', 'opened', 'src']
   }
 
@@ -187,7 +187,7 @@ export class ToolOverflow extends HTMLElement {
   }
 
   /** @function get */
-  get opened (): any {
+  get opened (): unknown {
     return this.hasAttribute('opened')
   }
 

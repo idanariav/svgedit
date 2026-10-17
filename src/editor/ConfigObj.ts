@@ -30,7 +30,7 @@ export const SESSION_ONLY_PREFS = new Set(['bkgd_color', 'bkgd_url', 'bkgd_gradi
  */
 export default class ConfigObj {
   defaultPrefs: Record<string, any>
-  defaultConfig: Record<string, any>
+  defaultConfig: Record<string, unknown>
   curPrefs: Record<string, any>
   defaultExtensions: string[]
   curConfig: Record<string, any>
@@ -331,7 +331,7 @@ have been read.
    */
   setConfig (opts: Record<string, any>, cfgCfg: { allowInitialUserOverride?: boolean } = {}): void {
     /** @param val See {@link module :SVGEditor.Config} or {@link module :SVGEditor.Prefs} */
-    const extendOrAdd = (cfgObj: Record<string, any>, key: string, val: any): void => {
+    const extendOrAdd = (cfgObj: Record<string, unknown>, key: string, val: any): void => {
       if (cfgObj[key] && typeof cfgObj[key] === 'object' && !Array.isArray(cfgObj[key])) {
         cfgObj[key] = mergeDeep(cfgObj[key], val)
       } else {

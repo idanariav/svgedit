@@ -88,7 +88,7 @@ const FIELDS: Record<Mode, Field[]> = {
 const loadExtensionTranslation = function (svgEditor: EditorInstance) {
   const lang = svgEditor.configObj.pref('lang')
   // Locale files are inlined into the bundle (statically resolved glob).
-  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: any }>
+  const locales = import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>
   const translationModule = locales[`./locale/${lang}.js`] || locales['./locale/en.js']
   if (translationModule) {
     svgEditor.i18next.addResourceBundle(lang, name, translationModule.default)
@@ -125,7 +125,7 @@ export default {
      * What to draw for a mode from the dragged start / end points.
  * @returns Mode-specific geometry (see {@link describe}).
      */
-    const geometry = (mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, mods: { shift: boolean, alt: boolean }): any => {
+    const geometry = (mode: Mode, start: { x: number, y: number }, end: { x: number, y: number }, mods: { shift: boolean, alt: boolean }): unknown => {
       if (mode === 'spiral') return { cx: start.x, cy: start.y, radius: Math.hypot(end.x - start.x, end.y - start.y) }
       if (mode === 'arc') return arcDragEnds(start, end, mods)
       return dragRect(start, end, mods)
@@ -231,7 +231,7 @@ export default {
      * Create the shape from the popover's values: spirals are centred on the
      * click, the others have it as their top-left corner.
      */
-    const createFromOptions = (mode: Mode, at: { x: number, y: number }, values: Record<string, any>): void => {
+    const createFromOptions = (mode: Mode, at: { x: number, y: number }, values: Record<string, unknown>): void => {
       Object.assign(options[mode], values)
       const o = options[mode]
       let geom
@@ -286,7 +286,7 @@ export default {
 
       el.addEventListener('submit', (e) => {
         e.preventDefault()
-        const values: Record<string, any> = {}
+        const values: Record<string, unknown> = {}
         for (const { input, field } of Object.values(inputs)) {
           const v = readField(input, field)
           if (v !== undefined) values[field.key] = v

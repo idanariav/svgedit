@@ -155,7 +155,7 @@ class SeZoom extends HTMLElement {
   slotElement: HTMLSlotElement
   inputElement: HTMLInputElement
   clickArea: HTMLDivElement
-  imgPath: any
+  imgPath: unknown
   $icon: HTMLSpanElement
   arrowUp: HTMLDivElement
   arrowDown: HTMLDivElement

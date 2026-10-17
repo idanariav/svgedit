@@ -35,7 +35,7 @@ const shapeToPath = (el: Element, doc: Document, svgCanvas: any): Element => {
  * @param node - A top-level imported drawable, in the DOM.
  * @returns The node to keep referencing (a new path if it was a shape).
  */
-const convertShapesToPaths = (node: Element, doc: Document, svgCanvas: any): Element => {
+const convertShapesToPaths = (node: Element, doc: Document, svgCanvas: unknown): Element => {
   if (SHAPE_TO_PATH_TAGS.includes(node.localName)) {
     return shapeToPath(node, doc, svgCanvas)
   }

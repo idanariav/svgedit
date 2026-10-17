@@ -41,7 +41,7 @@ const readySignal = (): void => {
          * @property {true} cancelable
          */
       /** @name module:SVGthis.svgEditorReadyEvent */
-      const svgEditorReadyEvent: any = new w.CustomEvent('svgEditorReady', {
+      const svgEditorReadyEvent: unknown = new w.CustomEvent('svgEditorReady', {
         bubbles: true,
         cancelable: true
       })
@@ -90,9 +90,9 @@ class EditorStartup {
   hotkeys: import('./Hotkeys.ts').default
   goodLangs: string[]
   // Seams the built-in extensions fill in when they load (undefined otherwise).
-  shadowApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
-  outlineApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
-  glowApi: { read(el: Element): any, apply(el: Element, spec: any, cmd: any): void } | undefined
+  shadowApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
+  outlineApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
+  glowApi: { read(el: Element): any, apply(el: Element, spec: unknown, cmd: unknown): void } | undefined
   armShapeInsert: ((detail?: any, target?: Element) => void) | undefined
   fxFilter: ReturnType<typeof import('./extensions/fx-filter.ts').createFxComposer> | undefined
   updateGrid: ((zoom?: number) => void) | undefined
@@ -119,7 +119,7 @@ class EditorStartup {
   enableToolCancel: boolean
   /** 'toolbars' while a toolbar field has focus, 'canvas' after */ uiContext: string
   defaultImageURL: string
-  modeEvent: any
+  modeEvent: unknown
   /** Messages sent before the extensions finished loading. */ messageQueue: any[]
   extensionsAdded: boolean
   showSaveWarning: boolean
@@ -1022,7 +1022,7 @@ class EditorStartup {
       )
       // load user extensions (given as pathNames)
       await Promise.all(
-        this.configObj.curConfig.userExtensions.map(async ({ pathName, config }: { pathName: string, config: any }) => {
+        this.configObj.curConfig.userExtensions.map(async ({ pathName, config }: { pathName: string, config: unknown }) => {
           /**
            * @tutorial ExtensionDocs
            * @property {string} [name] Name of the extension. Used internally; no need for i18n. Defaults to extension name without beginning "ext-" or ending ".js".
@@ -1043,7 +1043,7 @@ class EditorStartup {
       this.svgCanvas.bind(
         'extensions_added',
         /** @listens module:SvgCanvas#event:extensions_added */
-        (_win: Window, _data: any): void => {
+        (_win: Window, _data: unknown): void => {
           this.extensionsAdded = true
           this.setAll()
           // the key of each tool, drawn on its icon (all tools exist now; later ones are picked up by the observer)
@@ -1053,7 +1053,7 @@ class EditorStartup {
 
           this.messageQueue.forEach(
             /** @fires module:svgcanvas.SvgCanvas#event:message */
-            (messageObj: any): void => {
+            (messageObj: unknown): void => {
               this.svgCanvas.call('message', messageObj)
             }
           )

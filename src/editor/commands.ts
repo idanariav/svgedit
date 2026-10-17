@@ -28,7 +28,7 @@ import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 
 export interface ParamSpec {
   type: 'number' | 'string' | 'boolean' | 'enum'
-  default?: any
+  default?: unknown
   min?: number
   max?: number
   /** allowed values for `enum`; a function is read each time (saved layouts, say) */
@@ -49,8 +49,8 @@ export interface CommandSpec {
   icon?: string
   params?: Record<string, ParamSpec>
   /** `true`, or a human-readable reason it is unavailable */
-  enabled?: (editor: any) => true | string
-  run: (editor: any, params: Record<string, any>) => any
+  enabled?: (editor: EditorInstance) => true | string
+  run: (editor: EditorInstance, params: Record<string, any>) => unknown
   /** opens a dialog / file picker / prompt (excluded from sweeps and automation) */
   interactive?: boolean
   /** list in host command palettes (default true) */
@@ -118,7 +118,7 @@ const coerceParam = (id: string, name: string, spec: ParamSpec, value: any) => {
 export interface RunEntry {
   id: string
   /** as given (not yet validated) */
-  params: Record<string, any>
+  params: Record<string, unknown>
   source: string
   /** 0, or higher when a command ran inside another */
   depth: number
@@ -138,13 +138,13 @@ const resolveParams = (params: Record<string, ParamSpec>): Record<string, ParamS
 )
 
 export class CommandRegistry {
-  editor: any
+  editor: EditorInstance
   table: Map<string, CommandRecord>
   runListeners: Set<(entry: RunEntry) => void>
   runDepth: number
 
   /** @param editor the owning editor instance (one registry per editor) */
-  constructor (editor: any) {
+  constructor (editor: EditorInstance) {
     this.editor = editor
     this.table = new Map()
     this.runListeners = new Set()
@@ -289,9 +289,9 @@ export class CommandRegistry {
    * Validate `params` against a command's `ParamSpec`s: unknown keys and
    * missing `required` ones are `badParams`; others are coerced + clamped.
    */
-  validate (rec: CommandRecord, params: Record<string, any>): Record<string, any> {
+  validate (rec: CommandRecord, params: Record<string, unknown>): Record<string, unknown> {
     const specs = rec.params ?? {}
-    const out: Record<string, any> = {}
+    const out: Record<string, unknown> = {}
     for (const name of Object.keys(params ?? {})) {
       if (!(name in specs)) throw new CommandError('badParams', rec.id, `${rec.id}: unknown parameter "${name}"`)
     }
@@ -315,7 +315,7 @@ export class CommandRegistry {
 `tablet`, or `api` (host / extension / automation code)
  * @returns whatever the command returns
    */
-  run (id: string, params: Record<string, any> = {}, source: string = 'api'): any {
+  run (id: string, params: Record<string, unknown> = {}, source: string = 'api'): unknown {
     if (!this.runListeners.size) return this.runCommand(id, params)
     const canvas = this.editor?.svgCanvas
     const undoBefore = canvas?.undoMgr?.getUndoStackSize()
@@ -340,7 +340,7 @@ export class CommandRegistry {
     }
   }
 
-  runCommand (id: string, params: Record<string, any>): any {
+  runCommand (id: string, params: Record<string, unknown>): unknown {
     const rec = this.table.get(id)
     if (!rec) throw new CommandError('unknown', id, `Unknown command "${id}"`)
     const state = this.isEnabled(id)
@@ -368,7 +368,7 @@ export class CommandRegistry {
  * @param source see `run`
  * @returns whether the command ran
    */
-  tryRun (id: string, params: Record<string, any> = {}, source: string = 'api'): boolean {
+  tryRun (id: string, params: Record<string, unknown> = {}, source: string = 'api'): boolean {
     try {
       this.run(id, params, source)
       return true

@@ -103,10 +103,10 @@ export const parseKeyCombo = (combo: string): KeyboardEventInit & { key: string 
 }
 
 export class Automation {
-  editor: any
+  editor: EditorInstance
 
   /** @param editor the owning editor instance */
-  constructor (editor: any) {
+  constructor (editor: EditorInstance) {
     this.editor = editor
   }
 
@@ -119,7 +119,7 @@ export class Automation {
   frame (): { rootLeft: number, rootTop: number, contentX: number, contentY: number, zoom: number } {
     const { editor } = this
     const root = editor.$req('svgroot').getBoundingClientRect()
-    const content = editor.$id('svgcontent')
+    const content = editor.$req('svgcontent')
     return {
       rootLeft: root.left,
       rootTop: root.top,
@@ -191,7 +191,7 @@ export class Automation {
   pointer (events: PointerEventSpec[]): void {
     let held = false
     const fire = (type: string, mods: Mods | undefined, client: { x: number, y: number }, detail = 1) => {
-      const target = document.elementFromPoint(client.x, client.y) ?? this.editor.$id('svgcanvas')
+      const target = document.elementFromPoint(client.x, client.y) ?? this.editor.$req('svgcanvas')
       // An array would pass silently: `['alt'].shift` is the (truthy) Array method, i.e. Shift held.
       if (Array.isArray(mods)) throw new TypeError('pointer mods is an object like { shift: true }, not an array')
       const m = mods ?? {}

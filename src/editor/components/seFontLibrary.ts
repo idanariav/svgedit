@@ -119,7 +119,7 @@ export class SeFontLibrary extends HTMLElement {
   _query: string
   _catalogPath: string
   _loaded: boolean
-  _previewRequested: Set<any>
+  _previewRequested: Set<unknown>
 
   _fonts: Array<{ family: string, category: string }> = []
   _categories: string[] = []

@@ -60,7 +60,7 @@ export interface BBoxObjectWithFactor {
   zoom?: number
 }
 
-export type ReadyCallback = () => any
+export type ReadyCallback = () => unknown
 
 /** :SVGthis.URLLoadCallback */
 export type module = (success: boolean) => void
@@ -72,7 +72,7 @@ class Editor extends EditorStartup {
   isReady: boolean
   customExportImage: boolean
   configObj: ConfigObj
-  setConfig: (opts: Record<string, any>, cfgCfg?: { allowInitialUserOverride?: boolean; }) => void
+  setConfig: (opts: Record<string, unknown>, cfgCfg?: { allowInitialUserOverride?: boolean; }) => void
   docprops: boolean
   goodLangs: string[]
   shortcuts: ({ id: string; group: string; label: string; key: (string | boolean)[]; fn: () => void; atomic?: undefined; enabled?: undefined; } | { id: string; group: string; label: string; key: string; fn: () => void; atomic?: undefined; enabled?: undefined; } | { id: string; atomic: boolean; group: string; label: string; key: (string | boolean)[]; fn: () => void; enabled?: undefined; } | { id: string; atomic: boolean; group: string; label: string; key: string; fn: () => void; enabled?: undefined; } | { id: string; group: string; label: string; fn: () => void; key?: undefined; atomic?: undefined; enabled?: undefined; } | { enabled: (editor: EditorInstance) => true | string; id: string; group: string; label: string; key: (string | boolean)[]; fn: () => void; atomic?: undefined; } | { enabled: (editor: EditorInstance) => true | string; id: string; group: string; label: string; key: string; fn: () => void; atomic?: undefined; } | { enabled: (editor: EditorInstance) => true | string; id: string; atomic: boolean; group: string; label: string; key: (string | boolean)[]; fn: () => void; } | { enabled: (editor: EditorInstance) => true | string; id: string; atomic: boolean; group: string; label: string; key: string; fn: () => void; } | { enabled: (editor: EditorInstance) => true | string; id: string; group: string; label: string; fn: () => void; key?: undefined; atomic?: undefined; })[]
@@ -277,7 +277,7 @@ class Editor extends EditorStartup {
    *    is what actually lets a hard-to-reproduce path-node bug be
    *    reconstructed from the log instead of guessed at.
    */
-  setDebugLogger (sink?: ((event: string, detail?: any) => void) | null): void {
+  setDebugLogger (sink?: ((event: string, detail?: Record<string, unknown>) => void) | null): void {
     if (!this._debugSnapshotLogger) {
       this._debugSnapshotLogger = new DebugSnapshotLogger(() => this.svgCanvas.getDebugSnapshot())
     }
@@ -288,7 +288,7 @@ class Editor extends EditorStartup {
       return
     }
     // One sequenced sink for all three channels (actions + gestures, state snapshots).
-    const { emit, stop } = attachDebugActionStream(this, sink)
+    const { emit, stop } = attachDebugActionStream(this, sink as (event: string, detail?: object) => void)
     this._stopDebugActions = stop
     this._debugSnapshotLogger.start(emit)
   }
@@ -300,7 +300,7 @@ class Editor extends EditorStartup {
  * @param sink - `(level, { message, data })`
  * @param level - A `LogLevel` value; defaults to leaving the level unchanged
    */
-  setLogSink (sink: (arg0: string, arg1: { message: string, data: any }) => void | null, level?: import('@svgedit/svgcanvas/common/logger.ts').LogLevelValue): void {
+  setLogSink (sink: (arg0: string, arg1: { message: string, data: unknown }) => void | null, level?: import('@svgedit/svgcanvas/common/logger.ts').LogLevelValue): void {
     setLogSink(sink)
     if (level !== undefined) setLogLevel(level)
   }
@@ -900,7 +900,7 @@ host restore) leave this false to avoid polluting history.
 contents to paste, bypassing the sessionStorage snapshot (see
 `pasteElements`'s `data` param).
    */
-  pasteInCenter (data?: any[]): void {
+  pasteInCenter (data?: unknown[]): void {
     const { workarea } = this
     const zoom = this.svgCanvas.getZoom()
     const x =

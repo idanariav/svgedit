@@ -24,7 +24,7 @@ const ACTIONS = [
  */
 export class SeEyedropperMenu extends HTMLElement {
   _shadowRoot: ShadowRoot
-  _disabled: Set<any>
+  _disabled: Set<unknown>
 
   _i18next: import('i18next').i18n | null
   _callbacks: Record<string, Function | undefined>

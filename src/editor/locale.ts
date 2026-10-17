@@ -11,7 +11,7 @@
 import i18next from 'i18next'
 
 /** strings, or nested objects / arrays of them */
-export type LocaleStrings = Record<string, any>
+export type LocaleStrings = Record<string, unknown>
 /**
  * The string keys of the object are two-letter language codes.
  * @tutorial LocaleDocs

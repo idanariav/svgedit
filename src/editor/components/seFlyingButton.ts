@@ -53,7 +53,7 @@ export class FlyingButton extends HTMLElement {
  * @returns template
    */
 
-  createTemplate (imgPath: string): any {
+  createTemplate (imgPath: string): unknown {
     const template = document.createElement('template')
     template.innerHTML = `
       <style>
@@ -171,7 +171,7 @@ export class FlyingButton extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['title', 'pressed', 'locked', 'disabled', 'opened', 'src']
   }
 
@@ -235,7 +235,7 @@ export class FlyingButton extends HTMLElement {
   }
 
   /** @function get */
-  get pressed (): any {
+  get pressed (): unknown {
     return this.hasAttribute('pressed')
   }
 
@@ -252,7 +252,7 @@ export class FlyingButton extends HTMLElement {
   }
 
   /** @function get */
-  get opened (): any {
+  get opened (): unknown {
     return this.hasAttribute('opened')
   }
 
@@ -267,7 +267,7 @@ export class FlyingButton extends HTMLElement {
   }
 
   /** @function get */
-  get disabled (): any {
+  get disabled (): unknown {
     return this.hasAttribute('disabled')
   }
 

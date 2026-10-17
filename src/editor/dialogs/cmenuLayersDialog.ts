@@ -53,7 +53,7 @@ export class SeCMenuLayerDialog extends HTMLElement {
    * @function observedAttributes
  * @returns observed
    */
-  static get observedAttributes (): any {
+  static get observedAttributes (): string[] {
     return ['value', 'leftclick', 'layers-dupe', 'layers-del', 'layers-merge_down', 'layers-merge_all']
   }
 
