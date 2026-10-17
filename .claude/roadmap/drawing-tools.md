@@ -35,6 +35,14 @@ Done: `tool_gradient` (mode `gradient`): an annotator on the selected shape's li
 - **In the tablet shell's More tools flyout.**
 - A freshly double-clicked stop opens the *modal* colour dialog (Apply / Cancel); the popover mode used by the swatches needs an anchor element, which a canvas chip does not have.
 
+## Curvature tool (`ext-curvature`): checked against VectorCraft, nothing to port
+
+VectorCraft replaced its Catmull-Rom Curvature spline with a circle-through-three-points rule (Oct 2026). Ours is a Spiro (G2)
+solve with Catmull-Rom only as the failure fallback, and for three points Spiro already draws that same circle, so the J / U
+overshoot that motivated the change is not ours. One real difference is left, and it is a taste call: upstream shortens the
+handles of a smooth point whose turn is tighter than 30° (`TIGHT_TURN`) so a narrow V comes to a point, where Spiro rounds it
+through the full circle. Revisit only if narrow V's look wrong in use.
+
 ## Shaper (ext-shaper): follow-ups from T1.6
 
 Done: line / rectangle / ellipse / regular polygon recognition, scribble-to-delete, one undo step per stroke (`core/shape-recognize.js`, `ext-shaper`). Remaining:

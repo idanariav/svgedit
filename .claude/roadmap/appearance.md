@@ -44,6 +44,14 @@ OK, clone-on-write for gradients and filters something unselected also uses.
   defaults to `points=corner` (Illustrator's default; VectorCraft's missing-key
   default is smooth), and Pucker & Bloat / Twist default to a visible
   amount (30 / 50°) so a freshly added effect does something.
+- **Zig Zag ridges are spaced by curve parameter, not by length** (`zigZag` in `live-effects-distort.ts`: `t = j / (ridges + 1)`),
+  so on a curved or uneven segment the wave bunches where the curve is slow. VectorCraft spaces them evenly along each segment's
+  arc length (fix #1554, with tests on a circle and an uneven curve) and, for `points=smooth`, draws one continuous wave (#2343).
+  Switching to arc length changes the output for a curved segment, so an existing `se:fx` drawing re-derives a different `fx-d`
+  the next time its effects are applied; check `isFxCurrent` and the round-trip fixtures before changing it.
+- **Round Corners skips a corner that has a handle on either side** (`roundCorners`: "Corners that already carry handles are left
+  alone"), so a corner where a curve meets a line is not rounded. VectorCraft rounds it too (2026-10-15): trim along the curve by
+  the radius (split the cubic at the arc-length point) instead of along the handle direction.
 - **Warp on a flat box borrows the other axis.** VectorCraft clamps a
   zero-height box to 1e-9, so warping a straight horizontal line moves it by
   ~1e-9 px; `core/warp.js` uses the other axis' half-size instead so Arc on a
@@ -106,7 +114,7 @@ Done: corners → effects → width as one chain with a root source and mirrored
 ## Width profiles and the Width tool (`core/width-profile.js`, `core/width-outline.js`, `ext-width-tool`): follow-ups from T2.6
 
 Done: `se:width-profile="t:l:r;…"` (width factors per side along the path) on a tapered-stroke element; the outline is the `width_outline` port (corner joins by the stroke's `stroke-linejoin`/`-miterlimit`, caps by `stroke-linecap`, closed paths as two loops, steps); the Width tool (`tool_width`, mode `width`): hover diamond, drag outward adds a point (both sides, Alt = the side being dragged), drag a diamond slides it, drag a side handle widens it, click selects, Delete removes (one undo step each); six presets in the taper popover (`applyWidthProfile`). A legacy `se:taper` drawing renders exactly as before; a profile wins over it and keeps `se:taper` as its two end widths so dash-fit, style copy and the taper popover still see a taper. Remaining:
-- **Not in v1 from VectorCraft's tool:** the numeric editor for a point (double-click), selecting and dragging several points, Alt-dragging a diamond to copy a point, dropping a point on another to make a step (a discontinuous profile renders and round-trips, there is just no gesture to make one), compound paths.
+- **Not in v1 from VectorCraft's tool:** the numeric editor for a point (double-click on a stroke creates a point; Shift-double-click also adjusts the adjoining widths; the dialog's OK is one undo step, Cancel changes nothing, and adjoining adjustments must not overflow intermediate values, see VectorCraft's Width Point Edit, Oct 2026), selecting and dragging several points, Alt-dragging a diamond to copy a point, dropping a point on another to make a step (a discontinuous profile renders and round-trips, there is just no gesture to make one), compound paths.
 - **One subpath.** A path of several pieces is not offered (as for taper); VectorCraft runs the profile along each.
 - **Entering the tool does not select a stroke.** It works on the selection, or the stroke under the press (which it then selects).
 - **Output is a polygon** (`M/L/Z`, flattened to 0.1 units), not fitted cubics like the legacy taper's `simplify` — larger in the file for a long curved stroke, and not meant to be node-edited (its source is the centerline). Fitting each side with `fitCubics` between corners would shrink it.

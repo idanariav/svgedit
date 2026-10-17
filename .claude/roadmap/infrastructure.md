@@ -27,6 +27,16 @@ Not started. Each is built with the first feature that needs it; do not build th
   drawing-tool mode commands (switching tools is always allowed) and extension commands that register without a
   check. A hotkey on a gated command is inert and no longer
   `preventDefault`s: arrow keys scroll the canvas with nothing selected, Tab moves focus in an empty layer.
+- **Command sweep: a no-op must not record an undo step.** The sweep reports a run that changes the markup without an undo
+  step; the reverse (a step recorded while the markup is unchanged) is not checked. VectorCraft fixed a batch of these in
+  Oct 2026 (paint, lock, simplify and similar commands that change nothing) and asserts it. Add the check next to the
+  existing one in `command-sweep.spec.js`, then fix what it finds (an empty `transact` already returns null, so the
+  offenders are commands that mutate and write back the same values, or push a command by hand).
+- **Command sweep: hostile parameters.** The sweep runs commands with their defaults. VectorCraft also feeds junk (huge,
+  non-finite or non-integer numbers, indices naming nothing, absurd counts) and requires a clean refusal, no hang and no
+  corrupt drawing (its Offset Path hang and the 1e9 pt refusals came from this). Add a pass over `params` for the commands
+  that declare them, plus a budget on anything that multiplies elements (blend steps, repeat, split grid). Doubles as the
+  validation the [LLM CLI](llm-cli.md) needs.
 - **Puppet warp on `registerTool`.** Needs a way for a gesture to cancel without dooming an enclosing session
   transaction (see `techdebt.md`, "Tool contract (compromises)"). Worth it only if a second session-style tool
   appears; then give the registry a session concept instead of special-casing. *Scheduled:* T2.7 and T2.8 did not need it (one undo step per drag); the next candidate is T2.11, if it becomes a tool at all.

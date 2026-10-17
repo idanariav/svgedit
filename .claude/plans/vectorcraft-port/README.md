@@ -1,6 +1,6 @@
 # Porting VectorCraft features into svgedit — plan index
 
-Survey date: 2026-10-09. Source repo: `/Users/idanariav/GitProjects/vectorcraft`
+Survey date: 2026-10-09; upstream re-checked 2026-10-17 (vectorcraft `f7de3d6a`, its follow-ups folded into the per-area roadmap files). Source repo: `/Users/idanariav/GitProjects/vectorcraft`
 (Rust, ~221k lines, an open-source Illustrator re-implementation).
 
 This folder holds hand-off plans. Each feature is written so an agent with no
