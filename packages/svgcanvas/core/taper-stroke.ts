@@ -205,7 +205,25 @@ registerLiveStage({
   }
 })
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `taper-stroke.ts` gives its canvas. */
+export interface TaperStrokeApi {
+  /** Whether a width profile can be put on the element (a stroked line, polyline or path, open or closed). */
+  canWidthStroke(elem: Element | null): boolean
+  /** The element's (default: the selection's) width profile as `[t, left, right]` points, or null. */
+  getWidthProfile(elem?: Element): Array<[number, number, number]> | null
+  /** A line or polyline as an equivalent path, in place, without history (inside a transaction). */
+  widthStrokeAsPath(elem: Element): Element
+  /** Draw a path with a width profile from its stored centerline, without history; false if nothing could be drawn. */
+  drawWidthProfile(elem: Element, points: Array<[number, number, number]>): boolean
+  /** Give the selected strokes a width profile as one undo step; returns the elements that took it. */
+  applyWidthProfile(points: Array<[number, number, number]>): Element[]
+  applyTaperStroke(opts?: { start?: number, end?: number }): void
+  removeTaperStroke(): void
+  getTaperParams(): { start: number, end: number } | null
+  canTaperStroke(elem: Element): boolean
+}
+
+export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
   const svgCanvas = canvas
 
   registerGeometryRemap(TAPER_SOURCE_ATTR, remapTaperSource)
@@ -467,13 +485,15 @@ export const init = (canvas: SvgCanvas): void => {
     return done
   }
 
-  svgCanvas.canWidthStroke = canWidthStroke
-  svgCanvas.getWidthProfile = getWidthProfile
-  svgCanvas.widthStrokeAsPath = asPath
-  svgCanvas.drawWidthProfile = drawWidthProfile
-  svgCanvas.applyWidthProfile = applyWidthProfile
-  svgCanvas.applyTaperStroke = applyTaperStroke
-  svgCanvas.removeTaperStroke = removeTaperStroke
-  svgCanvas.getTaperParams = getTaperParams
-  svgCanvas.canTaperStroke = canTaperStroke
+  return {
+    canWidthStroke,
+    getWidthProfile,
+    widthStrokeAsPath: asPath,
+    drawWidthProfile,
+    applyWidthProfile,
+    applyTaperStroke,
+    removeTaperStroke,
+    getTaperParams,
+    canTaperStroke
+  }
 }

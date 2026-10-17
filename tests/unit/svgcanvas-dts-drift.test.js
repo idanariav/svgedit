@@ -38,7 +38,18 @@ const declaredMembers = () => {
   read('svgcanvas.ts', (n) => ts.isClassDeclaration(n) && n.name?.text === 'SvgCanvas', classNames)
   read('svgcanvas-members.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'AttachedMembers')
   read('svgcanvas-internal.d.ts', (n) => ts.isInterfaceDeclaration(n) && n.name.text === 'InternalMembers', internal)
-  return { names, classNames, internal, required }
+  // The modules' own interfaces (`type ModuleApis = A & B & …` in svgcanvas.ts): the members each core module gives the canvas.
+  const canvasSource = fs.readFileSync(path.resolve(process.cwd(), 'packages/svgcanvas/svgcanvas.ts'), 'utf8')
+  const apis = /type ModuleApis =\s*([\s\S]*?)\n\n/.exec(canvasSource)?.[1].split('&').map((n) => n.trim()).filter(Boolean) ?? []
+  const coreDir = path.resolve(process.cwd(), 'packages/svgcanvas/core')
+  const coreFiles = fs.readdirSync(coreDir).filter((f) => /\.ts$/.test(f) && !f.endsWith('.d.ts'))
+  const moduleApiNames = new Set()
+  for (const api of apis) {
+    const file = coreFiles.find((f) => new RegExp(`export interface ${api}\\b`).test(fs.readFileSync(path.join(coreDir, f), 'utf8')))
+    if (!file) throw new Error(`no module exports interface ${api}`)
+    read(`core/${file}`, (n) => ts.isInterfaceDeclaration(n) && n.name.text === api, moduleApiNames)
+  }
+  return { names, classNames, internal, required, moduleApiNames, apis }
 }
 
 const liveMembers = () => {
@@ -70,7 +81,7 @@ const liveMembers = () => {
 }
 
 describe('svgCanvas members drift', () => {
-  const { names: declared, classNames, internal, required } = declaredMembers()
+  const { names: declared, classNames, internal, required, moduleApiNames } = declaredMembers()
   const live = liveMembers()
 
   it('declares the SvgCanvas class and its attached members', () => {
@@ -79,7 +90,7 @@ describe('svgCanvas members drift', () => {
   })
 
   it('declares every runtime member (on the class, as attached, or as internal plumbing)', () => {
-    expect([...live].filter((n) => !classNames.has(n) && !declared.has(n) && !internal.has(n)).sort()).toEqual([])
+    expect([...live].filter((n) => !classNames.has(n) && !declared.has(n) && !internal.has(n) && !moduleApiNames.has(n)).sort()).toEqual([])
   })
 
   it('does not list an attached member as both public and internal', () => {

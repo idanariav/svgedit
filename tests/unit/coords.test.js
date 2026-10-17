@@ -53,8 +53,8 @@ describe('coords', function () {
       }
     attachUnits(coordsCanvas)
     domUtils.init(coordsCanvas)
-    bboxUtils.init(coordsCanvas)
-    coords.init(coordsCanvas)
+    Object.assign(coordsCanvas, bboxUtils.createBBoxUtils(coordsCanvas))
+    Object.assign(coordsCanvas, coords.createCoords(coordsCanvas))
   })
 
   /**
@@ -365,7 +365,7 @@ describe('coords', function () {
       }
     }
     attachUnits(coordsCanvas)
-    coords.init(coordsCanvas)
+    Object.assign(coordsCanvas, coords.createCoords(coordsCanvas))
     const rect = document.createElementNS(NS.SVG, 'rect')
     rect.setAttribute('width', '10')
     rect.setAttribute('height', '10')

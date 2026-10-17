@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { init as pathSimplifyInit, strengthToTolerance } from '../../packages/svgcanvas/core/path-simplify.ts'
+import { createPathSimplify as pathSimplifyInit, strengthToTolerance } from '../../packages/svgcanvas/core/path-simplify.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.ts'
 
@@ -54,7 +54,7 @@ describe('Smooth Path session', () => {
 
   it('warns and no-ops when nothing is selected', () => {
     const canvas = { getSelectedElements: vi.fn(() => []) }
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     expect(() => canvas.previewSmoothPath(0.4)).not.toThrow()
   })
 
@@ -62,7 +62,7 @@ describe('Smooth Path session', () => {
     const baseline = wobblyPolylineD()
     const path = makePath(baseline)
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.previewSmoothPath(0.4)
     const before = parseAnchors(baseline)[0].anchors.length
     const after = parseAnchors(path.getAttribute('d'))[0].anchors
@@ -76,7 +76,7 @@ describe('Smooth Path session', () => {
     const d = 'M10,10 L110,10 L110,70 L10,70 Z'
     const path = makePath(d)
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.previewSmoothPath(0.4)
     const anchors = parseAnchors(path.getAttribute('d'))[0]
     expect(anchors.closed).toBe(true)
@@ -86,7 +86,7 @@ describe('Smooth Path session', () => {
   it('repeated strength changes refit from the original shape and never compound', () => {
     const path = makePath(wobblyPolylineD())
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.previewSmoothPath(0.4)
     const first = path.getAttribute('d')
     canvas.previewSmoothPath(1)
@@ -98,7 +98,7 @@ describe('Smooth Path session', () => {
     const baseline = wobblyPolylineD()
     const path = makePath(baseline)
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.previewSmoothPath(0.4)
     const smoothed = path.getAttribute('d')
     canvas.commitSmoothPath()
@@ -113,7 +113,7 @@ describe('Smooth Path session', () => {
     const baseline = wobblyPolylineD()
     const path = makePath(baseline)
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.previewSmoothPath(0.4)
     canvas.cancelSmoothPath()
     expect(path.getAttribute('d')).toBe(baseline)
@@ -124,14 +124,14 @@ describe('Smooth Path session', () => {
   it('commit with no prior preview is a no-op (no undo command recorded)', () => {
     const path = makePath('M0,0 L10,1 L20,0')
     const canvas = makeCanvas(path)
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     canvas.commitSmoothPath()
     expect(canvas.undoMgr.beginUndoableChange).not.toHaveBeenCalled()
   })
 
   it('simplifyPathD (the one-shot refit used by ext-puppet-warp) returns absolute path data, or null for nothing', () => {
     const canvas = makeCanvas(makePath('M0,0'))
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const d = canvas.simplifyPathD(wobblyPolylineD(), 1)
     expect(d).toMatch(/^M[\d.,-]+( [LC][\d.,\s-]+)+$/)
     expect(parseAnchors(d)[0].anchors.length).toBeLessThan(20)
@@ -159,7 +159,7 @@ describe('simplifyFreehand (the pencil commit)', () => {
 
   it('swaps the polyline for a fitted, freehand-stamped path that reuses its id', () => {
     const canvas = makeCanvas()
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const wave = Array.from({ length: 120 }, (_, i) => [i * 2, 30 * Math.sin(i / 15)])
     const path = canvas.simplifyFreehand(polyline(wave), 2)
     expect(path.tagName).toBe('path')
@@ -174,7 +174,7 @@ describe('simplifyFreehand (the pencil commit)', () => {
 
   it('a loop drawn back onto its start is committed as a closed path', () => {
     const canvas = makeCanvas()
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const ring = Array.from({ length: 200 }, (_, i) => [100 + 40 * Math.cos(i / 199 * 2 * Math.PI), 100 + 40 * Math.sin(i / 199 * 2 * Math.PI)])
     const path = canvas.simplifyFreehand(polyline(ring), 2)
     expect(parseAnchors(path.getAttribute('d'))[0].closed).toBe(true)
@@ -183,7 +183,7 @@ describe('simplifyFreehand (the pencil commit)', () => {
 
   it('a bigger fidelity gives a coarser curve', () => {
     const canvas = makeCanvas()
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const wiggle = Array.from({ length: 200 }, (_, i) => [i * 1.5, 12 * Math.sin(i / 3) + 40 * Math.sin(i / 30)])
     const count = (fidelity) => parseAnchors(canvas.simplifyFreehand(polyline(wiggle), fidelity).getAttribute('d'))[0].anchors.length
     expect(count(0.5)).toBeGreaterThan(count(8))
@@ -191,7 +191,7 @@ describe('simplifyFreehand (the pencil commit)', () => {
 
   it('falls back to a sane default for a missing or invalid fidelity', () => {
     const canvas = makeCanvas()
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const wave = Array.from({ length: 60 }, (_, i) => [i * 2, 10 * Math.sin(i / 8)])
     for (const bad of [undefined, NaN, 0, -3]) {
       expect(canvas.simplifyFreehand(polyline(wave), bad).tagName).toBe('path')
@@ -200,7 +200,7 @@ describe('simplifyFreehand (the pencil commit)', () => {
 
   it('leaves a one-point polyline alone and uses the legacy smoothing if the fit throws', () => {
     const canvas = makeCanvas()
-    pathSimplifyInit(canvas)
+    Object.assign(canvas, pathSimplifyInit(canvas))
     const single = polyline([[1, 1]])
     expect(canvas.simplifyFreehand(single, 2)).toBe(single)
     canvas.addSVGElementsFromJson.mockImplementation(() => { throw new Error('boom') })

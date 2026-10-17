@@ -480,8 +480,18 @@ const getSegmentParams = (canvas: SvgCanvas): SegmentParams | null => {
   return parseParams(g.getAttribute(SEGMENT_ATTR))
 }
 
-export const init = (canvas: SvgCanvas): void => {
-  canvas.canSegment = canSegment
-  canvas.segmentSelection = (params: SegmentParams) => segmentSelection(canvas, params)
-  canvas.getSegmentParams = () => getSegmentParams(canvas)
+/** The members `segment.ts` gives its canvas. */
+export interface SegmentApi {
+  // Clip / mask / boolean / segment / taper / crop
+  canSegment(elem: Element): boolean
+  segmentSelection(params: SegmentParams): void
+  getSegmentParams(): SegmentParams | null
+}
+
+export const createSegment = (canvas: SvgCanvas): SegmentApi => {
+  return {
+    canSegment,
+    segmentSelection: (params: SegmentParams) => segmentSelection(canvas, params),
+    getSegmentParams: () => getSegmentParams(canvas)
+  }
 }

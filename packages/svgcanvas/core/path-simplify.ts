@@ -42,7 +42,19 @@ const CONTINUE_REACH = 6
 export const strengthToTolerance = (strength: number): number =>
   MIN_TOLERANCE + Math.max(0, Math.min(1, strength)) * (MAX_TOLERANCE - MIN_TOLERANCE)
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `path-simplify.ts` gives its canvas. */
+export interface PathSimplifyApi {
+  pencilEnd(x: number, y: number): PenEnd | null
+  continueFreehand(polyline: Element, end: PenEnd, fidelity?: number): Element
+  simplifyFreehand(element: Element, fidelity?: number): Element
+  // Path tools
+  previewSmoothPath(strength?: number): void
+  commitSmoothPath(): void
+  cancelSmoothPath(): void
+  simplifyPathD(d: string, tolerance?: number): string | null
+}
+
+export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
   const svgCanvas = canvas
 
   /**
@@ -226,14 +238,17 @@ export const init = (canvas: SvgCanvas): void => {
     return end.elem
   }
 
-  svgCanvas.pencilEnd = pencilEnd
-  svgCanvas.continueFreehand = continueFreehand
-  svgCanvas.simplifyFreehand = simplifyFreehand
-  svgCanvas.previewSmoothPath = previewSmoothPath
-  svgCanvas.commitSmoothPath = commitSmoothPath
-  svgCanvas.cancelSmoothPath = cancelSmoothPath
   // Reusable one-shot refit for any tool holding a raw `d` (e.g. puppet-warp's
   // dense warped polylines): flatten curves to samples, then fit optimal cubic
   // béziers. Returns absolute path data, or null when nothing usable.
-  svgCanvas.simplifyPathD = smoothPathD
+
+  return {
+    pencilEnd,
+    continueFreehand,
+    simplifyFreehand,
+    previewSmoothPath,
+    commitSmoothPath,
+    cancelSmoothPath,
+    simplifyPathD: smoothPathD
+  }
 }

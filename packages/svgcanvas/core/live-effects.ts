@@ -365,7 +365,26 @@ registerLiveStage({
   stackable: (view) => !strokeOutputOf(parseFxStack(view.getAttribute(FX_ATTR)))
 })
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `live-effects.ts` gives its canvas. */
+export interface LiveEffectsApi {
+  // Live effects (se:fx stack)
+  registerLiveEffect(name: string, def: object): void
+  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }> }>
+  canApplyLiveEffect(elem: Element): boolean
+  reconcileLiveEffects(elem: Element): boolean
+  getLiveEffects(elem?: Element | null): Array<{ name: string, params: Record<string, number | boolean | string> }>
+  previewLiveEffects(stack: Array<{ name: string, params?: object }>): void
+  cancelLiveEffectsPreview(): void
+  applyLiveEffects(stack: Array<{ name: string, params?: object }>): Element | null
+  /** Like `applyLiveEffects` on `elem`, inside the caller's transaction: no undo step, no re-selection, no event. */
+  applyLiveEffectsTo(elem: Element, stack: Array<{ name: string, params?: object }>): Element | null
+  /** The box the effects are computed against (the source geometry's), in the element's own coordinates. */
+  getLiveEffectsBox(elem: Element): { x: number, y: number, width: number, height: number } | null
+  removeLiveEffects(): Element | null
+  expandLiveEffects(): Element | null
+}
+
+export const createLiveEffects = (canvas: SvgCanvas): LiveEffectsApi => {
   const svgCanvas = canvas
 
   registerGeometryRemap(FX_SOURCE_ATTR, remapFxSource)
@@ -588,16 +607,18 @@ export const init = (canvas: SvgCanvas): void => {
     return finish(elem)
   }
 
-  svgCanvas.registerLiveEffect = registerLiveEffect
-  svgCanvas.listLiveEffects = listLiveEffects
-  svgCanvas.canApplyLiveEffect = canApplyLiveEffect
-  svgCanvas.reconcileLiveEffects = reconcileLiveEffects
-  svgCanvas.getLiveEffects = getLiveEffects
-  svgCanvas.previewLiveEffects = previewLiveEffects
-  svgCanvas.cancelLiveEffectsPreview = cancelLiveEffectsPreview
-  svgCanvas.applyLiveEffects = applyLiveEffects
-  svgCanvas.applyLiveEffectsTo = applyLiveEffectsTo
-  svgCanvas.getLiveEffectsBox = getLiveEffectsBox
-  svgCanvas.removeLiveEffects = removeLiveEffects
-  svgCanvas.expandLiveEffects = expandLiveEffects
+  return {
+    registerLiveEffect,
+    listLiveEffects,
+    canApplyLiveEffect,
+    reconcileLiveEffects,
+    getLiveEffects,
+    previewLiveEffects,
+    cancelLiveEffectsPreview,
+    applyLiveEffects,
+    applyLiveEffectsTo,
+    getLiveEffectsBox,
+    removeLiveEffects,
+    expandLiveEffects
+  }
 }

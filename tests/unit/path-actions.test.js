@@ -2,7 +2,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as pathActionsInit } from '../../packages/svgcanvas/core/path-actions.ts'
 import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.ts'
-import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.ts'
+import { createBBoxUtils as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.ts'
 import { attachUnits } from './unitsMock.js'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
@@ -163,7 +163,7 @@ describe('PathActions', () => {
 
     // Initialize modules
     domUtilsInit(svgCanvas)
-    bboxUtilsInit(svgCanvas)
+    Object.assign(svgCanvas, bboxUtilsInit(svgCanvas))
     attachUnits(svgCanvas)
     pathActionsInit(svgCanvas)
     pathActionsMethod = svgCanvas.pathActions

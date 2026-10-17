@@ -15,7 +15,14 @@ import { NS } from './namespaces.ts'
 type JsonElement = Omit<SVGElementJSON, 'children'> & { children?: JsonNode[] }
 type JsonNode = JsonElement | string
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `json.ts` gives its canvas. */
+export interface JsonApi {
+  getJsonFromSvgElements(data: Element): SVGElementJSON
+  // Element creation / lookup
+  addSVGElementsFromJson(data: SVGElementJSON): Element
+}
+
+export const createJson = (canvas: SvgCanvas): JsonApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const svgdoc_: Document | null = canvas.getDOMDocument?.() || (typeof document !== 'undefined' ? document : null)
   /** Iterate an element and return its JSON format (text nodes become strings; comments and the like are dropped). */
@@ -136,7 +143,10 @@ export const init = (canvas: SvgCanvas): void => {
   }
 
   // The canvas types promise element-only JSON (`SVGElementJSON`); text children are strings here, which no caller relies on.
-  svgCanvas.getJsonFromSvgElements = getJsonFromSvgElements as unknown as SvgCanvas['getJsonFromSvgElements']
   // (declared as Element; a string or null argument yields a text node / null, which no caller relies on)
-  svgCanvas.addSVGElementsFromJson = addSVGElementsFromJson as unknown as SvgCanvas['addSVGElementsFromJson']
+
+  return {
+    getJsonFromSvgElements: getJsonFromSvgElements as unknown as SvgCanvas['getJsonFromSvgElements'],
+    addSVGElementsFromJson: addSVGElementsFromJson as unknown as SvgCanvas['addSVGElementsFromJson']
+  }
 }

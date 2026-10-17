@@ -200,7 +200,25 @@ const sourceOf = (elem: Element): SubPath | null => {
   return attr ? readSubpath(elem, attr) : readSubpath(elem)
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `arrow-align.ts` gives its canvas. */
+export interface ArrowAlignApi {
+  /** Whether the element's ends can carry an aligned arrowhead (a line, polyline or one open path with its own geometry). */
+  canAlignArrows(elem: Element | null): boolean
+  /** The element's head alignment (`se:arrow-align`), or null for the legacy centred heads. */
+  getArrowAlign(elem: Element): 'tip' | 'extend' | null
+  /** Set (or with null clear) the alignment and re-derive markers and geometry; records no history. */
+  setArrowAlign(elem: Element, mode: 'tip' | 'extend' | null): boolean
+  /** Re-derive an aligned element's marker `refX` and trimmed geometry; returns whether the geometry changed. */
+  syncArrowAlign(elem: Element, trusted?: boolean): boolean
+  /** The distance a connector keeps an aligned head's end from its shape, or null when not aligned. */
+  getArrowOffset(elem: Element, pos: 'start' | 'end'): number | null
+  /** The untrimmed points of an aligned line or polyline, or null. */
+  getArrowSourcePoints(elem: Element): Array<{ x: number; y: number }> | null
+  /** Replace the untrimmed points of an aligned line or polyline and trim again. */
+  setArrowSourcePoints(elem: Element, pts: Array<{ x: number; y: number }>): boolean
+}
+
+export const createArrowAlign = (canvas: SvgCanvas): ArrowAlignApi => {
   const svgCanvas = canvas
 
   /**
@@ -393,11 +411,13 @@ export const init = (canvas: SvgCanvas): void => {
   registerAttrValidator(ARROW_TRIM_ATTR, (value) => (/^[\d.]+,[\d.]+$/.test(value) ? true : 'is not "start,end"'))
   registerAttrValidator(ARROW_ALIGN_ATTR, (value) => (value === 'tip' || value === 'extend' ? true : 'is not "tip" or "extend"'))
 
-  svgCanvas.canAlignArrows = canAlignArrows
-  svgCanvas.getArrowAlign = getArrowAlign
-  svgCanvas.setArrowAlign = setArrowAlign
-  svgCanvas.syncArrowAlign = syncArrowAlign
-  svgCanvas.getArrowOffset = getArrowOffset
-  svgCanvas.getArrowSourcePoints = getArrowSourcePoints
-  svgCanvas.setArrowSourcePoints = setArrowSourcePoints
+  return {
+    canAlignArrows,
+    getArrowAlign,
+    setArrowAlign,
+    syncArrowAlign,
+    getArrowOffset,
+    getArrowSourcePoints,
+    setArrowSourcePoints
+  }
 }

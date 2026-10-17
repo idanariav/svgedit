@@ -10,7 +10,7 @@ import { attachUnits } from './unitsMock.js'
 const utilities = {
   init: (canvas) => {
     domUtils.init(canvas)
-    bboxUtils.init(canvas)
+    Object.assign(canvas, bboxUtils.createBBoxUtils(canvas))
   },
   getBBox: bboxUtils.getBBox
 }

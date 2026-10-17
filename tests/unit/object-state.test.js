@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import {
-  isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark, canHoldObjects, init
-} from '../../packages/svgcanvas/core/object-state.ts'
+import { isPanelObject, isExpandableGroup, isObjectLocked, isObjectHidden, hasLockMark, canHoldObjects, createObjectState as init } from '../../packages/svgcanvas/core/object-state.ts'
 
 const make = (tag, attrs = {}, parent = document.body) => {
   const el = document.createElementNS(NS.SVG, tag)
@@ -89,7 +87,7 @@ describe('canvas methods', () => {
       getSelectedElements: () => selected,
       selectOnly: vi.fn((els) => { selected = els })
     }
-    init(canvas)
+    Object.assign(canvas, init(canvas))
     lay = layer(document.body)
     a = make('rect', { id: 'a' }, lay)
     b = make('rect', { id: 'b' }, lay)

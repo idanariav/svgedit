@@ -58,7 +58,13 @@ const translatePoints = (pointsStr: string, tx: number, ty: number): string => p
  * Initialize the recalculate module with the SVG canvas.
  * @param canvas - The SVG canvas object
  */
-export const init = (canvas: SvgCanvas): void => {
+/** The members `recalculate.ts` gives its canvas. */
+export interface RecalculateApi {
+  updateClipPath(attr: string, tx: number, ty: number, elem?: Element | undefined): string | undefined
+  recalculateDimensions(selected: Element): Command | null
+}
+
+export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
   const { convertToNum } = getUnits(canvas)
 
@@ -544,6 +550,8 @@ export const init = (canvas: SvgCanvas): void => {
     return batchCmd
   }
 
-  svgCanvas.updateClipPath = updateClipPath
-  svgCanvas.recalculateDimensions = recalculateDimensions
+  return {
+    updateClipPath,
+    recalculateDimensions
+  }
 }

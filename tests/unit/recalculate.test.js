@@ -66,9 +66,9 @@ describe('recalculate', function () {
     }
     attachUnits(recalculateCanvas)
     domUtils.init(recalculateCanvas)
-    bboxUtils.init(recalculateCanvas)
-    coords.init(recalculateCanvas)
-    recalculate.init(recalculateCanvas)
+    Object.assign(recalculateCanvas, bboxUtils.createBBoxUtils(recalculateCanvas))
+    Object.assign(recalculateCanvas, coords.createCoords(recalculateCanvas))
+    Object.assign(recalculateCanvas, recalculate.createRecalculate(recalculateCanvas))
   }
 
   let elem

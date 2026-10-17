@@ -2,7 +2,7 @@ import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as textActionsInit } from '../../packages/svgcanvas/core/text-actions.ts'
 import { init as domUtilsInit } from '../../packages/svgcanvas/core/dom-utils.ts'
-import { init as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.ts'
+import { createBBoxUtils as bboxUtilsInit } from '../../packages/svgcanvas/core/bbox-utils.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 describe('TextActions', () => {
@@ -88,7 +88,7 @@ describe('TextActions', () => {
 
     // Initialize utilities and text-actions modules
     domUtilsInit(svgCanvas)
-    bboxUtilsInit(svgCanvas)
+    Object.assign(svgCanvas, bboxUtilsInit(svgCanvas))
     textActionsInit(svgCanvas)
     textActionsMethod = svgCanvas.textActions
     textActionsMethod.setInputElem(inputElement)

@@ -102,7 +102,13 @@ const flipAttributeInBoxUnits = (elem: Element, attr: string): void => {
  * Initialize the coords module with the SVG canvas.
  * @param canvas - The SVG canvas object
  */
-export const init = (canvas: SvgCanvas): void => {
+/** The members `coords.ts` gives its canvas. */
+export interface CoordsApi {
+  remapElement(selected: Element, changes: Partial<RemapChanges>, m: DOMMatrix): void
+  registerGeometryRemap(attrName: string, remapFn: Function): void
+}
+
+export const createCoords = (canvas: SvgCanvas): CoordsApi => {
   const svgCanvas = canvas // per-instance; remapElement below is closed over it
   const { convertToNum } = getUnits(canvas)
 
@@ -612,11 +618,14 @@ export const init = (canvas: SvgCanvas): void => {
     }
   }
 
-  svgCanvas.remapElement = remapElement
   // Exposed on the instance (not just importable from geometry-remap-registry.js
   // directly) so consumers outside packages/svgcanvas's own build — editor
   // extensions, served from source rather than bundled into dist/svgcanvas.js —
   // register into the *same* registry this module's runGeometryRemaps reads
   // from, rather than an independent module-graph copy that never gets seen.
-  svgCanvas.registerGeometryRemap = registerGeometryRemap
+
+  return {
+    remapElement,
+    registerGeometryRemap
+  }
 }

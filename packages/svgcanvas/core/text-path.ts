@@ -29,7 +29,17 @@ import type { BatchCommand } from './history.js'
 // Geometry attributes dropped when a shape is rebuilt as a different tag.
 const SHAPE_GEOM_ATTRS = ['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points', 'x1', 'y1', 'x2', 'y2', 'd']
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `text-path.ts` gives its canvas. */
+export interface TextPathApi {
+  attachTextToPath(): void
+  detachTextFromPath(): void
+  releaseTextOnPath(removing: Element[], batchCmd: import('./history.js').BatchCommand): Element[]
+  canTextOnPath(): boolean
+  /** Move the selected text-on-path start offset to `pct` percent. */
+  textPathOffset(pct?: number): number | null
+}
+
+export const createTextPath = (canvas: SvgCanvas): TextPathApi => {
   const svgCanvas = canvas
 
   /** The selected text + rail pair, or null. */
@@ -222,9 +232,11 @@ export const init = (canvas: SvgCanvas): void => {
     return clamped
   }
 
-  svgCanvas.attachTextToPath = attachTextToPath
-  svgCanvas.detachTextFromPath = detachTextFromPath
-  svgCanvas.releaseTextOnPath = releaseTextOnPath
-  svgCanvas.canTextOnPath = canTextOnPath
-  svgCanvas.textPathOffset = textPathOffset
+  return {
+    attachTextToPath,
+    detachTextFromPath,
+    releaseTextOnPath,
+    canTextOnPath,
+    textPathOffset
+  }
 }

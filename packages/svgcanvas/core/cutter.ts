@@ -399,7 +399,15 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
   }
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `cutter.ts` gives its canvas. */
+export interface CutterApi {
+  cutShapes(points: Array<{ x: number, y: number }>): void
+}
+
+export const createCutter = (canvas: SvgCanvas): CutterApi => {
   const svgCanvas = canvas
-  svgCanvas.cutShapes = (points: Pt[]) => cutShapes(svgCanvas, points)
+
+  return {
+    cutShapes: (points: Pt[]) => cutShapes(svgCanvas, points)
+  }
 }

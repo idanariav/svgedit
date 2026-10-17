@@ -42,7 +42,7 @@
       ...paperUtils,
       init (canvas) {
         domUtils.init(canvas)
-        bboxUtils.init(canvas)
+        Object.assign(canvas, bboxUtils.createBBoxUtils(canvas))
         // domUtils/bboxUtils no longer export their canvas-state-dependent
         // helpers as bare functions (module-singleton-hazard fix) — init()
         // now attaches them directly onto the given canvas instead. Copy

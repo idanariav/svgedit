@@ -18,6 +18,7 @@ import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { BBox } from '../svgcanvas.ts'
 
 /** A bounding box (like `DOMRect`). */
 export interface BBoxObject {
@@ -47,7 +48,16 @@ const visElemsArr = visElems.split(',')
  * (elem-required) export; the instance also gets a selection-fallback
  * wrapper for it, matching `dom-utils.js`'s `getRotationAngle` treatment.
  */
-export const init = (canvas: SvgCanvas): void => {
+/** The members `bbox-utils.ts` gives its canvas. */
+export interface BBoxUtilsApi {
+  getVisibleElements(parentElement?: Element): Element[]
+  /** The stroked, transformed bounding box of the elements (all visible ones when omitted). */
+  getStrokedBBoxDefaultVisible(elems?: Element[]): BBox
+  getStrokedBBox(elems?: Element[]): BBox | null
+  getBBox(elem?: Element | undefined): BBoxObject | null
+}
+
+export const createBBoxUtils = (canvas: SvgCanvas): BBoxUtilsApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -106,16 +116,19 @@ export const init = (canvas: SvgCanvas): void => {
     )
   }
 
-  canvas.getVisibleElements = getVisibleElements
   // The canvas types promise a box (a list of attached elements always has one); `false` / `null` only come back for an
   // empty or fully detached list (techdebt.md "getStrokedBBox's false / null").
-  canvas.getStrokedBBoxDefaultVisible = getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBoxDefaultVisible']
   // Public API alias — external hosts/extensions call svgCanvas.getStrokedBBox()
-  canvas.getStrokedBBox = getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBox']
   // getBBox stays a bare, pure (elem-required) export below — every call site
   // already passes an elem — but the public per-instance API keeps the
   // "default to current selection" convenience, correctly scoped now.
-  canvas.getBBox = (elem?: Element) => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
+
+  return {
+    getVisibleElements,
+    getStrokedBBoxDefaultVisible: getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBoxDefaultVisible'],
+    getStrokedBBox: getStrokedBBoxDefaultVisible as SvgCanvas['getStrokedBBox'],
+    getBBox: (elem?: Element) => getBBox(elem ?? svgCanvas.getSelectedElements()[0])
+  }
 }
 
 /**

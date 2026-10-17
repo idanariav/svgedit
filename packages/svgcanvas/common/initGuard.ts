@@ -38,3 +38,22 @@ export const runGuardedInit = <C extends object>(canvas: object, label: string, 
     registry.set(key, label)
   }
 }
+
+/**
+ * Gives `canvas` the members of a module's API object, flagging any name a previous module already claimed.
+ * `label` identifies the module for the warning, `registry` is the shared `propName -> owning label` map of one canvas.
+ */
+export const attachApi = (canvas: object, label: string, api: object, registry: Map<string, string>): void => {
+  for (const key of Object.keys(api)) {
+    const owner = registry.get(key)
+    if (owner && owner !== label) {
+      warn(
+        `"${label}" overwrote property "${key}" previously set by "${owner}"`,
+        undefined,
+        'svgcanvas-init-guard'
+      )
+    }
+    registry.set(key, label)
+  }
+  Object.assign(canvas, api)
+}

@@ -45,7 +45,15 @@ export const hasVisibleStroke = (elem: Element): boolean => {
 // Reentrant init: the offset operations are created per SvgCanvas instance
 // (closed over `svgCanvas` below) so several editors can coexist in one
 // realm. Stateless helpers above stay shared.
-export const init = (canvas: SvgCanvas): void => {
+/** The members `path-offset.ts` gives its canvas. */
+export interface PathOffsetApi {
+  /** Grow (delta > 0) or shrink (delta < 0) the selected shape's outline. */
+  offsetPath(delta: number): void
+  strokeToPath(): void
+  hasVisibleStroke(elem: Element): boolean
+}
+
+export const createPathOffset = (canvas: SvgCanvas): PathOffsetApi => {
   const svgCanvas = canvas
 
   /**
@@ -243,7 +251,9 @@ export const init = (canvas: SvgCanvas): void => {
     replaceWithPath(elem, d, styleAttrs)
   }
 
-  svgCanvas.offsetPath = offsetPath
-  svgCanvas.strokeToPath = strokeToPath
-  svgCanvas.hasVisibleStroke = hasVisibleStroke
+  return {
+    offsetPath,
+    strokeToPath,
+    hasVisibleStroke
+  }
 }

@@ -60,9 +60,8 @@ test.describe('SVG core recalculate extra cases', () => {
 
       canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
-      coords.init(canvasStub)
-      recalculate.init(canvasStub)
-
+      Object.assign(canvasStub, coords.createCoords(canvasStub))
+      Object.assign(canvasStub, recalculate.createRecalculate(canvasStub))
       // Scale about center via translate/scale/translate sequence
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       rect.setAttribute('x', '5')
@@ -152,9 +151,8 @@ test.describe('SVG core recalculate extra cases', () => {
       }
       canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
-      coords.init(canvasStub)
-      recalculate.init(canvasStub)
-
+      Object.assign(canvasStub, coords.createCoords(canvasStub))
+      Object.assign(canvasStub, recalculate.createRecalculate(canvasStub))
       const rect = document.createElementNS(NS, 'rect')
       rect.setAttribute('x', '0')
       rect.setAttribute('y', '0')
@@ -244,9 +242,8 @@ test.describe('SVG core recalculate extra cases', () => {
       }
       canvasStub.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvasStub)
-      coords.init(canvasStub)
-      recalculate.init(canvasStub)
-
+      Object.assign(canvasStub, coords.createCoords(canvasStub))
+      Object.assign(canvasStub, recalculate.createRecalculate(canvasStub))
       const poly = document.createElementNS(NS, 'polygon')
       poly.setAttribute('points', '0,0 10,0 10,10')
       poly.setAttribute('transform', 'translate(5 5) scale(-1 2) translate(-5 -5)')

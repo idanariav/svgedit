@@ -416,7 +416,21 @@ registerLiveStage({
   }
 })
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `corner-radius.ts` gives its canvas. */
+export interface CornerRadiusApi {
+  applyCornerRadius(r?: number, opts?: { kind?: 'r' | 'i' | 'c', corners?: number[] }): Element | null
+  canRoundCorners(elem: Element): boolean
+  getCornerSettings(elem?: Element): Array<{
+    index: number,
+    radius: number,
+    kind: 'r' | 'i' | 'c',
+    max: number,
+    /** The corner's geometry in the element's own space (`core/corner-radius.js`). */
+    corner: { index: number, at: { x: number, y: number }, u: { x: number, y: number }, v: { x: number, y: number }, lu: number, lv: number, tanHalf: number }
+  }>
+}
+
+export const createCornerRadius = (canvas: SvgCanvas): CornerRadiusApi => {
   const svgCanvas = canvas
 
   registerGeometryRemap(CORNER_SOURCE_ATTR, remapCornerSource)
@@ -531,7 +545,9 @@ export const init = (canvas: SvgCanvas): void => {
     return elem
   }
 
-  svgCanvas.applyCornerRadius = applyCornerRadius
-  svgCanvas.canRoundCorners = canRoundCorners
-  svgCanvas.getCornerSettings = getCornerSettings
+  return {
+    applyCornerRadius,
+    canRoundCorners,
+    getCornerSettings
+  }
 }

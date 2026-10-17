@@ -228,7 +228,19 @@ export const dashFitIssue = (elem: Element): string | null => {
   return null
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `dash-fit.ts` gives its canvas. */
+export interface DashFitApi {
+  /** Whether dashes are fitted on every one of the elements (default: the selection). */
+  isDashFitted(elems?: Element[]): boolean
+  /** Why the element cannot have its dashes fitted, or null. */
+  dashFitIssue(elem: Element): string | null
+  /** Fit the dashes of the elements (or turn the fit off) as one undo step; returns how many changed. */
+  setDashFit(on: boolean, elems?: Element[]): number
+  /** Choose a dash pattern for the selection (fitted elements are fitted again); false when nothing is fitted. */
+  setDashPattern(value: string): boolean
+}
+
+export const createDashFit = (canvas: SvgCanvas): DashFitApi => {
   const svgCanvas = canvas
   registerAttrValidator(DASH_FIT_ATTR, validateDashFit)
 
@@ -272,36 +284,12 @@ export const init = (canvas: SvgCanvas): void => {
   /**
    * Whether dashes are fitted on every one of the elements (default: the selection).
    */
-  svgCanvas.isDashFitted = (elems = svgCanvas.getSelectedElements()) => {
-    const list = elems.filter(Boolean)
-    return list.length > 0 && list.every((el) => el.hasAttribute(DASH_FIT_ATTR))
-  }
-
-  svgCanvas.dashFitIssue = dashFitIssue
 
   /**
    * Fit the dashes of the elements (or turn the fit off), as one undo step. Elements that cannot be
    * fitted are left alone. Elements default to the selection.
    * @returns how many elements changed
    */
-  svgCanvas.setDashFit = (on, elems = svgCanvas.getSelectedElements()) => {
-    const list = elems.filter(Boolean).filter((el) => (on ? dashFitIssue(el) === null : el.hasAttribute(DASH_FIT_ATTR)))
-    if (!list.length) return 0
-    let changed = 0
-    svgCanvas.transact(on ? 'Fit dashes' : 'Unfit dashes', () => {
-      for (const el of list) {
-        const nominal = parseDashes(el.getAttribute(DASH_FIT_ATTR)) ?? parseDashes(el.getAttribute('stroke-dasharray'))
-        if (on) {
-          if (nominal && applyFit(el, nominal)) changed++
-        } else {
-          clearFit(el, el.getAttribute(DASH_FIT_ATTR))
-          changed++
-        }
-      }
-    })
-    svgCanvas.call('changed', list)
-    return changed
-  }
 
   /**
    * Choose a dash pattern for the selection. Fitted elements take it as their new pattern and are
@@ -309,21 +297,47 @@ export const init = (canvas: SvgCanvas): void => {
    * @param value a `stroke-dasharray` value, `none` for solid
    * @returns false when nothing is fitted (the caller sets the attribute as usual)
    */
-  svgCanvas.setDashPattern = (value) => {
-    const list = svgCanvas.getSelectedElements().filter(Boolean)
-    if (!list.some((el: Element) => el.hasAttribute(DASH_FIT_ATTR))) return false
-    const pattern = parseDashes(value)
-    svgCanvas.transact('Change dash', () => {
-      for (const el of list) {
-        if (!el.hasAttribute(DASH_FIT_ATTR)) {
-          el.setAttribute('stroke-dasharray', value)
-        } else if (!pattern || !applyFit(el, pattern)) {
-          clearFit(el, pattern ? value : null)
-          if (!pattern) el.setAttribute('stroke-dasharray', value)
+
+  return {
+    isDashFitted: (elems = svgCanvas.getSelectedElements()) => {
+      const list = elems.filter(Boolean)
+      return list.length > 0 && list.every((el) => el.hasAttribute(DASH_FIT_ATTR))
+    },
+    dashFitIssue,
+    setDashFit: (on, elems = svgCanvas.getSelectedElements()) => {
+      const list = elems.filter(Boolean).filter((el) => (on ? dashFitIssue(el) === null : el.hasAttribute(DASH_FIT_ATTR)))
+      if (!list.length) return 0
+      let changed = 0
+      svgCanvas.transact(on ? 'Fit dashes' : 'Unfit dashes', () => {
+        for (const el of list) {
+          const nominal = parseDashes(el.getAttribute(DASH_FIT_ATTR)) ?? parseDashes(el.getAttribute('stroke-dasharray'))
+          if (on) {
+            if (nominal && applyFit(el, nominal)) changed++
+          } else {
+            clearFit(el, el.getAttribute(DASH_FIT_ATTR))
+            changed++
+          }
         }
-      }
-    })
-    svgCanvas.call('changed', list)
-    return true
+      })
+      svgCanvas.call('changed', list)
+      return changed
+    },
+    setDashPattern: (value) => {
+      const list = svgCanvas.getSelectedElements().filter(Boolean)
+      if (!list.some((el: Element) => el.hasAttribute(DASH_FIT_ATTR))) return false
+      const pattern = parseDashes(value)
+      svgCanvas.transact('Change dash', () => {
+        for (const el of list) {
+          if (!el.hasAttribute(DASH_FIT_ATTR)) {
+            el.setAttribute('stroke-dasharray', value)
+          } else if (!pattern || !applyFit(el, pattern)) {
+            clearFit(el, pattern ? value : null)
+            if (!pattern) el.setAttribute('stroke-dasharray', value)
+          }
+        }
+      })
+      svgCanvas.call('changed', list)
+      return true
+    }
   }
 }

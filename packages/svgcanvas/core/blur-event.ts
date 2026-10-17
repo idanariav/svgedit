@@ -13,7 +13,14 @@ import type SvgCanvas from '../svgcanvas.ts'
 * are attached to the instance (and cross-call each other through it), so
 * svgcanvas.js no longer imports them by name.
 */
-export const init = (canvas: SvgCanvas): void => {
+/** The members `blur-event.ts` gives its canvas. */
+export interface BlurEventApi {
+  setBlurNoUndo(val: number): void
+  setBlurOffsets(filterElem: Element, stdDev: number): void
+  setBlur(val: number, complete?: boolean): void
+}
+
+export const createBlurEvent = (canvas: SvgCanvas): BlurEventApi => {
   const svgCanvas = canvas
 
   const getFeGaussianBlurElem = (filterElem: Element): Element | null => {
@@ -217,7 +224,10 @@ export const init = (canvas: SvgCanvas): void => {
 
   // Expose on the instance; svgcanvas.js relies on these attachments rather
   // than importing the functions by name.
-  svgCanvas.setBlurNoUndo = setBlurNoUndo
-  svgCanvas.setBlurOffsets = setBlurOffsets
-  svgCanvas.setBlur = setBlur
+
+  return {
+    setBlurNoUndo,
+    setBlurOffsets,
+    setBlur
+  }
 }

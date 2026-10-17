@@ -13,10 +13,8 @@ import type { SVGElementJSON, BBox } from './svgcanvas.js'
 import type { StyleProps, XY, ElementAndBBox, CanvasState } from './core/canvas-state.ts'
 import type { BatchCommand, ChangeElementCommand } from './core/history.js'
 import type { BBoxObject } from './core/bbox-utils.ts'
-import type { RemapChanges } from './core/coords.ts'
 import type { SelectorManagerApi, SelectorClassApi } from './core/select.ts'
 import type { Drawing } from './core/draw.js'
-import type { PenEnd } from './core/pen-continue.ts'
 import type { Units } from './core/units.ts'
 import type { PathClassApi, SegmentClassApi, PathObject, PathSegment, PathElement } from './core/path-types.ts'
 
@@ -170,13 +168,6 @@ export interface InternalMembers {
   svgdoc: Document
   transformListToTransform(tlist: SVGTransformList | null | undefined, min?: number, max?: number | null): SVGTransform
   units: Units
-  // --- `core/bbox-utils.ts` ---
-  getBBox(elem?: Element | undefined): BBoxObject | null
-  // --- `core/blur-event.js` ---
-  setBlurNoUndo(val: number): void
-  setBlurOffsets(filterElem: Element, stdDev: number): void
-  // --- `core/coords.js` ---
-  remapElement(selected: Element, changes: Partial<RemapChanges>, m: DOMMatrix): void
   // --- `core/dom-utils.ts` ---
   snapPointToGrid(x: number, y: number): XY
   // --- `core/draw.js` ---
@@ -196,10 +187,6 @@ export interface InternalMembers {
   addPointGrip(index: number, x?: number | undefined, y?: number | undefined): SVGRectElement
   getCtrlLine(id: string | number): SVGLineElement
   replacePathSeg(type: number, index: number, pts: number[], elem?: Element): void
-  // --- `core/path-simplify.ts` ---
-  simplifyFreehand(element: Element, fidelity?: number): Element
-  pencilEnd(x: number, y: number): PenEnd | null
-  continueFreehand(polyline: Element, end: PenEnd, fidelity?: number): Element
   // --- `core/path.ts` ---
   clearData(): void
   getLinkControlPts(): boolean
@@ -210,18 +197,11 @@ export interface InternalMembers {
   reorientGrads(elem: Element, m: DOMMatrix): void
   setLinkControlPoints(lcp: boolean): void
   smoothControlPoints(ct1: XY, ct2: XY, pt: XY): XY[] | undefined
-  // --- `core/recalculate.js` ---
-  updateClipPath(attr: string, tx: number, ty: number, elem?: Element | undefined): string | undefined
   // --- `core/selection.js` ---
   getIntersectionList(rect?: BBox): Element[] | null
   groupSvgElem(elem: Element): void
   prepareSvg(newDoc: XMLDocument): void
   recalculateAllSelectedDimensions(): void
-  // --- `core/svg-defs.ts` ---
-  convertDropShadowFilters(elem: Element): void
-  convertGradients(elem: Element): void
-  removeUnusedDefElems(): number
-  setUseData(parent: Element): void
   // --- `core/svg-exec.js` ---
   svgToString(elem: Element, indent: number): string
   // --- `core/text-attrs.js` ---

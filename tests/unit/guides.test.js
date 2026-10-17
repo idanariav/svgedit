@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
-import { GUIDES_ATTR, parseGuides, formatGuides, validateGuides, visibleGuides, init } from '../../packages/svgcanvas/core/guides.ts'
+import { GUIDES_ATTR, parseGuides, formatGuides, validateGuides, visibleGuides, createGuides as init } from '../../packages/svgcanvas/core/guides.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing, collectPointTargets, snapPoint } from '../../packages/svgcanvas/core/smart-guides.ts'
 
@@ -61,7 +61,7 @@ describe('svgCanvas.getGuides / setGuides', () => {
       transact: vi.fn((label, fn) => { transacted.push(label); return fn() }),
       getCurConfig: () => ({})
     }
-    init(canvas)
+    Object.assign(canvas, init(canvas))
   })
 
   it('reads the attribute and writes it inside one transaction with the given label', () => {

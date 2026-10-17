@@ -27,7 +27,13 @@ const matrixOf = (elem: Element): SVGMatrix | null => {
   return tlist ? transformListToTransform(tlist).matrix : null
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `path-join.ts` gives its canvas. */
+export interface PathJoinApi {
+  canJoinPaths(elems: Element[]): boolean
+  joinSelectedPaths(): Element | null
+}
+
+export const createPathJoin = (canvas: SvgCanvas): PathJoinApi => {
   const svgCanvas = canvas
 
   /**
@@ -85,6 +91,8 @@ export const init = (canvas: SvgCanvas): void => {
     return first
   }
 
-  svgCanvas.canJoinPaths = canJoinPaths
-  svgCanvas.joinSelectedPaths = joinSelectedPaths
+  return {
+    canJoinPaths,
+    joinSelectedPaths
+  }
 }

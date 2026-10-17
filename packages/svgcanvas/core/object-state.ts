@@ -93,7 +93,29 @@ const keepPosition = (el: Element, oldParent: Element, newParent: Element): void
   else el.setAttribute('transform', `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`)
 }
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `object-state.ts` gives its canvas. */
+export interface ObjectStateApi {
+  /** Every element (current group, else visible layers) sharing the criterion with `ref`, `ref` included; selects nothing. */
+  /** Replace the selected shape with a group of rows × cols rects over its bounding box (one undo step); null when nothing was done. */
+  /** Whether `elem` is a plain shape that Split Into Grid can take. */
+  /** Scale / move / rotate / reflect every selected object about its own reference point (one undo step); returns the transformed elements. */
+  /** Hide (`display="none"`) or show objects as one undo step; hidden objects leave the selection. False when nothing changed. */
+  setObjectsHidden(elems: Element[], hidden: boolean): boolean
+  /** Lock (`se:locked`) or unlock objects as one undo step; locked objects (and what is inside a locked group) cannot be selected. False when nothing changed. */
+  setObjectsLocked(elems: Element[], locked: boolean): boolean
+  hasLockedObjects(): boolean
+  hasHiddenObjects(): boolean
+  unlockAllObjects(): boolean
+  showAllObjects(): boolean
+  /** Set or clear an object's `data-name` as one undo step. */
+  setObjectName(el: Element, name: string): boolean
+  /** Why the objects cannot be moved into `parent` (a layer or plain group) in front of `before`, or null. */
+  objectMoveIssue(elems: Element[], parent: Element, before?: Node | null): string | null
+  /** Move objects into `parent` in front of `before` (the end when null) as one undo step, keeping their place on the page. False when refused or nothing moved. */
+  moveObjects(elems: Element[], parent: Element, before?: Node | null): boolean
+}
+
+export const createObjectState = (canvas: SvgCanvas): ObjectStateApi => {
   const svgCanvas = canvas
 
   /** Drop `elems` (and anything inside them) from the selection. */
@@ -107,35 +129,11 @@ export const init = (canvas: SvgCanvas): void => {
    * Hide or show objects as one undo step. Hidden objects leave the selection.
    * @returns false when nothing changed
    */
-  svgCanvas.setObjectsHidden = (elems, hidden) => {
-    const todo = elems.filter((e) => isPanelObject(e) && isObjectHidden(e) !== hidden)
-    if (!todo.length) return false
-    if (hidden) unselect(todo)
-    svgCanvas.transact(hidden ? 'Hide' : 'Show', () => {
-      for (const el of todo) {
-        if (hidden) el.setAttribute('display', 'none')
-        else el.removeAttribute('display')
-      }
-    })
-    return true
-  }
 
   /**
    * Lock or unlock objects as one undo step. Locked objects leave the selection.
    * @returns false when nothing changed
    */
-  svgCanvas.setObjectsLocked = (elems, locked) => {
-    const todo = elems.filter((e) => isPanelObject(e) && hasLockMark(e) !== locked)
-    if (!todo.length) return false
-    if (locked) unselect(todo)
-    svgCanvas.transact(locked ? 'Lock' : 'Unlock', () => {
-      for (const el of todo) {
-        if (locked) el.setAttributeNS(NS.SE, 'se:locked', 'true')
-        else el.removeAttributeNS(NS.SE, 'locked')
-      }
-    })
-    return true
-  }
 
   /**
    * The objects the Layers panel lists, at any depth (layers themselves excluded; a generated group is one object),
@@ -165,52 +163,32 @@ export const init = (canvas: SvgCanvas): void => {
   /**
    * Is any object locked? (Cheap: stops at the first.)
    */
-  svgCanvas.hasLockedObjects = () => collectObjects(hasLockMark, true).length > 0
 
   /**
    * Is any object hidden? (Cheap: stops at the first.)
    */
-  svgCanvas.hasHiddenObjects = () => collectObjects(isObjectHidden, true).length > 0
 
   /**
    * Unlock every locked object as one undo step.
    * @returns false when nothing was locked
    */
-  svgCanvas.unlockAllObjects = () => svgCanvas.setObjectsLocked(collectObjects(hasLockMark), false)
 
   /**
    * Show every hidden object as one undo step.
    * @returns false when nothing was hidden
    */
-  svgCanvas.showAllObjects = () => svgCanvas.setObjectsHidden(collectObjects(isObjectHidden), false)
 
   /**
    * Give an object a name (`data-name`, what group names already use) as one undo step.
    * An empty name removes it.
    * @returns false when nothing changed
    */
-  svgCanvas.setObjectName = (el, name) => {
-    const clean = String(name ?? '').trim()
-    if ((el.getAttribute('data-name') ?? '') === clean) return false
-    svgCanvas.transact('Rename', () => {
-      if (clean) el.setAttribute('data-name', clean)
-      else el.removeAttribute('data-name')
-    })
-    return true
-  }
 
   /**
    * Why `elems` cannot be moved into `parent` (before `before`), or null when
    * they can. A target must be a layer or plain group that is not one of the
    * moved objects or inside one.
    */
-  svgCanvas.objectMoveIssue = (elems, parent, before = null) => {
-    if (!elems.length) return 'nothing to move'
-    if (!canHoldObjects(parent)) return 'target cannot hold objects'
-    if (elems.some((e) => e === parent || e.contains(parent))) return 'cannot move a group into itself'
-    if (before && before.parentNode !== parent) return 'bad insertion point'
-    return null
-  }
 
   /**
    * Move objects into `parent`, in front of `before` (the end when null), as one
@@ -219,23 +197,70 @@ export const init = (canvas: SvgCanvas): void => {
    * @param parent a layer or plain group
    * @returns false when refused or nothing moved
    */
-  svgCanvas.moveObjects = (elems, parent, before = null) => {
-    if (svgCanvas.objectMoveIssue(elems, parent, before)) return false
-    const ordered = [...elems].sort((a, b) =>
-      (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)
-    // Moving a node in front of itself is a no-op insertion point.
-    let anchor = before
-    while (anchor && ordered.includes(anchor as Element)) anchor = anchor.nextSibling
-    const unchanged = ordered.every((e, i) => e.parentNode === parent &&
-      e.nextSibling === (ordered[i + 1] ?? anchor))
-    if (unchanged) return false
-    svgCanvas.transact('Move', () => {
-      for (const el of ordered) {
-        const oldParent = el.parentNode as Element
-        parent.insertBefore(el, anchor)
-        if (oldParent !== parent) keepPosition(el, oldParent, parent)
-      }
-    })
-    return true
+
+  return {
+    setObjectsHidden: (elems, hidden) => {
+      const todo = elems.filter((e) => isPanelObject(e) && isObjectHidden(e) !== hidden)
+      if (!todo.length) return false
+      if (hidden) unselect(todo)
+      svgCanvas.transact(hidden ? 'Hide' : 'Show', () => {
+        for (const el of todo) {
+          if (hidden) el.setAttribute('display', 'none')
+          else el.removeAttribute('display')
+        }
+      })
+      return true
+    },
+    setObjectsLocked: (elems, locked) => {
+      const todo = elems.filter((e) => isPanelObject(e) && hasLockMark(e) !== locked)
+      if (!todo.length) return false
+      if (locked) unselect(todo)
+      svgCanvas.transact(locked ? 'Lock' : 'Unlock', () => {
+        for (const el of todo) {
+          if (locked) el.setAttributeNS(NS.SE, 'se:locked', 'true')
+          else el.removeAttributeNS(NS.SE, 'locked')
+        }
+      })
+      return true
+    },
+    hasLockedObjects: () => collectObjects(hasLockMark, true).length > 0,
+    hasHiddenObjects: () => collectObjects(isObjectHidden, true).length > 0,
+    unlockAllObjects: () => svgCanvas.setObjectsLocked(collectObjects(hasLockMark), false),
+    showAllObjects: () => svgCanvas.setObjectsHidden(collectObjects(isObjectHidden), false),
+    setObjectName: (el, name) => {
+      const clean = String(name ?? '').trim()
+      if ((el.getAttribute('data-name') ?? '') === clean) return false
+      svgCanvas.transact('Rename', () => {
+        if (clean) el.setAttribute('data-name', clean)
+        else el.removeAttribute('data-name')
+      })
+      return true
+    },
+    objectMoveIssue: (elems, parent, before = null) => {
+      if (!elems.length) return 'nothing to move'
+      if (!canHoldObjects(parent)) return 'target cannot hold objects'
+      if (elems.some((e) => e === parent || e.contains(parent))) return 'cannot move a group into itself'
+      if (before && before.parentNode !== parent) return 'bad insertion point'
+      return null
+    },
+    moveObjects: (elems, parent, before = null) => {
+      if (svgCanvas.objectMoveIssue(elems, parent, before)) return false
+      const ordered = [...elems].sort((a, b) =>
+        (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)
+      // Moving a node in front of itself is a no-op insertion point.
+      let anchor = before
+      while (anchor && ordered.includes(anchor as Element)) anchor = anchor.nextSibling
+      const unchanged = ordered.every((e, i) => e.parentNode === parent &&
+        e.nextSibling === (ordered[i + 1] ?? anchor))
+      if (unchanged) return false
+      svgCanvas.transact('Move', () => {
+        for (const el of ordered) {
+          const oldParent = el.parentNode as Element
+          parent.insertBefore(el, anchor)
+          if (oldParent !== parent) keepPosition(el, oldParent, parent)
+        }
+      })
+      return true
+    }
   }
 }

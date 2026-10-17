@@ -36,7 +36,7 @@ test.describe('SVG core smoke', () => {
       const { coords } = window.svgHarness
       const canvas = { getGridSnapping: () => false, getDrawing: () => ({ getNextId: () => '1' }) }
       canvas.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
-      coords.init(canvas)
+      Object.assign(canvas, coords.createCoords(canvas))
       return typeof canvas.remapElement === 'function'
     })
     expect(hasRemap).toBe(true)

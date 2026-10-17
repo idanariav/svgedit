@@ -18,7 +18,16 @@ import {
 import { isWebkit } from '../common/browser.ts'
 import { NS } from './namespaces.ts'
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `svg-defs.ts` gives its canvas. */
+export interface SvgDefsApi {
+  uniquifyElems(g: Element): void
+  setUseData(parent: Element): void
+  convertGradients(elem: Element): void
+  convertDropShadowFilters(elem: Element): void
+  removeUnusedDefElems(): number
+}
+
+export const createSvgDefs = (canvas: SvgCanvas): SvgDefsApi => {
   const svgCanvas = canvas // per-instance; functions below are closed over it
 
   /**
@@ -381,9 +390,11 @@ export const init = (canvas: SvgCanvas): void => {
     })
   }
 
-  svgCanvas.uniquifyElems = uniquifyElemsMethod
-  svgCanvas.setUseData = setUseDataMethod
-  svgCanvas.convertGradients = convertGradientsMethod
-  svgCanvas.convertDropShadowFilters = convertDropShadowFiltersMethod
-  svgCanvas.removeUnusedDefElems = removeUnusedDefElemsMethod // remove DOM elements inside the `<defs>` if they are notreferred to,
+  return {
+    uniquifyElems: uniquifyElemsMethod,
+    setUseData: setUseDataMethod,
+    convertGradients: convertGradientsMethod,
+    convertDropShadowFilters: convertDropShadowFiltersMethod,
+    removeUnusedDefElems: removeUnusedDefElemsMethod // remove DOM elements inside the `<defs>` if they are notreferred to,
+  }
 }

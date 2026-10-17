@@ -54,8 +54,7 @@ test.describe('SVG core remap extras', () => {
 
       utilities.init(canvas)
       canvas.units = units.createUnits(canvas)
-      coords.init(canvas)
-
+      Object.assign(canvas, coords.createCoords(canvas))
       const group = document.createElementNS(NS, 'g')
       svg.append(group)
 

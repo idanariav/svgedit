@@ -66,28 +66,39 @@ export const validateGuides = (value: string): true | string => {
 export const visibleGuides = (svgCanvas: Pick<SvgCanvas, 'getCurConfig' | 'getGuides'>): Guides =>
   svgCanvas.getCurConfig?.().showGuides === false ? { v: [], h: [] } : (svgCanvas.getGuides?.() ?? { v: [], h: [] })
 
-export const init = (canvas: SvgCanvas): void => {
+/** The members `guides.ts` gives its canvas. */
+export interface GuidesApi {
+  /** The drawing's ruler guides (`se:guides` on the root): `v` = x positions of vertical lines, `h` = y positions of horizontal ones. */
+  getGuides(): { v: number[]; h: number[] }
+  /** Replace the ruler guides as one undo step; false when nothing changed. */
+  setGuides(guides: { v?: number[]; h?: number[] }, label?: string): boolean
+}
+
+export const createGuides = (canvas: SvgCanvas): GuidesApi => {
   const svgCanvas = canvas
   registerAttrValidator(GUIDES_ATTR, validateGuides)
 
   /**
    * The drawing's guides, hidden or not.
    */
-  svgCanvas.getGuides = () => parseGuides(svgCanvas.getSvgContent().getAttribute(GUIDES_ATTR))
 
   /**
    * Replace the drawing's guides as one undo step.
    * @param label undo-menu text
    * @returns whether anything changed
    */
-  svgCanvas.setGuides = (guides, label = 'Edit guides') => {
-    const root = svgCanvas.getSvgContent()
-    const next = formatGuides(guides)
-    if (next === formatGuides(parseGuides(root.getAttribute(GUIDES_ATTR)))) return false
-    svgCanvas.transact(label, () => {
-      if (next) root.setAttribute(GUIDES_ATTR, next)
-      else root.removeAttribute(GUIDES_ATTR)
-    })
-    return true
+
+  return {
+    getGuides: () => parseGuides(svgCanvas.getSvgContent().getAttribute(GUIDES_ATTR)),
+    setGuides: (guides, label = 'Edit guides') => {
+      const root = svgCanvas.getSvgContent()
+      const next = formatGuides(guides)
+      if (next === formatGuides(parseGuides(root.getAttribute(GUIDES_ATTR)))) return false
+      svgCanvas.transact(label, () => {
+        if (next) root.setAttribute(GUIDES_ATTR, next)
+        else root.removeAttribute(GUIDES_ATTR)
+      })
+      return true
+    }
   }
 }

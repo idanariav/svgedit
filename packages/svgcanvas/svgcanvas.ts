@@ -24,10 +24,12 @@ import { init as toolRegistryInit } from './core/tool-registry.ts'
 import { init as selectionInit } from './core/selection.ts'
 import { init as textActionsInit } from './core/text-actions.ts'
 import { init as eventInit } from './core/event.ts'
-import { init as jsonInit } from './core/json.ts'
+import { createJson } from './core/json.ts'
+import type { JsonApi } from './core/json.ts'
 import * as elemGetSet from './core/elem-get-set.ts'
 import { init as selectedElemInit } from './core/selected-elem.ts'
-import { init as blurInit } from './core/blur-event.ts'
+import { createBlurEvent } from './core/blur-event.ts'
+import type { BlurEventApi } from './core/blur-event.ts'
 import { getReverseNS, NS } from './core/namespaces.ts'
 import {
   assignAttributes,
@@ -50,8 +52,9 @@ import {
 } from './core/dom-utils.ts'
 import {
   getBBoxOfElementAsPath,
-  init as bboxUtilsInit
+  createBBoxUtils
 } from './core/bbox-utils.ts'
+import type { BBoxUtilsApi } from './core/bbox-utils.ts'
 import { convertToPath } from './core/path-utils.ts'
 import { encode64, decode64, blankPageObjectURL } from './core/encoding-utils.ts'
 import {
@@ -63,42 +66,58 @@ import { isExtensionHook, EXTENSION_LIFECYCLE_METHODS } from './core/extension-h
 import { warn } from './common/logger.ts'
 import { createUnits, getTypeMap } from './core/units.ts'
 import { init as svgInit } from './core/svg-exec.ts'
-import { init as svgDefsInit } from './core/svg-defs.ts'
-import { init as coordsInit } from './core/coords.ts'
-import { init as recalculateInit } from './core/recalculate.ts'
+import { createSvgDefs } from './core/svg-defs.ts'
+import type { SvgDefsApi } from './core/svg-defs.ts'
+import { createCoords } from './core/coords.ts'
+import type { CoordsApi } from './core/coords.ts'
+import { createRecalculate } from './core/recalculate.ts'
+import type { RecalculateApi } from './core/recalculate.ts'
 import { init as selectInit } from './core/select.ts'
 import { clearSvgContentElement } from './core/clear.ts'
 import { createBooleanOps } from './core/boolean-ops.ts'
-import { init as pathOffsetInit } from './core/path-offset.ts'
-import { init as pathSimplifyInit } from './core/path-simplify.ts'
-import { init as cornerRadiusInit } from './core/corner-radius.ts'
-import { init as taperStrokeInit } from './core/taper-stroke.ts'
-import { init as objectStateInit } from './core/object-state.ts'
+import { createPathOffset } from './core/path-offset.ts'
+import type { PathOffsetApi } from './core/path-offset.ts'
+import { createPathSimplify } from './core/path-simplify.ts'
+import type { PathSimplifyApi } from './core/path-simplify.ts'
+import { createCornerRadius } from './core/corner-radius.ts'
+import type { CornerRadiusApi } from './core/corner-radius.ts'
+import { createTaperStroke } from './core/taper-stroke.ts'
+import type { TaperStrokeApi } from './core/taper-stroke.ts'
+import { createObjectState } from './core/object-state.ts'
+import type { ObjectStateApi } from './core/object-state.ts'
 import { createDrawSnap } from './core/draw-snap.ts'
 import { createGestureState } from './core/gesture-state.ts'
-import { init as guidesInit } from './core/guides.ts'
-import { init as dashFitInit } from './core/dash-fit.ts'
-import { init as arrowAlignInit } from './core/arrow-align.ts'
-import { init as pathJoinInit } from './core/path-join.ts'
+import { createGuides } from './core/guides.ts'
+import type { GuidesApi } from './core/guides.ts'
+import { createDashFit } from './core/dash-fit.ts'
+import type { DashFitApi } from './core/dash-fit.ts'
+import { createArrowAlign } from './core/arrow-align.ts'
+import type { ArrowAlignApi } from './core/arrow-align.ts'
+import { createPathJoin } from './core/path-join.ts'
+import type { PathJoinApi } from './core/path-join.ts'
 import { init as liveStackInit } from './core/live-stack.ts'
 import { init as artBrushInit } from './core/art-brush-canvas.ts'
 import { init as blendInit } from './core/blend-canvas.ts'
-import { init as liveEffectsInit } from './core/live-effects.ts'
+import { createLiveEffects } from './core/live-effects.ts'
+import type { LiveEffectsApi } from './core/live-effects.ts'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.ts'
 import { init as warpInit } from './core/warp.ts'
 import { init as distortInit } from './core/distort.ts'
-import { init as textPathInit } from './core/text-path.ts'
+import { createTextPath } from './core/text-path.ts'
+import type { TextPathApi } from './core/text-path.ts'
 import { init as shapeBuilderInit } from './core/shape-builder.ts'
 import { createClipMask } from './core/clip-mask.ts'
-import { init as cutterInit } from './core/cutter.ts'
-import { init as segmentInit } from './core/segment.ts'
+import { createCutter } from './core/cutter.ts'
+import type { CutterApi } from './core/cutter.ts'
+import { createSegment } from './core/segment.ts'
+import type { SegmentApi } from './core/segment.ts'
 import { createImageCrop } from './core/image-crop.ts'
 import {
   getClosest,
   getParents,
   mergeDeep
 } from './common/util.ts'
-import { runGuardedInit } from './common/initGuard.ts'
+import { runGuardedInit, attachApi } from './common/initGuard.ts'
 
 import dataStorage from './core/dataStorage.ts'
 import type { StyleProps, BrushParams, XY, CanvasState, ElementAndBBox } from './core/canvas-state.ts'
@@ -232,10 +251,28 @@ export interface UndoManager {
   finishUndoableChange(): HistoryCommand & { isEmpty(): boolean }
 }
 
-/**
- * The main SvgCanvas class that manages all SVG-related functions.
- *
- */
+/** What the core modules give the canvas; each module owns its interface. */
+type ModuleApis =
+  SvgDefsApi &
+  BlurEventApi &
+  JsonApi &
+  CoordsApi &
+  RecalculateApi &
+  BBoxUtilsApi &
+  PathOffsetApi &
+  PathSimplifyApi &
+  DashFitApi &
+  ArrowAlignApi &
+  CornerRadiusApi &
+  PathJoinApi &
+  GuidesApi &
+  SegmentApi &
+  CutterApi &
+  TextPathApi &
+  TaperStrokeApi &
+  LiveEffectsApi &
+  ObjectStateApi
+
 /** The detail of the event `call()` dispatches: its argument, and what the last `bind()` handler returned. */
 interface CallDetail { arg: unknown, result?: unknown }
 
@@ -246,7 +283,10 @@ export interface ExtensionObject {
   [hook: string]: unknown
 }
 
-class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers & InternalMembers) {
+/**
+ * The main SvgCanvas class that manages all SVG-related functions.
+ */
+class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers & InternalMembers & ModuleApis) {
   static $id = $id
   static $qq = $qq
   static $qa = $qa
@@ -444,11 +484,11 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     // Created before the core inits so their document/window listeners can use its signal.
     this.destroyAbort = new AbortController()
 
-    runGuardedInit(this, 'json', jsonInit, initGuardRegistry)
+    attachApi(this, 'json', createJson(this), initGuardRegistry)
     runGuardedInit(this, 'domUtils', domUtilsInit, initGuardRegistry)
-    runGuardedInit(this, 'bboxUtils', bboxUtilsInit, initGuardRegistry)
-    runGuardedInit(this, 'coords', coordsInit, initGuardRegistry)
-    runGuardedInit(this, 'recalculate', recalculateInit, initGuardRegistry)
+    attachApi(this, 'bboxUtils', createBBoxUtils(this), initGuardRegistry)
+    attachApi(this, 'coords', createCoords(this), initGuardRegistry)
+    attachApi(this, 'recalculate', createRecalculate(this), initGuardRegistry)
     runGuardedInit(this, 'select', selectInit, initGuardRegistry)
     runGuardedInit(this, 'undo', undoInit, initGuardRegistry)
     runGuardedInit(this, 'transaction', transactionInit, initGuardRegistry)
@@ -474,7 +514,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     runGuardedInit(this, 'event', eventInit, initGuardRegistry)
     runGuardedInit(this, 'textActions', textActionsInit, initGuardRegistry)
     runGuardedInit(this, 'svg', svgInit, initGuardRegistry)
-    runGuardedInit(this, 'svgDefs', svgDefsInit, initGuardRegistry)
+    attachApi(this, 'svgDefs', createSvgDefs(this), initGuardRegistry)
     runGuardedInit(this, 'draw', draw.init, initGuardRegistry)
     runGuardedInit(this, 'elemGetSet', elemGetSet.init, initGuardRegistry)
 
@@ -495,31 +535,31 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & AttachedMembers 
     // Alias function
     this.linkControlPoints = this.pathActions.linkControlPoints
 
-    runGuardedInit(this, 'blur', blurInit, initGuardRegistry)
+    attachApi(this, 'blur', createBlurEvent(this), initGuardRegistry)
     runGuardedInit(this, 'selectedElem', selectedElemInit, initGuardRegistry)
     this.booleanOps = createBooleanOps(this)
-    runGuardedInit(this, 'pathOffset', pathOffsetInit, initGuardRegistry)
-    runGuardedInit(this, 'pathSimplify', pathSimplifyInit, initGuardRegistry)
+    attachApi(this, 'pathOffset', createPathOffset(this), initGuardRegistry)
+    attachApi(this, 'pathSimplify', createPathSimplify(this), initGuardRegistry)
     runGuardedInit(this, 'liveStack', liveStackInit, initGuardRegistry)
-    runGuardedInit(this, 'cornerRadius', cornerRadiusInit, initGuardRegistry)
-    runGuardedInit(this, 'taperStroke', taperStrokeInit, initGuardRegistry)
+    attachApi(this, 'cornerRadius', createCornerRadius(this), initGuardRegistry)
+    attachApi(this, 'taperStroke', createTaperStroke(this), initGuardRegistry)
     runGuardedInit(this, 'artBrush', artBrushInit, initGuardRegistry)
     runGuardedInit(this, 'blend', blendInit, initGuardRegistry)
-    runGuardedInit(this, 'objectState', objectStateInit, initGuardRegistry)
+    attachApi(this, 'objectState', createObjectState(this), initGuardRegistry)
     this.drawSnap = createDrawSnap(this)
     this.clipMask = createClipMask(this)
-    runGuardedInit(this, 'guides', guidesInit, initGuardRegistry)
-    runGuardedInit(this, 'dashFit', dashFitInit, initGuardRegistry)
-    runGuardedInit(this, 'arrowAlign', arrowAlignInit, initGuardRegistry)
-    runGuardedInit(this, 'pathJoin', pathJoinInit, initGuardRegistry)
-    runGuardedInit(this, 'liveEffects', liveEffectsInit, initGuardRegistry)
+    attachApi(this, 'guides', createGuides(this), initGuardRegistry)
+    attachApi(this, 'dashFit', createDashFit(this), initGuardRegistry)
+    attachApi(this, 'arrowAlign', createArrowAlign(this), initGuardRegistry)
+    attachApi(this, 'pathJoin', createPathJoin(this), initGuardRegistry)
+    attachApi(this, 'liveEffects', createLiveEffects(this), initGuardRegistry)
     runGuardedInit(this, 'liveEffectsDistort', liveEffectsDistortInit, initGuardRegistry)
     runGuardedInit(this, 'warp', warpInit, initGuardRegistry)
     runGuardedInit(this, 'distort', distortInit, initGuardRegistry)
-    runGuardedInit(this, 'textPath', textPathInit, initGuardRegistry)
+    attachApi(this, 'textPath', createTextPath(this), initGuardRegistry)
     runGuardedInit(this, 'shapeBuilder', shapeBuilderInit, initGuardRegistry)
-    runGuardedInit(this, 'cutter', cutterInit, initGuardRegistry)
-    runGuardedInit(this, 'segment', segmentInit, initGuardRegistry)
+    attachApi(this, 'cutter', createCutter(this), initGuardRegistry)
+    attachApi(this, 'segment', createSegment(this), initGuardRegistry)
     this.imageCrop = createImageCrop(this)
 
     /**

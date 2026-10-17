@@ -46,9 +46,8 @@ test.describe('SVG core recalculate', () => {
       }
       canvas.units = window.svgHarness.units.createUnits({ getRoundDigits: () => 5, getBaseUnit: () => 'px' })
       utilities.init(canvas)
-      coords.init(canvas)
-      recalculate.init(canvas)
-
+      Object.assign(canvas, coords.createCoords(canvas))
+      Object.assign(canvas, recalculate.createRecalculate(canvas))
       const identityRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       identityRect.setAttribute('x', '10')
       identityRect.setAttribute('y', '10')
