@@ -35,7 +35,21 @@ export const test = base.extend({
     fs.writeFileSync(path.join(nycDir, `playwright-worker-${workerInfo.workerIndex}.json`), JSON.stringify(merged))
   }, { scope: 'worker', auto: true }],
   page: async ({ page }, use, testInfo) => {
+    // Undo is by model snapshot (core/snapshot-history.ts); SE_COMMAND_UNDO=1 runs the suite on the commands' own (un)apply
+    // instead, with the snapshot mirror checking every undo / redo against the snapshots (core/snapshot-mirror.ts)
+    await page.addInitScript((commandUndo) => {
+      globalThis.__SE_SNAPSHOT_MIRROR = commandUndo
+      globalThis.__SE_SNAPSHOT_UNDO = !commandUndo
+    }, process.env.SE_COMMAND_UNDO === '1')
     await use(page)
+
+    if (testInfo.status === 'passed') {
+      const problems = await page.evaluate(() => window.svgEditor?.svgCanvas?.snapshotMirror?.problems ?? []).catch(() => [])
+      if (problems.length) {
+        fs.mkdirSync('test-results', { recursive: true })
+        fs.appendFileSync('test-results/snapshot-mirror.jsonl', JSON.stringify({ test: testInfo.titlePath.join(' › '), problems }) + '\n')
+      }
+    }
 
     // Drawing invariants (core/drawing-invariants.js): after every passing
     // test, the drawing in the page must still be structurally healthy. A test

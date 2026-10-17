@@ -86,6 +86,12 @@ export interface SelectedChangedPayload {
 
 export interface ElementsPayload {
   elems: Element[]
+  /**
+   * The change is an undo / redo that restored a snapshot (`core/snapshot-history.ts`): what the drawing derives from its
+   * elements (blend steps, art-brush paths, filter regions…) came back with them, so a feature that regenerates such data on
+   * `elementChanged` must leave it alone.
+   */
+  restored?: boolean
 }
 
 export interface OpenedDocumentPayload {

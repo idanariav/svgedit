@@ -24,6 +24,7 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { ElementsPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
 
 const name = 'blend'
 const P = 'ext-blend'
@@ -184,8 +185,9 @@ export default defineFeature({
       refresh()
     })
 
-    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
-      // The steps follow their keys (also after an undo of a key edit).
+    svgCanvas.bind('elementChanged', (_win: Window, opts: ElementsPayload) => {
+      // The steps follow their keys; an undo or redo brings the steps back with the keys.
+      if (opts.restored) { refresh(); return }
       let changed = false
       for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshBlend(el) || changed
       if (changed || blendedSelection()) refresh()

@@ -83,6 +83,7 @@
 | `load-image.ts` | Load an image href into an `HTMLImageElement`, ready for `drawImage` |
 | `math.ts` | Mathematical utilities |
 | `measure.ts` | Measure tool maths: the distance, angle and offsets between two points, the 45° constraint, and the readout lines |
+| `model-render.ts` | Document model → SVG DOM (R1 step b): the renderer that makes the DOM a view of the model |
 | `namespaces.ts` | Namespaces or tools therefor |
 | `object-state.ts` | Per-object state for the Layers panel's object rows: hidden (`display="none"`, the same mechanism as a hidden layer), locked (`se:locked="true"`, the same attribute a locked layer carries) and moving objects between… |
 | `paint.ts` | Fill, stroke, color management |
@@ -115,6 +116,8 @@
 | `shape-family.ts` | Generators for the "Line Segment family" shape tools: Spiral, Arc, Rectangular Grid and Polar Grid, plus the drag geometry (Shift = equal axes, Alt = from the centre) the tools share |
 | `shape-recognize.ts` | Shape recognition for the Shaper tool: a rough freehand stroke becomes a clean shape |
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
+| `snapshot-history.ts` | Undo and redo as model snapshots (R1 step d): the drawing after every command, and a step is `reconcile(dom, now, snapshot)` |
+| `snapshot-mirror.ts` | The undo stack as document-model snapshots, kept beside the command stack as an oracle (R1 step d, observer mode) |
 | `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
 | `svg-defs.ts` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.ts` | SVG text in and out of the canvas: serializing the drawing (`svgToString`, `svgCanvasToString`), loading it (`setSvgString`), importing and inserting fragments, embedding images and fonts, and rasterising the result |

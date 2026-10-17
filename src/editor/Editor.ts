@@ -379,6 +379,8 @@ host restore) leave this false to avoid polluting history.
     const cmd = Object.assign(new Command(), { text: 'Change canvas background' })
     cmd.type = () => 'ChangeBackgroundCommand'
     cmd.elements = () => []
+    // The background is a preference, not part of the drawing: undo by snapshot leaves it to this command
+    ;(cmd as unknown as { domless: boolean }).domless = true
     cmd.apply = (handler) => {
       Command.prototype.apply.call(cmd, handler, () => {
         editor.applyBackgroundState(next.color, next.url, editor.gradientElemFromXml(next.gradient))
@@ -689,7 +691,8 @@ host restore) leave this false to avoid polluting history.
       ['emit:elementChanged', () => this.svgCanvas.call(
         'elementChanged',
         {
-          elems
+          elems,
+          ...(this.svgCanvas.restoring ? { restored: true } : {})
         }
       )]
     ])

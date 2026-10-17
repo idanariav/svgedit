@@ -65,12 +65,21 @@ enforce them).
 
 Size: XL (months). Step (a) is in; decide on (b)–(e) with it in hand (see "What step (a) changed about the plan").
 
-**Where this stands (2026-10-17).** R2, R3 and R4 are done (R4 but for the optional `features/` rename), R6 was measured and needs nothing, and the
-part of R1 that pays without a rewrite shipped: the model reads and writes the whole vault losslessly and `npm run cli` inspects, reads
-and checks drawings with no browser. (b)–(e) are still a months-long rewrite, not a refactor: the editor leans on the live DOM at about 94
-`getBBox`, 55 `getStrokedBBox`, 57 `BatchCommand` and 51 `transact` sites. Do not start it as a side effect of other work; start it
-with the text-measurement spike named above (area text through a model plus a measuring SVG), and only if the bug classes in "Today"
-keep costing more than the rewrite would.
+**Where this stands (2026-10-18).** R2, R3 and R4 are done (R4 but for the optional `features/` rename) and R6 was measured and needs nothing. For R1:
+(a) the model reads and writes the whole vault losslessly and `npm run cli` inspects, reads and checks drawings with no browser; **(b) is in:**
+`core/model-render.ts` renders a model into DOM and patches DOM from one model to another (`reconcile`: shared subtrees skipped by identity, children
+matched by id, removed elements pooled so the same node comes back), with `readDom` as its inverse and the 32 round-trip fixtures as the oracle;
+**(d) is in:** undo and redo are model snapshots (`core/snapshot-history.ts`, on by default; see `architecture.md` › Undo), the whole e2e suite
+(592 specs, including the every-command-undoable sweep over 32 fixtures) passes on it, and an undo or redo costs about what the commands cost (≈25 ms
+at 5,000 elements in the instrumented build). What it did **not** do yet is remove the commands: they are still built at the 57 `BatchCommand` and
+88 `ChangeElementCommand` sites, still give the stack its labels, and still run for the one non-element command (the background). Left of R1:
+**(c)** port commands to `(doc, params) → doc'` so the DOM is no longer the place edits are made (the model-first direction), then delete
+`history.js`'s command types, `transaction.js`'s snapshot diff and `undo.js`'s type-keyed side effects (the snapshot history makes the diff
+redundant: a command only has to say *what it was called* and the snapshot says what it did); **(e)** tools as Begin / Preview / Commit over the
+model; and the derived-data features that regenerate on `elementChanged` (art-brush, corner radius, glow / outline / shadow regions, markers, mirror,
+taper, text-on-path, connector) should learn `restored` as blend did, so an undo never re-derives what the snapshot already holds (nothing fails
+without it today). (c) and (e) touch the 94 `getBBox`, 55 `getStrokedBBox` and 51 `transact` sites and are the months; start them with the
+text-measurement spike named above, not as a side effect.
 R2 and R3 make it much cheaper.
 
 ### Step (a): status

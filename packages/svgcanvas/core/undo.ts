@@ -13,6 +13,8 @@ import {
   getRotationAngle, setHref
 } from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.ts'
+import { SnapshotMirror, readContent } from './snapshot-mirror.ts'
+import { SnapshotHistory } from './snapshot-history.ts'
 import { isAreaText, reflowAreaText, settleAreaText, LAYOUT_ATTRS } from './text-rows.ts'
 import {
   isGecko
@@ -420,6 +422,63 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
       type: cmd.type?.() ?? cmd.constructor?.name,
       undoSize: svgCanvas.undoMgr.getUndoStackSize()
     })
+  }
+
+  // Undo and redo as model snapshots (R1 step d, core/snapshot-history.ts). `globalThis.__SE_SNAPSHOT_UNDO = false` before the
+  // canvas is built keeps the commands' own (un)apply instead.
+  if ((globalThis as { __SE_SNAPSHOT_UNDO?: boolean }).__SE_SNAPSHOT_UNDO !== false) {
+    const history = new SnapshotHistory({
+      count: () => svgCanvas.undoMgr.getUndoStackSize(),
+      held: () => svgCanvas.inTransaction(),
+      signal: () => svgCanvas.destroyAbort.signal,
+      content: () => svgCanvas.getSvgContent(),
+      before: () => svgCanvas.clearSelection(),
+      patched: (touched) => {
+        const content = svgCanvas.getSvgContent()
+        // The document size is the viewBox; the width / height follow the zoom
+        const [, , w, h] = (content.getAttribute('viewBox') ?? '').split(/\s+/).map(Number)
+        if (w > 0 && h > 0 && (w !== svgCanvas.contentW || h !== svgCanvas.contentH)) {
+          svgCanvas.contentW = w
+          svgCanvas.contentH = h
+          const root = svgCanvas.getSvgRoot()
+          svgCanvas.updateCanvas(Number(root.getAttribute('width')), Number(root.getAttribute('height')))
+        }
+        // Undoing a change to the path being node-edited keeps the session going; anything else ends it
+        const editedPath = svgCanvas.getCurrentMode() === 'pathedit' ? svgCanvas.getPathObj() : null
+        if (editedPath && touched.includes(editedPath.elem)) {
+          editedPath.dragging = false
+          editedPath.dragctrl = false
+          editedPath.init().show(true)
+        } else {
+          svgCanvas.pathActions.clear()
+        }
+        svgCanvas.identifyLayers()
+        for (const el of touched) if (el.tagName === 'use') svgCanvas.setUseData(el)
+        svgCanvas.logDebugEvent?.('history-apply', { direction: 'snapshot', elemIds: touched.map((el) => el.id || null), mode: svgCanvas.getCurrentMode() })
+        if (touched.length) {
+          svgCanvas.restoring = true
+          try { svgCanvas.call('changed', touched) } finally { svgCanvas.restoring = false }
+        }
+      }
+    })
+    svgCanvas.snapshotHistory = history
+    const mgr = svgCanvas.undoMgr
+    const prevPush = mgr.onPush
+    mgr.onPush = (cmd) => { prevPush?.(cmd); history.pushed(mgr.getUndoStackSize()) }
+    mgr.onReset = () => history.reset()
+    mgr.snapshots = history
+  }
+
+  // Oracle for R1 (core/snapshot-mirror.ts): off unless a test or a developer asks for it before the canvas is built.
+  if ((globalThis as { __SE_SNAPSHOT_MIRROR?: boolean }).__SE_SNAPSHOT_MIRROR) {
+    const mirror = new SnapshotMirror(() => readContent(svgCanvas.getSvgContent()))
+    svgCanvas.snapshotMirror = mirror
+    const mgr = svgCanvas.undoMgr
+    const prevPush = mgr.onPush
+    mgr.onPush = (cmd) => { prevPush?.(cmd); mirror.pushed() }
+    mgr.onUndo = (cmd) => mirror.undone(cmd.getText?.() ?? '')
+    mgr.onRedo = (cmd) => mirror.redone(cmd.getText?.() ?? '')
+    mgr.onReset = () => mirror.reset()
   }
 
   return {

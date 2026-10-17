@@ -19,7 +19,7 @@ Every detail carries `seq` (1, 2, 3… from switch-on) and `t` (ms since switch-
 | `selection` | selection changed | `elems`, `mode` |
 | `tool-gesture` | a `registerTool` gesture | `tool`, `phase` (`begin` / `commit` / `cancel`), `at`, `created`, `why` |
 | `history-push` | a command landed on the undo stack | `text`, `type`, `undoSize`. A shape drawn by a drag is pushed shortly **after** its `pointer-up` |
-| `history-apply` | undo / redo applied | `direction`, `cmdType`, `text`, `elemIds`, `mode`, `refreshedInPlace` |
+| `history-apply` | undo / redo applied | `direction`, `cmdType`, `text`, `elemIds`, `mode`, `refreshedInPlace` (by snapshot: `direction: 'snapshot'`, `elemIds` of the elements the step changed, no `cmdType`) |
 | `path-*`, `pathedit-*` | node selection, enter / exit path edit, open / close subpath, node delete, commits | see `path-actions.js`, `path-method.js` |
 | `debug-snapshot` | the visibility state changed (polled every 400 ms) | selectors, path grips (`stale` flags those rendered without a model behind them), group dimming, `pathEditing.mode` |
 

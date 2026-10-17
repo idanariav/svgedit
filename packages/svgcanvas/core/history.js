@@ -770,6 +770,14 @@ export class UndoManager {
     this.undoStack = /** @type {any[]} */ ([])
     /** Debug hook: called after every command lands on the stack (see undo.js). @type {?((cmd: any) => void)} */
     this.onPush = null
+    /** Debug hooks (see snapshot-mirror.ts): after an undo step, after a redo step, and after the stack was cleared. @type {?((cmd: any) => void)} */
+    this.onUndo = null
+    /** @type {?((cmd: any) => void)} */
+    this.onRedo = null
+    /** @type {?(() => void)} */
+    this.onReset = null
+    /** Undo and redo as model snapshots instead of command (un)apply: `{ step (count) }`, see snapshot-history.ts. @type {?{ step: (count: number) => void, baseline: () => void }} */
+    this.snapshots = null
 
     // this is the stack that stores the original values, the elements and
     // the attribute name for begin/finish
@@ -784,6 +792,7 @@ export class UndoManager {
   resetUndoStack () {
     this.undoStack = /** @type {any[]} */ ([])
     this.undoStackPointer = 0
+    this.onReset?.()
   }
 
   /**
@@ -821,7 +830,10 @@ export class UndoManager {
   undo () {
     if (this.undoStackPointer > 0) {
       const cmd = this.undoStack[--this.undoStackPointer]
-      cmd.unapply(this.handler_)
+      // a command that changes no element (the canvas background is a preference) is not in a snapshot: it runs itself
+      if (this.snapshots && !cmd.domless) this.snapshots.step(this.undoStackPointer)
+      else cmd.unapply(this.handler_)
+      this.onUndo?.(cmd)
     }
   }
 
@@ -832,7 +844,9 @@ export class UndoManager {
   redo () {
     if (this.undoStackPointer < this.undoStack.length && this.undoStack.length > 0) {
       const cmd = this.undoStack[this.undoStackPointer++]
-      cmd.apply(this.handler_)
+      if (this.snapshots && !cmd.domless) this.snapshots.step(this.undoStackPointer)
+      else cmd.apply(this.handler_)
+      this.onRedo?.(cmd)
     }
   }
 
@@ -868,6 +882,7 @@ export class UndoManager {
   * @returns {void}
   */
   beginUndoableChange (attrName, elems) {
+    this.snapshots?.baseline()
     const p = ++this.undoChangeStackPointer
     let i = elems.length
     const oldValues = new Array(i); const elements = new Array(i)

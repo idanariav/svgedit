@@ -289,6 +289,7 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
    * @param label Undo-menu text of the resulting step.
    */
   const beginTransaction = (label: string, options: TransactionOptions = {}): Transaction => {
+    undoMgr.snapshots?.baseline()
     if (!session) {
       session = {
         label,

@@ -142,6 +142,8 @@ export class CommandRegistry {
   table: Map<string, CommandRecord>
   runListeners: Set<(entry: RunEntry) => void>
   runDepth: number
+  /** commands executing now, the outermost being 1 (see runCommand) */
+  execDepth = 0
 
   /** @param editor the owning editor instance (one registry per editor) */
   constructor (editor: EditorInstance) {
@@ -346,6 +348,8 @@ export class CommandRegistry {
     const state = this.isEnabled(id)
     if (state !== true) throw new CommandError('disabled', id, state)
     const args = this.validate(rec, params)
+    // the drawing as it is now is where this command starts from (a command run by a command is part of the outer one)
+    if (this.execDepth++ === 0) this.editor?.svgCanvas?.undoMgr?.snapshots?.baseline()
     try {
       const canvas = this.editor?.svgCanvas
       const exec = () => rec.run(this.editor, args as never)
@@ -355,6 +359,7 @@ export class CommandRegistry {
       logError(`Command "${id}" failed`, err, 'commands')
       throw new CommandError('internal', id, err instanceof Error ? err.message : String(err), err)
     } finally {
+      this.execDepth--
       // The selection events a command fires land before an atomic command's
       // undo step is recorded, so the undo/redo state they refreshed is stale.
       this.refreshEnablement()
