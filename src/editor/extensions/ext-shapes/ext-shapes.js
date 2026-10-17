@@ -99,7 +99,7 @@ export default {
           const { svgContent, bbox } = /** @type {Required<Pick<ShapeInsertDetail, 'svgContent'|'bbox'>>} */ (userShape)
           const parser = new DOMParser()
           const parsed = parser.parseFromString(
-          `<svg xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`,
+          `<svg xmlns="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">${svgContent}</svg>`,
           'image/svg+xml'
           )
           // A saved shape may carry its referenced paint servers in a leading

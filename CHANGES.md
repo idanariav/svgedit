@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.10
+- Fix: a saved user shape that carries `se:` attributes is parsed with the `se` namespace declared, so inserting it no longer fails or drops them.
+
 ## 7.4.1-fork.9
 - UI: hover tooltips appear after ~350 ms (`tooltips.js`) instead of the browser's slow, sometimes missing `title` tooltip, and also on disabled tools, where they say why the tool is unavailable.
 - Fix: picking a custom centre for Repeat no longer opens the popover and closes it at once (the native popover's light dismiss ran on the picking click's `pointerup`).
