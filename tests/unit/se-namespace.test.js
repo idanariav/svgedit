@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { declareMissingSeNamespace, hasUnnamespacedSeAttr } from '../../packages/svgcanvas/core/se-namespace.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 

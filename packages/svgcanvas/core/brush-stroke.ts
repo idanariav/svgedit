@@ -21,7 +21,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { profile as taperProfile } from './taper-stroke.ts'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.ts'
 

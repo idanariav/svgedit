@@ -85,7 +85,7 @@ const ensureBuild = async () => {
     const latestSource = Math.max(
       ...(await Promise.all(roots.map(getLatestMtime))),
       // the canvas entry file sits outside `core/` but is part of the bundle
-      (await stat(join(process.cwd(), 'packages', 'svgcanvas', 'svgcanvas.js'))).mtimeMs
+      (await stat(join(process.cwd(), 'packages', 'svgcanvas', 'svgcanvas.ts'))).mtimeMs
     )
     if (latestSource > distStat.mtimeMs) {
       needsBuild = true

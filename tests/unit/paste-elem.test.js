@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 describe('paste-elem', () => {

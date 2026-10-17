@@ -22,7 +22,7 @@ short: details belong in the area files.
   `tsconfig.strict.json`. Import a `.ts` module with its `.ts` extension (`./x.ts`): plain Node runs the headless engine and
   does not map `.js` to `.ts`. After renaming a module run `node scripts/check-ts-imports.mjs --fix`. A new *editor* module
   stays `// @ts-check` with strict JSDoc until the editor has its own strict tsconfig. When you touch a core module's `init`,
-  type its `canvas` parameter as `import('../svgcanvas.js').default`; convert a module you are rewriting anyway.
+  type its `canvas` parameter as `SvgCanvas` (`import type SvgCanvas from '../svgcanvas.ts'`); convert a module you are rewriting anyway.
 - **No new `canvas.foo = …` attachments** ([R2](roadmap/rearchitecture.md#r2-canvas-composition-instead-of-attached-members)):
   a new core module exports functions that take the canvas (or what they need from it) as an argument, and the editor
   imports them. Attach to the canvas only what hosts or extensions call through `svgCanvas`.
@@ -62,7 +62,7 @@ self-contained **`dist/editor/Editor.js`**. Full write-up, evidence and migratio
 |---|---|---|---|
 | R1 | A document model as the source of truth (persistent tree, snapshot undo, SVG as import/export), replacing the live DOM + command-diff undo (step a mostly done 2026-10-15: `core/model/`, see its status in the re-architecture file) | XL | R2, R3 helpful |
 | R2 | Canvas composition: modules export functions over an explicit context instead of attaching ~540 members to one object (facade typed 2026-10-16; members not yet moved off the canvas, see the status in the re-architecture file) | L | — |
-| R3 | TypeScript (`.ts`) for the engine, then the editor (toolchain done; engine converted 2026-10-17 except `svgcanvas.js` and the modules R1 deletes) | M toolchain + L conversion | — |
+| R3 | TypeScript (`.ts`) for the engine, then the editor (toolchain done; engine converted 2026-10-17 (except the modules R1 deletes); the editor is next) | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 

@@ -11,7 +11,7 @@ import { init as layerOpsInit } from './layer-ops.ts'
 import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.ts'
 import { getParentsUntil } from '../common/util.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type HistoryRecordingService from './historyrecording.js'
 
 const visElems =

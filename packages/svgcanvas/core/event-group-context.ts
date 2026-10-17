@@ -12,7 +12,7 @@
  * @license MIT
  */
 import { transformPoint, getMatrixToContent } from './math.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
  * Modes that operate on existing elements / the selection, working in content

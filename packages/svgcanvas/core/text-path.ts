@@ -23,7 +23,7 @@ import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getTextWithNewlines } from './text-rows.ts'
 import { warn } from '../common/logger.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BatchCommand } from './history.js'
 
 // Geometry attributes dropped when a shape is rebuilt as a different tag.

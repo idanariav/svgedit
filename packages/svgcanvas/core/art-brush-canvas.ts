@@ -33,7 +33,7 @@ import { LIVE_ATTRS } from './path-join.ts'
 import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.ts'
 import type { ArtPath } from './art-brush.ts'
 import type { Pt } from './anchor-path.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 export const BRUSH_ATTR = 'se:art-brush'
 export const SPINE_ATTR = 'se:art-spine'

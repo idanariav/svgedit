@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 describe('path-join on the canvas', () => {
   let svgCanvas

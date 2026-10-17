@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // Regression guard: SvgCanvas registered a window 'storage' listener in its
 // constructor with no removal path. Every closed drawing view kept its

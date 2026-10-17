@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // Guards for behaviour tightened while svgcanvas.js moved under the strict typecheck
 // (noImplicitAny + strictNullChecks): the null cases the old code let through.

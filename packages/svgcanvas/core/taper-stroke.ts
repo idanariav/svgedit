@@ -36,7 +36,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { NS } from './namespaces.ts'
 import { warn } from '../common/logger.ts'
 import { getPaperScope, toAbsolutePathData } from './paper-utils.ts'

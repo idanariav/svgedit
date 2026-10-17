@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSpinInput.js'
 import extCornerRadius from '../../src/editor/extensions/ext-corner-radius/ext-corner-radius.js'
 import { installMockSvgEditor, uninstallMockSvgEditor } from './components/testUtils.js'

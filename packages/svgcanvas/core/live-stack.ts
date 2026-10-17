@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { parseAnchors, sameAnchorGeometry } from './anchor-path.ts'
 import { registerElementCheck } from './drawing-invariants.ts'
 

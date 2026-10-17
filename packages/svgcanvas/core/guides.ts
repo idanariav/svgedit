@@ -14,7 +14,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 
 export const GUIDES_ATTR = 'se:guides'

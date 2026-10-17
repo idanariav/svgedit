@@ -14,7 +14,7 @@
  */
 
 import ClipperLib from 'clipper-lib'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper } from './paper-utils.ts'
 import { warn } from '../common/logger.ts'
 

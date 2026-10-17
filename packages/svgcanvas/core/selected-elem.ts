@@ -11,7 +11,7 @@ import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import { init as groupOpsInit } from './group-ops.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 
 const {
@@ -1014,7 +1014,7 @@ export const init = (canvas: SvgCanvas): void => {
     const curElem = selectedElements[0]
     let elem: Element | undefined
     const allElems = svgCanvas.getVisibleElements(
-      currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer()
+      currentGroup || svgCanvas.getCurrentDrawing().getCurrentLayer() as Element
     )
     if (!allElems.length) {
       return

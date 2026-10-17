@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // The node editor models a closed subpath as `M start ... L(back to start) Z`:
 // the explicit closing lineto is the start vertex's one and only grip, and

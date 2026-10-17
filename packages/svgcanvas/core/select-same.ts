@@ -14,7 +14,7 @@
 
 // The modular entry point: only the colour modes and parsers the fills and strokes of a drawing use
 // (hex, names, rgb(), hsl()), not all of culori.
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { useMode, useParser, parse, modeRgb, modeOklab, modeHsl, parseHex, parseNamed, parseRgb, parseHsl, parseTransparent } from 'culori/fn'
 
 useMode(modeRgb)

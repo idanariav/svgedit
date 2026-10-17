@@ -6,7 +6,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getReverseNS, NS } from './namespaces.ts'
 import { getHref, setHref, getUrlFromAttr } from './dom-utils.ts'
 import { warn } from '../common/logger.ts'

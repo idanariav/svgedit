@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
 import { init as initClipMask } from '../../packages/svgcanvas/core/clip-mask.ts'
 

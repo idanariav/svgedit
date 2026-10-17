@@ -26,7 +26,7 @@ import { init as eventResizeInit } from './event-resize.ts'
 import { init as eventRotateInit } from './event-rotate.ts'
 import { init as eventSelectInit } from './event-select.ts'
 import { describeElement, describePointer } from './debug-events.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { DrawSnapOptions } from './draw-snap.ts'
 
 const {

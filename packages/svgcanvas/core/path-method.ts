@@ -14,7 +14,7 @@ import {
 import {
   assignAttributes
 } from './dom-utils.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { XY } from './canvas-state.ts'
 import type {
   CtrlPoints, PathElement, PathObject, PathSegItem, PathSegment

@@ -20,7 +20,7 @@ import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guide
 import { warn as logWarn } from '../common/logger.ts'
 import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.ts'
 import { anchorsToD } from './anchor-path.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { PathElement, PathObject, PathSegItem } from './path-types.ts'
 import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.ts'
 import type { PenEnd } from './pen-continue.ts'

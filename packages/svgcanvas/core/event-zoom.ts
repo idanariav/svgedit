@@ -5,7 +5,7 @@
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /** The pointer position the dispatcher hands every zoom handler: unzoomed (`realX/Y`) and the zoom factor. */
 interface ZoomPointer { realX: number, realY: number, zoom: number }

@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { init as initEventSelect } from '../../packages/svgcanvas/core/event-select.ts'
 
 // Regression test: undoing a drag of multiple ungrouped selected elements

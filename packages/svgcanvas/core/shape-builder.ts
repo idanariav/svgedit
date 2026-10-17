@@ -23,7 +23,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getOwnTransformScale, getPaperScope, getStyleAttrs as getBaseStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { warn } from '../common/logger.ts'
 

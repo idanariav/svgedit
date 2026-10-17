@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // `bind`/`call` used to be backed by a single-slot `events` object, so a
 // second `bind()` for the same name silently replaced the first handler

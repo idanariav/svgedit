@@ -19,7 +19,7 @@ import {
   getTransformList
 } from './math.ts'
 import { getUnits } from './units.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 
 /** One path segment as `remapElement` reads it: the legacy `pathSegList` item or a `getPathData()` entry, by type number. */

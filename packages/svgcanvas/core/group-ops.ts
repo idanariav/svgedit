@@ -21,7 +21,7 @@ import {
 } from './math.ts'
 import { isGecko } from '../common/browser.ts'
 import { getParents } from '../common/util.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 const {
   Command,

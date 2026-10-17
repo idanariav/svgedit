@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import {
   registerLiveEffect, listLiveEffects, parseFxStack, serializeFxStack, sanitizeFxStack,
   computeFxD, isFxCurrent, remapFxSource, resolveParams, MAX_FX_ANCHORS,

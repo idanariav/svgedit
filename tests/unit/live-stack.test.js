@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { registerLiveEffect } from '../../packages/svgcanvas/core/live-effects.ts'
 import { presetPoints } from '../../packages/svgcanvas/core/width-profile.ts'
 import { planStack, removalSet, canAddStage, stackProblems, rebuildAfterRemap } from '../../packages/svgcanvas/core/live-stack.ts'

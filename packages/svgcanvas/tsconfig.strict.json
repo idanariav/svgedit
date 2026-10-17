@@ -7,8 +7,7 @@
  },
  "files": [
   "legacy-jsdoc-types.d.ts",
-  "svgcanvas.d.ts",
-  "svgcanvas.js",
+  "svgcanvas.ts",
   "common/browser.ts",
   "common/initGuard.ts",
   "common/logger.ts",

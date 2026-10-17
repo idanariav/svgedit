@@ -152,18 +152,18 @@ in `tests/unit/svgcanvas-facade.test.js`), and `tsc` checks every module against
 `drawSnap` (a service), `gesture` (state) and a handful of stateless helpers; the other ~530 are still attached, and the
 d.ts files and the drift test stay until that changes. What remains is the work below: services for the loose state
 (`selectorManager`, `pathActions`, the drawing handles), `createX(host)` for the 5–10-member modules, then deleting
-the hand-written d.ts for `tsc --emitDeclarationOnly`.
+the two hand-written d.ts files for `tsc --emitDeclarationOnly`.
 
-**Today.** `svgcanvas.js` runs 50 `init(canvas)` functions (`runGuardedInit`), each attaching functions and state to
+**Today.** `svgcanvas.ts` runs 50 `init(canvas)` functions (`runGuardedInit`), each attaching functions and state to
 the one `SvgCanvas` instance (`svgCanvas.findSameAs = findSameAs`): about 540 members, with an `initGuardRegistry` to
 log name collisions. The shape cannot be inferred, so it is described by hand: `svgcanvas-members.d.ts`,
-`svgcanvas-internal.d.ts` (the plumbing members; typed since 2026-10-16), `svgcanvas.d.ts`, kept honest by
+`svgcanvas-internal.d.ts` (the plumbing members; typed since 2026-10-16), kept honest by
 `tests/unit/svgcanvas-dts-drift.test.js`. Generating them was tried and dropped: deriving the members from `init` is a
 type cycle (see [infrastructure](infrastructure.md) › "Typing the `init` modules").
 
 **Target.** Core modules export plain functions taking an explicit context (`selectSameAs(ctx, criterion, opts)`), or
 small service objects the canvas composes; the canvas's public surface is an explicit facade of what hosts and
-extensions call (`hostApi.d.ts` already says what the plugin uses). Types come from the source, and the three
+extensions call (`hostApi.d.ts` already says what the plugin uses). Types come from the source, and the two
 hand-written d.ts files and the drift test go away.
 
 **Evidence from R1 step (a).** The modules that own the `se:` grammars mix pure parsers with DOM or `paper.js` work, so
@@ -204,7 +204,7 @@ down as one typed object. Moved so far: `drawSnap` (service), `clearSvgContentEl
 `svgCanvas.gesture` (`core/gesture-state.ts`: `GestureState` and `createGestureState()`, every field at rest from the
 constructor, so no reader sees `undefined`); unit-test canvases that run the event modules get
 `gesture: createGestureState()`.
-**The facade, as it stands (2026-10-16).** `svgcanvas.d.ts` (the class), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
+**The facade, as it stands (2026-10-17).** `svgcanvas.ts` (the class, and the public types hosts import), `svgcanvas-members.d.ts` (`AttachedMembers`: typed,
 ~310 members) and `svgcanvas-internal.d.ts` (`InternalMembers`: ~205 members core modules share, all typed except eight that wait for their module's conversion) are the facade
 and its plumbing. Three tests keep them honest: `svgcanvas-dts-drift.test.js` (every runtime member is declared as public
 or internal, none is both, no internal one is stale, and now **no required public member is missing at runtime**: the
@@ -235,9 +235,9 @@ Size: L, fully incremental, low risk per module.
 
 ## R3. TypeScript
 
-**Status (2026-10-17).** 112 of the 117 engine modules are `.ts` (the 5 left: the shim `path-seg-shim`, and
+**Status (2026-10-17).** 113 of the 118 engine modules are `.ts` (with `svgcanvas.ts`) (the 5 left: the shim `path-seg-shim`, and
 `history`/`historyrecording`/`transaction`/`undo`, which R1 deletes); every
-converted module is in the strict typecheck. Then `svgcanvas.js` itself, then `src/editor`.
+converted module is in the strict typecheck. Then `src/editor`.
 
 **Decision (2026-10-16): `.ts` for the engine, incrementally.** The toolchain is in and proven on four leaf modules
 (`proportions`, `namespaces`, `se-namespace`, `geometry-remap-registry`). The case for `.ts` that the document model's JSDoc
@@ -248,7 +248,7 @@ opportunistic and small per module.
 **Toolchain, done:**
 - **Lint:** ESLint 9 + `neostandard` (`eslint.config.mjs`) replaces `standard`, which does not lint TypeScript. One style over
   `.js` and `.ts`; `no-var` stays an error (neostandard only warns), `@typescript-eslint/no-explicit-any` is an error in
-  `.ts`. ESLint does not read `.gitignore`: ignores are listed in the config. The three hand-written d.ts files, which
+  `.ts`. ESLint does not read `.gitignore`: ignores are listed in the config. The hand-written d.ts files, which
   `standard` never linted, were autofixed. The 24 stale `eslint-disable` directives are not reported
   (`reportUnusedDisableDirectives: 'off'`, as `standard` behaved); cleaning them up is a possible small task.
 - **Build and tests:** Vite 7 and vitest resolve `./x.js` to `x.ts` from JS importers (checked in build, dev server and
@@ -273,10 +273,10 @@ opportunistic and small per module.
 `text-wrap`, `svgroot`, `load-image`, `model/parse`, `model/serialize`, `model/features`, `model/drawing`, `model/index`, `width-profile`, `measure`, `path-node-guides`, `debug-events`, `touch`, `path-utils`, `paint`, `dom-utils`, `text-rows`, `bbox-utils`, `anchor-path`, `shape-family`, `bezier-fit`, `width-outline`, `select-same`, `drawing-invariants`, `path-fit`, `path-edit`, `path-join`, `dash-fit`, `blend`, `pen-continue`, `path-simplify`, `warp`, `guides`, `smart-guides`, `live-stack`, `art-brush`, `live-effects`, `distort`, `corner-radius`, `gradient-edit`, `recolor`, `shape-recognize`, `arrow-align`, `paper-utils`, `taper-stroke`, `shape-builder`, `path-offset`, `boolean-ops`, `cutter`, `segment`, `split-grid`, `transform-each`, `clip-mask`, `image-crop`, `brush-stroke`, `live-effects-distort`, `json`, `layer`, `object-state`, `sanitize`, `svg-defs`, `layer-ops`, `tool-registry`, `art-brush-canvas`, `blend-canvas`, `copy-elem`, `group-detach`, `event-zoom`, `event-text-edit`, `event-group-context`, `blur-event`, `paste-elem`, `text-path`, `event-path-edit`, `event-rotate`, `event-resize`, `event-shape-draw`, `event-select`, `coords`, `recalculate`, `text-attrs`, `select`, `selection`, `group-ops`, `elem-get-set`, `selected-elem`, `path`, `text-actions`, `event`, `path-method`, `path-types`, `path-actions`, `svg-exec`, `draw` (typedefs became exported interfaces; `any` only where a store is heterogeneous, with an
 `eslint-disable` and the reason).
 
-**Left (the conversion):** the self-contained modules are done and the facade is typed (2026-10-16, see R2). What is left of the engine is `svgcanvas.js` itself (already in the strict typecheck as JSDoc); `path-seg-shim` is a shim and `history.js`, `historyrecording.js`, `transaction.js` and `undo.js` are not worth converting: R1 deletes them. The `strictNullChecks` errors a conversion hits are real ones (`getRubberBox()` and `getrootSctm()` are typed non-null, `path` in `path-actions.ts` too, see techdebt); the editor after the engine, with its own strict tsconfig.
+**Left (the conversion):** the self-contained modules are done and the facade is typed (2026-10-16, see R2). The engine is done (`svgcanvas.ts` last, 2026-10-17); `path-seg-shim` is a shim and `history.js`, `historyrecording.js`, `transaction.js` and `undo.js` are not worth converting: R1 deletes them. The `strictNullChecks` errors a conversion hits are real ones (`getRubberBox()` and `getrootSctm()` are typed non-null, `path` in `path-actions.ts` too, see techdebt); the editor after the engine, with its own strict tsconfig.
 Per module: `git mv x.js x.ts`, move the JSDoc types into syntax (TypeScript's own `annotateWithTypeFromJSDoc` code fix does most of it through the language service API, but it drops the `?` of `[optional]` params, leaves an empty annotation for `module:` pseudo-types, and mixes up the `@param` / `@returns` of a function that follows a `@callback` / `@typedef` block, so read every signature it changed; a class's `this.x = …` fields need declarations; `/** @type {T} */ (expr)` casts become `(expr as T)`), `node scripts/check-ts-imports.mjs --fix`, change the
 `tsconfig.strict.json` entry, `npm run file-map`, tests green. Pitfalls: no big-bang conversion, no `any` to silence errors,
-no enums or parameter properties, and the hand-written d.ts files (`svgcanvas*.d.ts`) still describe the canvas until R2.
+no enums or parameter properties, and the two hand-written d.ts files (`svgcanvas-members.d.ts`, `svgcanvas-internal.d.ts`) still describe the attached members until R2.
 Retire the d.ts and the drift test only with R2.
 
 Size: M for the toolchain (done), L for the conversion (small per module).

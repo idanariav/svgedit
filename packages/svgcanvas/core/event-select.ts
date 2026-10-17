@@ -15,7 +15,7 @@ import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
 import { toCurrentGroupLocalDelta } from './event-group-context.ts'
 import * as hstry from './history.js'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 const { BatchCommand, ChangeElementCommand } = hstry
 

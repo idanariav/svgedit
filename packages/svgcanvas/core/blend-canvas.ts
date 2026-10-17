@@ -49,7 +49,7 @@ import { getTransformList, matrixMultiply } from './math.ts'
 import type { Track } from './art-brush.ts'
 import type { Pt, SubPath } from './anchor-path.ts'
 import type { BlendSpacing } from './blend.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { BLEND_STYLE_ATTRS, MAX_STEPS, pairPaths, pathAt, lerpStyle, stepCount, reverseSubpath, spineStops, centreOn, rotateSubpaths, pinSpine, reversePins } from './blend.ts'
 
 export const BLEND_ATTR = 'se:blend'

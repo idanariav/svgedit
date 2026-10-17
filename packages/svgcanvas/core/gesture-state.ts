@@ -6,7 +6,7 @@
  * @module gesture-state
  * @license MIT
  */
-import type { BBox } from '../svgcanvas.js'
+import type { BBox } from '../svgcanvas.ts'
 
 /** An area-text box being resized: committed or cancelled as one transaction when the mouse is released. */
 export interface AreaResize {

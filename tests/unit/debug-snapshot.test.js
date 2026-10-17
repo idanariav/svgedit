@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // getDebugSnapshot() aggregates internal visibility state (selection boxes,
 // group-context sibling dimming, path-node grips, clip-path/mask references)

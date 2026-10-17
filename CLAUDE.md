@@ -296,7 +296,7 @@ npm start -- --port 8001
 ```
 
 Both `src/editor/**` and `packages/svgcanvas/**` are served from source
-(`vite.config.mjs` aliases `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.js`
+(`vite.config.mjs` aliases `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.ts`
 for the dev server, vitest and the editor build alike), so a core change needs
 only a page reload. `packages/svgcanvas/dist/` is no longer used by anything here.
 

@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import {
   CORNER_KEYS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad,
   bilinearMap, homographyMap, distortMap, distortSubpaths, registerDistortEffects

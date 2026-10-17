@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { headPlacement, trimSubpath, ARROW_ALIGN_ATTR, ARROW_PTS_ATTR, ARROW_D_ATTR, ARROW_TRIM_ATTR } from '../../packages/svgcanvas/core/arrow-align.ts'
 import { parseAnchors } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { runGeometryRemaps } from '../../packages/svgcanvas/core/geometry-remap-registry.ts'

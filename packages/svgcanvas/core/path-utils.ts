@@ -11,7 +11,7 @@ import {
   getTransformList
 } from './math.ts'
 import { mergeDeep } from '../common/util.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 type ConvertHost = Pick<SvgCanvas, 'history' | 'addSVGElementsFromJson' | 'pathActions' | 'clearSelection' | 'addToSelection' | 'addCommandToHistory'>
 

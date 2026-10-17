@@ -9,7 +9,7 @@
  */
 import { assignAttributes } from './dom-utils.ts'
 import { snapToAngle, transformPoint } from './math.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these

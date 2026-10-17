@@ -130,7 +130,7 @@ const takeSnapshot = (root) => {
 }
 
 /**
- * @param {import('../svgcanvas.js').default} canvas
+ * @param {import('../svgcanvas.ts').default} canvas
  * @returns {void}
  */
 export const init = (canvas) => {

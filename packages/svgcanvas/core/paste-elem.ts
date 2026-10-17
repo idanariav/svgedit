@@ -2,8 +2,8 @@
 import { getUrlFromAttr } from './dom-utils.ts'
 import * as hstry from './history.js'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
-import type SvgCanvas from '../svgcanvas.js'
-import type { SVGElementJSON } from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
+import type { SVGElementJSON } from '../svgcanvas.ts'
 
 const {
   InsertElementCommand, BatchCommand

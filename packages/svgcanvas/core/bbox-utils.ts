@@ -17,7 +17,7 @@ import {
 import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /** A bounding box (like `DOMRect`). */
 export interface BBoxObject {

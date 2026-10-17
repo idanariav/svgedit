@@ -7,7 +7,7 @@
  */
 
 import paperCore from 'paper/dist/paper-core.js'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getMatrix, getTransformList, transformListToTransform } from './math.ts'
 

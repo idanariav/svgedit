@@ -8,7 +8,7 @@
  */
 import { requireBBox } from './bbox-utils.ts'
 import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
  * Rotate a multi-element selection rigidly about its union center by `angle`

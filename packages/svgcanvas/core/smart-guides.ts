@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { parseAnchors } from './anchor-path.ts'
 import { visibleGuides } from './guides.ts'
 import { getTransformList, transformListToTransform, transformPoint } from './math.ts'

@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getHref, setHref } from './dom-utils.ts'
 import { loadImage } from './load-image.ts'
 import { NS } from './namespaces.ts'

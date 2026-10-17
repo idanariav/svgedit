@@ -16,7 +16,7 @@ import { hasMatrixTransform, getTransformList, transformListToTransform, matrixM
 import {
   isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
 } from './text-rows.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 interface DownContext { x: number, y: number, zoom: number, selectedElements: Element[], mouseTarget: Element }
 interface MoveContext { selected: Element, x: number, y: number, svgRoot: SVGSVGElement, selectedElements: Element[] }

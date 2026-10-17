@@ -34,7 +34,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'

@@ -5,7 +5,7 @@
  * @module event-text-edit
  * @license MIT
  */
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these

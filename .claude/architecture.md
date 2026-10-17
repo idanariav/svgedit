@@ -12,7 +12,7 @@
 | `src/editor/panels/` | Four panels, each a `.js` + `.html` (Top, Left, Bottom, Right), plus the tablet shell and the Layers panel helpers (`layerTree.js`, `layerGestures.js`, `layerKeyboard.js`) |
 | `src/editor/extensions/` | `ext-*` folders (see [`extensions.md`](extensions.md)); inlined into the bundle by `extensionRegistry.js` |
 | `src/editor/hostApi.d.ts` | The host API types (`EditorHostApi`), typechecked against `Editor` and shipped to `dist/editor` |
-| `packages/svgcanvas/` | The drawing engine (a separate npm workspace): `svgcanvas.js` aggregates `core/` (~100 modules, each attached to the canvas by its `init(canvas)`) and `common/` |
+| `packages/svgcanvas/` | The drawing engine (a separate npm workspace): `svgcanvas.ts` aggregates `core/` (~100 modules, each attached to the canvas by its `init(canvas)`) and `common/` |
 | `packages/svgcanvas/core/model/` | The document model (R1 step a, below): a persistent XML tree, DOM-free |
 | `scripts/`, `tests/` | Build, gates and repair scripts; `tests/unit` (vitest) and `tests/e2e` (Playwright) |
 | `dist/` | Build output, gitignored |
@@ -26,7 +26,7 @@
 | Subsystem | File(s) | Responsibility |
 |-----------|---------|----------------|
 | **Editor / EditorStartup** | `Editor.js`, `EditorStartup.js` | Orchestration (menus, event routing, alignment, groups, exports); async init: config → i18n → DOM → SvgCanvas → panels → extensions |
-| **SvgCanvas** | `packages/svgcanvas/svgcanvas.js` + `core/` | All SVG creation, selection, transforms, undo / redo, path editing |
+| **SvgCanvas** | `packages/svgcanvas/svgcanvas.ts` + `core/` | All SVG creation, selection, transforms, undo / redo, path editing |
 | **ConfigObj** | `ConfigObj.js` | Config and prefs: `pref(key)`, `setConfig(obj)`, localStorage persistence. Config comes only through `setConfig` (the page URL is not read) |
 | **Panels** | `panels/*` | **Top**: quick actions and contextual trays; it inits last, so it can bind controls that live in other panels (zoom, stroke, opacity). **Left**: drawing tools. **Bottom**: colours. **Right**: the tabbed properties panel (Design / Text / Effects / Layers; `activateTab` / `autoSelectTab`) |
 | **TabletShell** | `panels/TabletShell.*`, `tablet.css`, `uiMode.js` | Optional touch-first shell (command bar + contextual bottom sheet) over `#workarea`: a presentation layer only, every control calls an existing `svgCanvas.*` / `editor.*` method. Toggled by `MainMenu.clickTabletMode` (`applyUiMode` + the `tabletMode` pref); shown only while `.svg_editor` has `ui-tablet` |
@@ -151,7 +151,7 @@ npm run build
 npm start           → Vite dev server on http://localhost:8000 (editor and canvas from source)
 ```
 
-`vite.config.mjs` aliases the bare `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.js` in every mode (dev, vitest, build), the same files its subpath imports (`@svgedit/svgcanvas/core/*.js`) already reach, so each core module exists once. HTML templates (`panels/`, `dialogs/`, `templates/`) are imported as strings through the `svgedit-html-templates` plugin, which only drops indentation between tags (`scripts/html-template.mjs`). `src/editor/index.html` is the only build entry (the sole consumer, the Obsidian plugin, imports the ES module directly). Sourcemaps are opt-in: `SOURCEMAP=true npm run build` (the plugin never consumes them and they roughly triple `dist/`).
+`vite.config.mjs` aliases the bare `@svgedit/svgcanvas` to `packages/svgcanvas/svgcanvas.ts` in every mode (dev, vitest, build), the same files its subpath imports (`@svgedit/svgcanvas/core/*.js`) already reach, so each core module exists once. HTML templates (`panels/`, `dialogs/`, `templates/`) are imported as strings through the `svgedit-html-templates` plugin, which only drops indentation between tags (`scripts/html-template.mjs`). `src/editor/index.html` is the only build entry (the sole consumer, the Obsidian plugin, imports the ES module directly). Sourcemaps are opt-in: `SOURCEMAP=true npm run build` (the plugin never consumes them and they roughly triple `dist/`).
 
 ### Self-contained bundle (no runtime asset folder)
 
@@ -192,7 +192,7 @@ An **optional, feature-detected** global a host (the Obsidian plugin) may instal
 - **Clipboard copy / paste:** `copySelectedElements` tags each def's JSON `_defs:true` and prepends it; `pasteElements` recreates the `_defs` entries **first** (so the shapes' refs resolve), with the id remap keeping references consistent.
 - **Shape library:** `_addSelectedToShapeLibrary` (`EditorStartup.js`) serialises the defs into a leading `<defs>…</defs>` so `svgContent` is self-contained; on insert `ext-shapes.js` splits it off, imports both and calls `remapElementIdsAndRefs([shape, ...defs], getNextId)`.
 - **Duplicate:** `cloneSelectedElements` (`core/selected-elem.js`) clones the defs (`def.cloneNode(true)`) and remaps each duplicate's own `url(#…)` / `href` onto the clones before `copyElem` builds the shape clones. Sharing the original's node is a bug: a drop-shadow filter's region is a bbox snapshot (`fx-filter.js` `setRegion`), so the duplicate rendered clipped to the original's position.
-- `restoreRefElements` (`svgcanvas.js`) restores a missing ref only when it was tracked in `this.removedElements`.
+- `restoreRefElements` (`svgcanvas.ts`) restores a missing ref only when it was tracked in `this.removedElements`.
 
 **Effect-filter ownership does not depend on its id.** `fx-filter.js` `buildFilter` stamps `data-fx="1"` on every filter it creates and `isOurFilter` checks that first, falling back to the `${elem.id}_fx` suffix for filters saved before the marker. A duplicate's `remapElementIdsAndRefs` and paste's `checkIDs` both rename filters, so the id convention can't be relied on. `convertDropShadowFilters` (`svg-exec.js`, the load-time region repair) retrofits the marker onto legacy filters.
 

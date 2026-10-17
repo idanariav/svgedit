@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { parseBrush, formatBrush, sanitizeOptions } from '../../packages/svgcanvas/core/art-brush-canvas.ts'
 
 describe('brush attribute', () => {

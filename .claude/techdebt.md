@@ -170,7 +170,7 @@ deliberate: text on accent buttons, colour-picker maths, danger red, grid defaul
 
 ## Facade state accessors typed non-null where they are set late (2026-10-16)
 
-`getRubberBox()` and `getrootSctm()` (`svgcanvas.js`) return `Element` / `DOMMatrix`, not `| null`: the selector manager
+`getRubberBox()` and `getrootSctm()` (`svgcanvas.ts`) return `Element` / `DOMMatrix`, not `| null`: the selector manager
 creates the rubber band and the mouse handlers set the root matrix before anything reads them, and typing them nullable put
 ~25 casts into the event modules. They really are `null` before the first gesture. Make them honest (a `requireRubberBox()`
 that throws, or narrowing in the converted event modules) when `event*.js` move to `.ts`. Related: three names reach the

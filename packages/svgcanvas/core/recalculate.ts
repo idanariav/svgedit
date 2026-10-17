@@ -18,7 +18,7 @@ import {
 } from './math.ts'
 import { mergeDeep } from '../common/util.ts'
 import { remapSourceAttrs } from './geometry-remap-registry.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { Command } from './history.js'
 import type { RemapChanges } from './coords.ts'

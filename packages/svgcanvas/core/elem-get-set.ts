@@ -13,7 +13,7 @@ import {
 } from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import { getParents } from '../common/util.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { BatchCommand as BatchCommandType } from './history.js'
 
@@ -309,7 +309,7 @@ export const init = (canvas: SvgCanvas): void => {
         bb = svgCanvas.getStrokedBBoxDefaultVisible()
         break
       case 'layer':
-        bb = svgCanvas.getStrokedBBoxDefaultVisible(svgCanvas.getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer()))
+        bb = svgCanvas.getStrokedBBoxDefaultVisible(svgCanvas.getVisibleElements(svgCanvas.getCurrentDrawing().getCurrentLayer() as Element))
         break
       default:
         return undefined

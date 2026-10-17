@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import '../../packages/svgcanvas/core/path-seg-shim.js'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // Regression guard for "orphaned path-node grips left visible after freehand
 // path drawing", first found

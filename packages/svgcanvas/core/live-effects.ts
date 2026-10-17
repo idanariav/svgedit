@@ -39,7 +39,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { NS } from './namespaces.ts'
 import { EPHEMERAL_ATTR } from './history.js'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'

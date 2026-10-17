@@ -1,7 +1,7 @@
 import { beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
 
 const FIXTURES = path.resolve(__dirname, '../e2e/fixtures/roundtrip')

@@ -25,7 +25,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
@@ -364,7 +364,7 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
   // (mirrors Illustrator knife tool: selection scopes the cut, but is optional)
   let elems = svgCanvas.getSelectedElements().filter(Boolean)
   if (elems.length === 0) {
-    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+    const layer = svgCanvas.getCurrentDrawing().getCurrentLayer() as SVGGElement
     elems = Array.from(layer.children)
   }
   elems = collectCuttableElements(elems)

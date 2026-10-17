@@ -11,7 +11,7 @@
 
 | File | What it is |
 |---|---|
-| `svgcanvas.js` | Numerous tools for working with the editor's "canvas" |
+| `svgcanvas.ts` | Numerous tools for working with the editor's "canvas" |
 | `vite.config.mjs` | Vite library build of the canvas on its own: one ES `svgcanvas.js` into `dist/` |
 
 ### `packages/svgcanvas/common/`

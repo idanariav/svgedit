@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // Regression: svgCanvasToString() (behind getSvgString(), which hosts call on
 // every change/autosave) used to leaveContext() + selectOnly([group]) whenever

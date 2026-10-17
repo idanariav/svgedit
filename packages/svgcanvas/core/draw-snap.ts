@@ -20,7 +20,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { collectPointTargets, snapPoint } from './smart-guides.ts'
 import type { DrawSnapTargets } from './smart-guides.ts'
 

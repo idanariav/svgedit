@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { parseBlend, formatBlend, sanitizeBlendOptions, blendParts } from '../../packages/svgcanvas/core/blend-canvas.ts'
 import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.ts'
 import { getPathDFromElement } from '../../packages/svgcanvas/core/path-utils.ts'

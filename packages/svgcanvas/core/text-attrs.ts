@@ -14,7 +14,7 @@ import {
   WRAP_WIDTH_ATTR, WRAP_HEIGHT_ATTR, VALIGN_ATTR, TEXT_ASCENT, getWrapWidth, getWrapHeight, writeAreaAttrs,
   reflowAreaText, settleAreaText, isAreaText, getAreaBox, makeAreaText, makePointText, rowsOf, softCount, SOFT_ATTR, getValign
 } from './text-rows.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 export const init = (canvas: SvgCanvas): void => {
   const svgCanvas = canvas // per-instance; methods below are closed over it

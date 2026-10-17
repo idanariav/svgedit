@@ -18,7 +18,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { warn } from '../common/logger.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { simplifyWith, fitFreehand } from './path-fit.ts'

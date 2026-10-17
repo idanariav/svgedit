@@ -17,7 +17,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getBBox } from './bbox-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 

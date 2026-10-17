@@ -22,7 +22,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.ts'
 import type { Pt, SubPath } from './anchor-path.ts'

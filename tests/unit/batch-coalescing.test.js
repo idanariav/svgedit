@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { BatchCommand, ChangeElementCommand } from '../../packages/svgcanvas/core/history.js'
 
 // BatchCommand used to notify the history handler once per subcommand, so

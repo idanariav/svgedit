@@ -17,7 +17,7 @@ import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import { supportsGoodTextCharPos } from '../common/browser.ts'
 import { isAreaText, rowsOf, softCount } from './text-rows.ts'
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 interface CharBox { x: number, y: number, height: number }
 interface Point { x: number, y: number }

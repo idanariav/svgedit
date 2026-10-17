@@ -481,6 +481,8 @@ export interface AttachedMembers {
   getDisabledElems(): Element[]
   /** The path being edited (`null` outside path editing). */
   getPathObj(): PathObject | null
+  /** The host's debug-event sink, or null while the debug log is off. */
+  _debugEventSink: ((event: string, detail?: object) => void) | null
 
   // Host-facing helpers (called from the editor and extensions)
   /** History helpers (`HistoryCommand` classes, `UndoManager`, …). Untyped on purpose: R1 deletes `core/history.js`. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 const makeCanvas = (dimensions, roundDigits) => {
   const workarea = document.createElement('div')

@@ -30,7 +30,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.ts'
 import type { Anchor, Cubic, Pt, SubPath } from './anchor-path.ts'
 import { LIVE_ATTRS } from './path-join.ts'

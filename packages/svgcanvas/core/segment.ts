@@ -25,7 +25,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getPaperScope, getStyleAttrs, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'

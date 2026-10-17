@@ -12,7 +12,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { rebuildAfterRemap } from './live-stack.ts'
 
 /** `coords.js`'s point map, and the scalers for a width and a height. */

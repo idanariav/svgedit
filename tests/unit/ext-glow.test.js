@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSpinInput.js'
 import '../../src/editor/components/seSelect.js'
 import extGlow from '../../src/editor/extensions/ext-glow/ext-glow.js'

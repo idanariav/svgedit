@@ -45,7 +45,7 @@ export default defineConfig({
     // module, each with its own module state), and a core change needs no
     // `vite build packages/svgcanvas` before it shows up.
     alias: [
-      { find: /^@svgedit\/svgcanvas$/, replacement: resolve(__dirname, 'packages/svgcanvas/svgcanvas.js') }
+      { find: /^@svgedit\/svgcanvas$/, replacement: resolve(__dirname, 'packages/svgcanvas/svgcanvas.ts') }
     ]
   },
   server: {

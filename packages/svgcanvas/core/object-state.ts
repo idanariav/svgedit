@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import Layer from './layer.ts'
 import { NS } from './namespaces.ts'
 import {

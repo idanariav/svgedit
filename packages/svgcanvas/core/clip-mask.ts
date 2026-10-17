@@ -15,7 +15,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { warn } from '../common/logger.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 

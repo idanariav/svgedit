@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import '../../src/editor/components/seSelect.js'
 import extPathEdit from '../../src/editor/extensions/ext-path-edit/ext-path-edit.js'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.js'

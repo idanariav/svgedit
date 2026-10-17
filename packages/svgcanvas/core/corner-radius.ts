@@ -41,7 +41,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { NS } from './namespaces.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import type { RemapPoint, RemapScale } from './geometry-remap-registry.ts'

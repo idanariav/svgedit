@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { WARP_STYLES, warpPoint, warpSubpaths, registerWarpEffect } from '../../packages/svgcanvas/core/warp.ts'
 import { getLiveEffectDef, computeFxD, parseFxStack, serializeFxStack } from '../../packages/svgcanvas/core/live-effects.ts'
 import { parseAnchors, anchorBBox, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'

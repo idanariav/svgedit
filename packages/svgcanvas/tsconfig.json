@@ -14,5 +14,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "files": ["legacy-jsdoc-types.d.ts", "svgcanvas.d.ts", "svgcanvas.js"]
+  "files": ["legacy-jsdoc-types.d.ts", "svgcanvas.ts"]
 }

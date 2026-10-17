@@ -9,7 +9,7 @@
 import { NS } from './namespaces.ts'
 import { setUnitAttr, getTypeMap } from './units.ts'
 import { getTransformList } from './math.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
  * Attaches the canvas-state-dependent helpers (element/defs lookup, grid

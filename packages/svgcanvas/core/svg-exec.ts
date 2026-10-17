@@ -19,7 +19,7 @@ import { isGecko } from '../common/browser.ts'
 import { NS } from './namespaces.ts'
 import * as draw from './draw.ts'
 import { getParents, getClosest } from '../common/util.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { RasterExportOptions, RasterExportResult } from '../svgcanvas-members.js'
 import type { ImportEntry } from '../svgcanvas-internal.js'
 import type { Drawing } from './draw.ts'
@@ -874,7 +874,7 @@ export const init = (canvas: SvgCanvas): void => {
       svgCanvas.setHref(useEl, '#' + symbol.id)
       ;(
         svgCanvas.getCurrentGroup() ||
-      svgCanvas.getCurrentDrawing().getCurrentLayer()
+      svgCanvas.getCurrentDrawing().getCurrentLayer() as Element
       ).append(useEl)
       batchCmd.addSubCommand(new InsertElementCommand(useEl))
       svgCanvas.clearSelection()
@@ -927,9 +927,10 @@ export const init = (canvas: SvgCanvas): void => {
         : svgCanvas.getDOMDocument().importNode(newDoc.documentElement, true)
       svgCanvas.uniquifyElems(wrapper)
 
-      const parent =
+      const parent = (
         svgCanvas.getCurrentGroup() ||
         svgCanvas.getCurrentDrawing().getCurrentLayer()
+      ) as Element
       const batchCmd = new BatchCommand('Insert Elements')
       const inserted = []
       for (const child of [...wrapper.children]) {

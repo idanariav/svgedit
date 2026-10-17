@@ -5,7 +5,7 @@
  * @module canvas-state
  * @license MIT
  */
-import type { BBox } from '../svgcanvas.js'
+import type { BBox } from '../svgcanvas.ts'
 import type { BatchCommand } from './history.js'
 import type { PathElement } from './path-types.ts'
 

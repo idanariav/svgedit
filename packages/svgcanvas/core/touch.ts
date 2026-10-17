@@ -1,6 +1,6 @@
 // http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 type Host = Pick<SvgCanvas, 'svgroot' | 'getZoom' | 'zoomAtPoint'>
 

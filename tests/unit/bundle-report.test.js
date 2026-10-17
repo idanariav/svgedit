@@ -16,7 +16,7 @@ describe('bundle-report groupModules', () => {
       [abs('src/editor/components/seButton.js')]: 20,
       [abs('src/editor/Editor.js')]: 30,
       [abs('packages/svgcanvas/core/math.ts')]: 40,
-      [abs('packages/svgcanvas/svgcanvas.js')]: 60,
+      [abs('packages/svgcanvas/svgcanvas.ts')]: 60,
       '\0vite/preload-helper': 1,
       [`${abs('src/editor/components/seInput.js')}?raw`]: 3
     })

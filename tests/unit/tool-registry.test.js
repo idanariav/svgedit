@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 
 const mouse = (type, clientX, clientY, extra = {}) => new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true, ...extra })

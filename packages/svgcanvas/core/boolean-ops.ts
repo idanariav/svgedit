@@ -10,7 +10,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getTransformList, transformListToTransform, matrixMultiply, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'

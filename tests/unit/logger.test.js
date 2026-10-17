@@ -61,7 +61,7 @@ describe('logging discipline', () => {
       if (f === 'node_modules' || f === 'dist') return []
       return statSync(p).isDirectory() ? walk(p) : /\.(js|ts)$/.test(p) && !p.endsWith('.d.ts') ? [p] : []
     })
-    const offenders = [...walk('src'), ...walk('packages/svgcanvas/core'), 'packages/svgcanvas/svgcanvas.js']
+    const offenders = [...walk('src'), ...walk('packages/svgcanvas/core'), 'packages/svgcanvas/svgcanvas.ts']
       .filter(f => readFileSync(f, 'utf8').split('\n')
         .some(l => /console\.(error|warn)\(/.test(l) && !/^\s*(\/\/|\*)/.test(l)))
     expect(offenders, 'use common/logger.js (error/warn) instead').toEqual([])

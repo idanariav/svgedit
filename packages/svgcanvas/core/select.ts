@@ -12,7 +12,7 @@ import { getBBox } from './bbox-utils.ts'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 
 /** One element's selection box: the dashed outline and the position the grips take around it. */

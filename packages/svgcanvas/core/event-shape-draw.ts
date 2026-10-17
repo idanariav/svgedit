@@ -10,7 +10,7 @@
 import { assignAttributes, preventClickDefault, setHref } from './dom-utils.ts'
 import { snapToAngle } from './math.ts'
 import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { StyleProps } from './canvas-state.ts'
 import type { PenEnd } from './pen-continue.ts'
 

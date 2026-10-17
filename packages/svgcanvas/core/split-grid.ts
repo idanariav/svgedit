@@ -9,7 +9,7 @@
  */
 
 import { NS } from './namespaces.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getBBox } from './bbox-utils.ts'
 import type { BBoxObject as Box } from './bbox-utils.ts'
 

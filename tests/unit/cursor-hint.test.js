@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 
 // `svgCanvas.setCursorHint` is how a tool says what the pointer is over, so the editor can pick a cursor by
 // position (core never touches artwork).

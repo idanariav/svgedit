@@ -14,7 +14,7 @@ import {
   getBBox,
   requireBBox
 } from './bbox-utils.ts'
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import type { XY } from './canvas-state.ts'
 import type { PathObject } from './path-types.ts'
 import { init as pathMethodInit } from './path-method.ts'

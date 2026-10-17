@@ -23,11 +23,13 @@ import { isObjectLocked, isObjectHidden } from './object-state.ts'
 import { isExtensionHook } from './extension-hooks.ts'
 import { sanitizeSvg } from './sanitize.ts'
 import { warn, error as logError } from '../common/logger.ts'
-import type SvgCanvas from '../svgcanvas.js'
-import type { BBox } from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
+import type { BBox } from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { ElementAndBBox } from './canvas-state.ts'
 import type { ExtensionHookPayloads } from './extension-hooks.ts'
+
+type ExtensionHook = (vars: unknown) => unknown
 
 const { BatchCommand } = hstry
 
@@ -270,9 +272,9 @@ export const init = (canvas: SvgCanvas): void => {
       } else if (ext[action]) {
         try {
           if (returnArray) {
-            results.push(ext[action](vars))
+            results.push((ext[action] as ExtensionHook)(vars))
           } else {
-            result = ext[action](vars)
+            result = (ext[action] as ExtensionHook)(vars)
           }
         } catch (err) {
           logError(`Extension "${name}" threw during "${action}":`, err, 'selection')
@@ -353,11 +355,11 @@ export const init = (canvas: SvgCanvas): void => {
         for (let li = 0; li < drawing.getNumLayers(); li++) {
           const layerName = drawing.getLayerName(li)
           if (!drawing.getLayerVisibility(layerName)) { continue }
-          boxes = boxes.concat(getVisibleElementsAndBBoxes(drawing.getLayerByName(layerName)))
+          boxes = boxes.concat(getVisibleElementsAndBBoxes(drawing.getLayerByName(layerName) as Element))
         }
         svgCanvas.setCurBBoxes(boxes)
       } else {
-        svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent))
+        svgCanvas.setCurBBoxes(getVisibleElementsAndBBoxes(parent as Element))
       }
     }
     let i = svgCanvas.getCurBBoxes().length

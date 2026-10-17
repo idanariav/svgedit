@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { getHref, walkTree } from './dom-utils.ts'
 import { getBBox as utilsGetBBox } from './bbox-utils.ts'
 import {

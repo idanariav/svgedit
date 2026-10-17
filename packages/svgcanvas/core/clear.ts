@@ -4,7 +4,7 @@
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import { NS } from './namespaces.ts'
 
 /** What the function reads from its canvas. */

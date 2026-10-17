@@ -5,8 +5,8 @@
  *
  * @copyright 2010 Alexis Deveria, 2010 Jeff Schiller
  */
-import type SvgCanvas from '../svgcanvas.js'
-import type { SVGElementJSON } from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
+import type { SVGElementJSON } from '../svgcanvas.ts'
 import type { StyleProps } from './canvas-state.ts'
 import { assignAttributes, cleanupElement } from './dom-utils.ts'
 import { NS } from './namespaces.ts'

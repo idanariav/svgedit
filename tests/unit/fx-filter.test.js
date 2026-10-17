@@ -1,4 +1,4 @@
-import SvgCanvas from '../../packages/svgcanvas/svgcanvas.js'
+import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { createFxComposer } from '../../src/editor/extensions/fx-filter.js'
 
 describe('fx-filter', () => {

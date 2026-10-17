@@ -7,7 +7,7 @@
  * @license MIT
  */
 
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 import HistoryRecordingService from './historyrecording.js'
 import { toXml } from './encoding-utils.ts'
 import { warn } from '../common/logger.ts'
@@ -237,7 +237,7 @@ export const init = (canvas: SvgCanvas): void => {
   const setLayersVisibility = (states: Record<string, boolean>): boolean => {
     const drawing = svgCanvas.getCurrentDrawing()
     const todo = Object.entries(states).filter(([name, visible]) =>
-      drawing.getLayerByName(name) && (drawing.getLayerByName(name).getAttribute('display') !== 'none') !== visible)
+      drawing.getLayerByName(name) && ((drawing.getLayerByName(name) as SVGGElement).getAttribute('display') !== 'none') !== visible)
     if (!todo.length) return false
     if (todo.length === 1) return setLayerVisibility(todo[0][0], todo[0][1])
     svgCanvas.transact('Layer Visibility', () => {
@@ -270,7 +270,7 @@ export const init = (canvas: SvgCanvas): void => {
   const setLayerTemplate = (layerName: string, bTemplate: boolean): boolean => {
     const drawing = svgCanvas.getCurrentDrawing()
     if (!drawing.setLayerTemplate(layerName, bTemplate)) return false
-    if (bTemplate && drawing.getLayerByName(layerName).getAttribute('display') === 'none') {
+    if (bTemplate && (drawing.getLayerByName(layerName) as SVGGElement).getAttribute('display') === 'none') {
       setLayerVisibility(layerName, true)
     }
     return true

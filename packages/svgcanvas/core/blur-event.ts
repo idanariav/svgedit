@@ -4,7 +4,7 @@
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
-import type SvgCanvas from '../svgcanvas.js'
+import type SvgCanvas from '../svgcanvas.ts'
 
 /**
 * Reentrant init: each SvgCanvas instance gets its own copy of these functions,
