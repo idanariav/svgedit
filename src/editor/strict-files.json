@@ -197,6 +197,7 @@
   "src/editor/toolDragReorder.js",
   "src/editor/toolOrder.js",
   "src/editor/toolShortcutBadges.js",
+  "src/editor/tooltips.js",
   "src/editor/uiMode.js",
   "src/editor/userDataAdapter.js"
 ]

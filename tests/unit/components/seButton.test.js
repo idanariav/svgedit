@@ -68,6 +68,13 @@ describe('se-button', () => {
     expect(el.$div.getAttribute('title')).toBe('bold [Ctrl+B]')
   })
 
+  it('a disabled button stays hit-testable so its tooltip (with the reason) can show', () => {
+    const el = mountElement('se-button')
+    const css = el.shadowRoot.querySelector('style').textContent
+    const rule = css.match(/\.disabled\s*\{[^}]*\}/)[0]
+    expect(rule).not.toMatch(/pointer-events/)
+  })
+
   it('toggles the pressed class via attribute and property', () => {
     const el = mountElement('se-button')
     el.setAttribute('pressed', 'true')

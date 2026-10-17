@@ -44,10 +44,14 @@ template.innerHTML = `
     outline: 2px solid var(--accent, #2962FF);
     outline-offset: -2px;
   }
+  /* still hit-testable: the tooltip explains why it is unavailable (host clicks are blocked in the constructor) */
   .disabled {
     opacity: 0.35;
     cursor: default;
-    pointer-events: none;
+  }
+  .disabled:hover {
+    background: transparent;
+    color: var(--icon, #4B5563);
   }
   .icon-wrap {
     width: 22px;
@@ -99,11 +103,10 @@ export class ToolButton extends HTMLElement {
     this.$iconWrap = /** @type {HTMLSpanElement} */ (this._shadowRoot.querySelector('.icon-wrap'))
     this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
 
-    // `.disabled`'s `pointer-events: none` only excludes the inner shadow div
-    // from hit-testing — the click still lands on this host element, so an
-    // external `addEventListener('click', ...)` (e.g. via the `$click`
-    // helper) fires anyway. Block it here, on the host, before it can reach
-    // any other click listener.
+    // A disabled button is still hit-testable (its tooltip says why it is
+    // unavailable), so an external `addEventListener('click', ...)` (e.g. via
+    // the `$click` helper) would fire anyway. Block it here, on the host,
+    // before it can reach any other click listener.
     this.addEventListener('click', (e) => {
       if (this.disabled) {
         e.stopImmediatePropagation()

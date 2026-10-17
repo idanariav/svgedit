@@ -1,5 +1,10 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.9
+- UI: hover tooltips appear after ~350 ms (`tooltips.js`) instead of the browser's slow, sometimes missing `title` tooltip, and also on disabled tools, where they say why the tool is unavailable.
+- Fix: picking a custom centre for Repeat no longer opens the popover and closes it at once (the native popover's light dismiss ran on the picking click's `pointerup`).
+- Fix: the left panel's "Additional tools" drawer is capped to the window height and scrolls, so its last tools are no longer cut off at the bottom of the screen.
+
 ## 7.4.1-fork.8
 - Config: `disabledFeatures: ['opensave']` leaves built-in features out by name (the `ext-` prefix is optional), on the default list and on an explicit `extensions` list. A host lists what it does not want instead of mirroring every built-in, so new tools reach it without a change.
 - BREAKING (config): URL configuration is gone — the `preventAllURLConfig`, `preventURLContentLoading`, `lockExtensions` and `allowedOrigins` options, reading config or content from the page's query string, and `setConfig`'s `overwrite: false` mode. Use `setConfig` and `loadFromString` / `loadFromURL` / `loadFromDataURI`.

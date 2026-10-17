@@ -5,6 +5,7 @@ import {
 import { createContextMenu } from './contextmenu.js'
 import { addSelectedToShapeLibrary } from './addToShapeLibrary.js'
 import { initToolShortcutBadges } from './toolShortcutBadges.js'
+import { initTooltips } from './tooltips.js'
 import { setUserDataAdapter } from './userDataAdapter.js'
 import editorTemplate from './templates/editorTemplate.html'
 import SvgCanvas from '@svgedit/svgcanvas'
@@ -231,6 +232,7 @@ class EditorStartup {
       // Apply saved theme + UI mode before any rendering
       applyTheme(this.configObj.pref('theme') || 'light', this.$svgEditor)
       applyUiMode(this.configObj.pref('tabletMode'), this.$svgEditor)
+      initTooltips(this.$container, this.$svgEditor, this.listenerAbort.signal)
       // allow to prepare the dom without display
       this.$svgEditor.style.visibility = 'hidden'
       this.workarea = $req('workarea')

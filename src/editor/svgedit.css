@@ -1859,3 +1859,22 @@ ul li.current {
   fill: var(--accent);
   stroke: var(--accent);
 }
+
+/* Hover tooltip bubble (tooltips.js): one element per editor, in the top layer. */
+.se-tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px 8px;
+  max-width: 280px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 6px;
+  background: var(--chrome-bg);
+  color: var(--fg);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  pointer-events: none;
+}

@@ -326,22 +326,12 @@ export default {
         pickCenterCallback = null
         svgEditor.leftPanel.clickSelect()
 
-        // This mousedown's browser-generated mouseup->click still hasn't fired
-        // yet. If `cb` reopens a popover synchronously, that trailing click
-        // would otherwise bubble to the popover's own document-level
-        // light-dismiss listener right after, closing it again immediately.
-        // Swallow exactly that one click (capture phase always runs before
-        // any bubble-phase listener, including light-dismiss) so the reopened
-        // popover survives; anything else that click would have done on the
-        // canvas is a no-op here since the click always follows a mousedown
-        // we've already fully handled.
-        const suppressTrailingClick = (/** @type {{ stopPropagation: () => void; }} */ e) => {
-          document.removeEventListener('click', suppressTrailingClick, true)
-          e.stopPropagation()
-        }
-        document.addEventListener('click', suppressTrailingClick, true)
+        // `cb` reopens the repeat popover, a native `popover="auto"` whose light
+        // dismiss also evaluates on `pointerup`: opened now (mid-gesture) it
+        // would be closed again by this very press's release. Reopen once the
+        // gesture has finished instead (the timeout lets the dismiss pass run).
+        document.addEventListener('pointerup', () => setTimeout(() => cb?.(x, y), 0), { once: true, capture: true })
 
-        cb?.(x, y)
         return { keep: false, started: false }
       }
     }

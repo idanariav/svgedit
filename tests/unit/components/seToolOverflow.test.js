@@ -72,6 +72,16 @@ describe('se-tool-overflow', () => {
     expect(el.opened).toBe(false)
   })
 
+  it('opening caps the menu to the window height and slides it up so its bottom stays on screen', () => {
+    const el = mountToolOverflow()
+    const rect = (top, height) => ({ top, height, bottom: top + height, left: 0, right: 0, width: 0 })
+    el.getBoundingClientRect = () => rect(700, 40)
+    el.$menu.getBoundingClientRect = () => rect(0, 300)
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.$menu.style.maxHeight).toBe(`${window.innerHeight - 16}px`)
+    expect(el.$menu.style.top).toBe(`${window.innerHeight - 8 - 300}px`)
+  })
+
   it('clicking a slotted tool closes the drawer after (mirrors flyout close-after-pick)', () => {
     const el = mountToolOverflow()
     el.opened = true

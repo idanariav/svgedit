@@ -263,8 +263,8 @@ class SeRepeatSettings extends SeSettingsPopover {
       this._centerY = y
       this._pendingReopen = pending
       this._setCenter('custom')
-      // ext-repeat's mouseDown hook already swallows the trailing click that
-      // completes this same gesture, so it's safe to reopen synchronously.
+      // ext-repeat calls this after the picking gesture's pointerup, so the
+      // popover's light dismiss cannot close it again.
       this.open()
     })
   }

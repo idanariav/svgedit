@@ -45,6 +45,8 @@ The left panel is a vertical column of tool buttons. Some are "flying buttons" (
 
 **Shortcut badges.** A tool in the left column shows its key at the bottom right of its icon (`V`, `⇧N`, `⌘I`); a tool without one shows nothing. `toolShortcutBadges.js` writes `data-shortcut` from the hotkey manager's **effective** first key, so rebinding shows at once (`HotkeyManager.onChange`); a MutationObserver picks up late tools and a flyout's changed last-picked tool. The Shapes flyout, with no key of its own, shows the key of the tool its face activates. The badge is CSS `::after` on the host (`svgedit.css`) and is hidden in tablet mode. A new tool gets one simply by having a key.
 
+**Tooltips.** `tooltips.js` replaces the browser's slow, unreliable `title` tooltip: while the pointer rests on any element (shadow DOM included) that has a `title`, the text is held back and shown in one `.se-tooltip` bubble (top layer, mounted in `.svg_editor`) after ~350 ms, or ~40 ms when moving between neighbours; the `title` returns on leave. Components keep authoring a plain `title`. A disabled `se-button` stays hit-testable so its tooltip shows why it is unavailable. The *Additional tools* drawer (`se-tool-overflow`) caps its height to the window and scrolls.
+
 ---
 
 ## Adding or changing a toolbar control

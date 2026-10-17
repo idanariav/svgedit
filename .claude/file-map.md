@@ -210,6 +210,7 @@
 | `toolDragReorder.js` | Drag-to-reorder for the left panel's tools |
 | `toolOrder.js` | Persistence for the left panel's user-customized tool order |
 | `toolShortcutBadges.js` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same… |
+| `tooltips.js` | Hover tooltips for the editor chrome: a short-delay replacement for the browser's native `title` tooltip, which waits about a second (longer on some platforms) and sometimes never shows |
 | `uiMode.js` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell) |
 | `userDataAdapter.js` | Module-level registry for an optional host storage adapter used to persist user customizations (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage` |
 

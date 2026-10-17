@@ -130,6 +130,8 @@ export class ToolOverflow extends HTMLElement {
           flex-direction: column;
           gap: 2px;
           margin-left: 44px;
+          box-sizing: border-box;
+          overflow-y: auto;
           z-index: 100;
           box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
         }
@@ -249,8 +251,10 @@ export class ToolOverflow extends HTMLElement {
         this.opened = !this.opened
         if (this.opened) {
           const rect = this.getBoundingClientRect()
-          const menuRect = this.$menu.getBoundingClientRect()
           const vh = window.innerHeight
+          // taller than the window: cap it and let it scroll, else the last tools are out of reach
+          this.$menu.style.maxHeight = `${vh - 16}px`
+          const menuRect = this.$menu.getBoundingClientRect()
           const top = menuRect.height > 0 && rect.top + menuRect.height > vh - 8
             ? Math.max(8, vh - 8 - menuRect.height)
             : rect.top
