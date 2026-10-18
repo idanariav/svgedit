@@ -361,6 +361,27 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a rotation shown through the model', () => {
+    it('turns about the middle of the box; the renderer writes the transform; ending it is one step', () => {
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('y', '20'); r.setAttribute('width', '40'); r.setAttribute('height', '30')
+      canvas.undoMgr.snapshots.baseline()
+      r.getBBox = () => ({ x: 10, y: 20, width: 40, height: 30 }) // jsdom has no layout
+      const plan = canvas.rotationPlan(r)
+      expect(plan).toEqual({ id: r.id, cx: 30, cy: 35 })
+      canvas.previewRotation(plan, 15)
+      canvas.previewRotation(plan, 30)
+      expect(r.getAttribute('transform')).toBe('rotate(30 30 35)')
+      const size = canvas.undoMgr.getUndoStackSize()
+      expect(canvas.snapshotHistory.endPreview('Rotate')).toBe(true)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
+      canvas.undoMgr.undo()
+      expect(r.hasAttribute('transform')).toBe(false)
+      r.setAttribute('transform', 'matrix(1 0 0 1 5 5)')
+      expect(canvas.rotationPlan(r)).toBeNull()
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {

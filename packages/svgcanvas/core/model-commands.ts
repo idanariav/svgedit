@@ -77,6 +77,13 @@ export interface ModelCommandsApi {
   previewDrag(plan: Map<Element, Affine>, dx: number, dy: number): void
   /** Show the elements scaled by `scale` (about the origin the caller put in it) after the transform each has in `plan`. */
   previewScale(plan: Map<Element, Affine>, scale: Affine): void
+  /**
+   * Where a rotation of this element can be shown through the model: its id and the point it turns about (the middle of its box,
+   * or the point its `rotate()` already turns about); null when it carries another transform.
+   */
+  rotationPlan(el: Element): { id: string, cx: number, cy: number } | null
+  /** Show the element turned to `angle` (degrees) about the plan's point; the renderer writes the transform. */
+  previewRotation(plan: { id: string, cx: number, cy: number }, angle: number): void
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -510,7 +517,25 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     previewWith(plan, (own) => compose({ a: 1, d: 1, e: dx, f: dy }, own))
   const previewScale = (plan: Map<Element, Affine>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
 
+  const rotationPlan = (el: Element): { id: string, cx: number, cy: number } | null => {
+    if (!el.id) return null
+    const transform = (el.getAttribute('transform') ?? '').trim()
+    const turned = /^rotate\(\s*(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)\s*\)$/.exec(transform)
+    if (turned) return { id: el.id, cx: Number(turned[2]), cy: Number(turned[3]) }
+    if (transform) return null
+    const box = (el as unknown as SVGGraphicsElement).getBBox?.()
+    return box ? { id: el.id, cx: box.x + box.width / 2, cy: box.y + box.height / 2 } : null
+  }
+
+  const previewRotation = (plan: { id: string, cx: number, cy: number }, angle: number): void => {
+    svgCanvas.snapshotHistory.preview((root) => setAttrsById(root, plan.id, {
+      transform: angle ? `rotate(${Number(angle.toFixed(6))} ${plan.cx} ${plan.cy})` : null
+    }))
+  }
+
   return {
+    rotationPlan,
+    previewRotation,
     dragPlan,
     previewDrag,
     previewScale,

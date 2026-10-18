@@ -56,6 +56,8 @@ export const init = (canvas: SvgCanvas): {
   const down = (_evt: MouseEvent, ctx: { selectedElements: Element[] }): void => {
     const { selectedElements } = ctx
     svgCanvas.setStarted(true)
+    svgCanvas.gesture.rotationPlan = null
+    svgCanvas.gesture.rotationShown = false
     // we are starting an undoable change (a drag-rotation)
     svgCanvas.undoMgr.beginUndoableChange('transform', selectedElements)
     // what each element's transform was, to put back when the gesture is stated on the model
@@ -102,7 +104,17 @@ export const init = (canvas: SvgCanvas): {
       angle = Math.round(angle / snap) * snap
     }
 
-    svgCanvas.setRotationAngle(angle < -180 ? (360 + angle) : angle, true)
+    const turn = angle < -180 ? (360 + angle) : angle
+    // A plain shape is turned in front of the renderer: the model shows each angle and the element is not edited by the gesture
+    if (svgCanvas.gesture.rotationPlan === null && selectedElements.filter(Boolean).length === 1 && !svgCanvas.gesture.rotationShown) {
+      svgCanvas.gesture.rotationPlan = svgCanvas.rotationPlan(selected)
+      svgCanvas.gesture.rotationShown = true
+    }
+    if (svgCanvas.gesture.rotationPlan) {
+      svgCanvas.previewRotation(svgCanvas.gesture.rotationPlan, turn)
+    } else {
+      svgCanvas.setRotationAngle(turn, true)
+    }
     svgCanvas.call('transition', selectedElements)
   }
 
@@ -113,6 +125,17 @@ export const init = (canvas: SvgCanvas): {
     svgCanvas.setCurrentMode('select')
     const isGroupRotate = !!svgCanvas.gesture.groupRotateStart
     const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
+    if (svgCanvas.gesture.rotationPlan && svgCanvas.snapshotHistory.previewing) {
+      // The renderer has been showing the rotation: that is the step
+      svgCanvas.snapshotHistory.endPreview('Rotate')
+      svgCanvas.gesture.rotationPlan = null
+      svgCanvas.gesture.rotationShown = false
+      svgCanvas.recalculateAllSelectedDimensions()
+      svgCanvas.call('changed', selectedElements)
+      return { element: null, keep: true as const }
+    }
+    svgCanvas.gesture.rotationPlan = null
+    svgCanvas.gesture.rotationShown = false
     // The rotation is stated on the model (one step); the commands only say it happened
     const stated = !batchCmd.isEmpty() && svgCanvas.commitTransforms('Rotate', startTransforms, restoreTransformAttr)
     if (!batchCmd.isEmpty() && !stated) {
