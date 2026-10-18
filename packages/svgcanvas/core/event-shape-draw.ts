@@ -131,6 +131,7 @@ export const init = (canvas: SvgCanvas): {
             width: 0,
             height: 0,
             id: svgCanvas.getNextId('image'),
+            'data-se-ephemeral': '', // a preview until mouse-up hands it to the model (event.ts `commitDrawn`)
             opacity: Number(curShape.opacity) / 2,
             style: 'pointer-events:inherit'
           }
