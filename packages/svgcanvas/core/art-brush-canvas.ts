@@ -358,7 +358,7 @@ export const createArtBrush = (canvas: SvgCanvas): ArtBrushApi => {
       g.setAttribute(LIB_ATTR, type)
       g.setAttribute(LIB_NAME_ATTR, label)
       writeArtPaths(defs.ownerDocument, g, art, null)
-      defs.append(g)
+      svgCanvas.insertLooseElements([{ parent: defs, el: g }], 'New brush')
       return g.id
     })
   }
@@ -369,7 +369,8 @@ export const createArtBrush = (canvas: SvgCanvas): ArtBrushApi => {
   const deleteArtBrush = (id: string): boolean => {
     const def = libraryDefs().find((g) => g.id === id)
     if (!def) return false
-    svgCanvas.transact('Delete brush', () => def.remove())
+    if (!def.id) return false
+    svgCanvas.removeElements('Delete brush', [def])
     return true
   }
 

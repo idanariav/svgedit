@@ -1,6 +1,6 @@
 {
   "packages/svgcanvas/core/arrow-align.ts": 24,
-  "packages/svgcanvas/core/art-brush-canvas.ts": 41,
+  "packages/svgcanvas/core/art-brush-canvas.ts": 39,
   "packages/svgcanvas/core/bbox-utils.ts": 6,
   "packages/svgcanvas/core/blend-canvas.ts": 41,
   "packages/svgcanvas/core/blur-event.ts": 9,
