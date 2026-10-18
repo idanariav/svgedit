@@ -77,17 +77,19 @@ commands is at the 57 `BatchCommand` and 88 `ChangeElementCommand` sites: they s
 `isEmpty()` still decides whether a step landed. Left of R1: **(c)** is under way. The write path exists (`snapshotHistory.edit(label, fn)`: `fn` maps the model to the model, the renderer makes the DOM
 show it, the step is recorded; DOM-free edits in `core/model/edit.ts`) and commands are moving onto it, one group at a time, with an ESLint rule
 (`core/model-commands.ts`) that keeps a ported group from writing the live DOM again. Ported: move to top / bottom / up / down, switch z-order, delete,
-a plain attribute change on the selection (the property panel's path) and element creation (`insertElementFromJson`). **(e)** is under way too:
+a plain attribute change on the selection (the property panel's path), element creation (`insertElementFromJson`, `insertLooseElements`; the drag-drawn shapes and images preview as ephemeral elements and `commitDrawn` hands them over on mouse-up), group / ungroup, duplicate, paste, every layer operation except lock / template (view state), moving a plain shape (its own coordinates, a leftover pure translation folded in), and single-element attribute sets (`setElementAttributes`: corner radius, arcs, image crop). **(e)** is under way too:
 `registerTool` tools are Begin / Preview / Commit (the preview is an overlay, `pointerUp` returns `{ create: json }`, the registry creates the element
-through the model); the shaper, shape-family, polystar and brush tools are on it. Not ported yet, in the order they would pay: duplicate / paste /
-group / ungroup / flip / move and resize (they measure with `getBBox` and bake transforms, so they need the measuring half of the plan first), the
-layer operations (`layer-ops.ts`, `draw.ts`), text (`text-actions.ts`), path editing, the legacy mouse-up creation of rect / ellipse / line / path /
-text in `event-*.ts`, the shape library tool, and the ~40 extensions that write the DOM directly. When none of those writes the live DOM, a check
-script can forbid it outside the renderer (the plan's step b), the command types can go for a one-call `commit(label)`, and the DOM is a view in
+through the model); the shaper, shape-family, polystar and brush tools are on it. `npm run check-dom-writes` ratchets what is left (1,135 live-DOM
+writes in 100 files in `core/` and `extensions/`, `scripts/dom-writes-baseline.json`; a file may only go down). What is left is the measuring half and
+not a list of commands: move / resize / rotate / flip of anything with a transform, clip, mask or feature data (they bake transforms with the browser's
+transform lists and `getBBox`), path and node editing, text layout and editing (`text-actions.ts`), freehand and legacy text creation, the shape library
+tool, and the extensions that derive geometry (blend, art-brush, taper, glow / outline / shadow regions, connector, mirror, repeat). Each needs its
+geometry computed on the model (pure matrix and path math, plus a text-measurement service) before it can state its change as a model edit; that is
+a design task of its own, so start with the text-measurement spike named above, then flip / rotate / scale as matrix math on the model. When none of those writes the live DOM, a check
+script can forbid it outside the renderer, the command types can go for a one-call `commit(label)`, and the DOM is a view in
 the full sense. The derived-data features that regenerate on `elementChanged` (art-brush, corner radius, glow / outline / shadow regions, markers, mirror,
 taper, text-on-path, connector) should learn `restored` as blend did, so an undo never re-derives what the snapshot already holds (nothing fails
-without it today). The rest touches the 94 `getBBox`, 55 `getStrokedBBox` and 51 `transact` sites; start with the text-measurement spike named above.
-R2 and R3 make it much cheaper.
+without it today). The rest touches the 94 `getBBox`, 55 `getStrokedBBox` and 51 `transact` sites; R2 and R3 make it much cheaper.
 
 ### Step (a): status
 
