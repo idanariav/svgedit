@@ -1,13 +1,8 @@
 // paste-elem.js — Paste handler
 import { getUrlFromAttr } from './dom-utils.ts'
-import * as hstry from './history.js'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { SVGElementJSON } from '../svgcanvas.ts'
-
-const {
-  InsertElementCommand, BatchCommand
-} = hstry
 
 /** The members `paste-elem.ts` gives its canvas. */
 export interface PasteElemApi {
@@ -60,7 +55,6 @@ export const createPasteElem = (canvas: SvgCanvas): PasteElemApi => {
     lastPasteSignature = signature
 
     const pasted: Element[] = []
-    const batchCmd = new BatchCommand('Paste elements')
     // const drawing = getCurrentDrawing();
     /** Maps past ID (on attribute) to current ID. */
     const changedIDs: Record<string, string> = {}
@@ -126,13 +120,11 @@ export const createPasteElem = (canvas: SvgCanvas): PasteElemApi => {
     const defsEntries = clipb.filter((e) => e?._defs)
     const elemEntries = clipb.filter((e) => e && !e._defs)
 
-    defsEntries.forEach((elem) => {
-      const defEl = svgCanvas.addSVGElementsFromJson(elem)
-      if (defEl) {
-        svgCanvas.findDefs().appendChild(defEl) // move out of the layer into <defs>
-        batchCmd.addSubCommand(new InsertElementCommand(defEl))
-      }
-    })
+    // Everything below is built detached and handed to the model: one step, and the renderer puts it in the DOM
+    const tx = svgCanvas.beginTransaction('Paste elements')
+    const withId = (elem: SVGElementJSON): SVGElementJSON => ({ ...elem, attr: { ...elem.attr, id: elem.attr?.id ?? svgCanvas.getNextId() } })
+    const looseDefs = defsEntries.map((elem) => svgCanvas.buildElementFromJson(withId(elem))).filter((el): el is Element => Boolean(el))
+    if (looseDefs.length) svgCanvas.insertLooseElements(looseDefs.map((el) => ({ parent: svgCanvas.findDefs(), el })), 'Paste elements')
 
     // If pasting while isolated inside a group, addSVGElementsFromJson drops the
     // new content straight into that group (matching draw-a-new-shape
@@ -143,24 +135,19 @@ export const createPasteElem = (canvas: SvgCanvas): PasteElemApi => {
     const detachTarget = currentGroup ? getGroupDetachTarget(currentGroup) : null
 
     // Move elements to lastClickPoint
-    let len = elemEntries.length
-    if (!len) return
-    while (len--) {
-      const elem = elemEntries[len]
-      if (!elem) { continue }
-
-      const copy = svgCanvas.addSVGElementsFromJson(elem)
-      if (detachTarget) {
-        applyGroupDetachTransform(copy, detachTarget.matrix)
-        detachTarget.targetParent.append(copy)
-      }
+    if (!elemEntries.length) { tx.cancel(); return }
+    const container = detachTarget ? detachTarget.targetParent : (currentGroup || svgCanvas.getDrawing().getTargetLayerGroup())
+    const loose = [...elemEntries].reverse()
+      .map((elem) => svgCanvas.buildElementFromJson(withId(elem)))
+      .filter((el): el is Element => Boolean(el))
+    const inserted = svgCanvas.insertLooseElements(loose.map((el) => ({ parent: container as Element, el })), 'Paste elements')
+    for (const copy of inserted) {
+      if (detachTarget) applyGroupDetachTransform(copy, detachTarget.matrix) // baking in needs the element in the drawing
       pasted.push(copy)
-      batchCmd.addSubCommand(new InsertElementCommand(copy))
-
       svgCanvas.restoreRefElements(copy)
     }
 
-    if (!pasted.length) return
+    if (!pasted.length) { tx.cancel(); return }
     svgCanvas.selectOnly(pasted, true) // show grips so the pasted element is ready to resize
 
     if (type !== 'in_place') {
@@ -188,12 +175,11 @@ export const createPasteElem = (canvas: SvgCanvas): PasteElemApi => {
           dy.push(cy)
         })
 
-        const cmd = svgCanvas.moveSelectedElements(dx, dy, false)
-        if (cmd) batchCmd.addSubCommand(cmd)
+        svgCanvas.moveSelectedElements(dx, dy, false)
       }
     }
 
-    svgCanvas.addCommandToHistory(batchCmd)
+    tx.commit()
     svgCanvas.call('changed', pasted)
   }
 
