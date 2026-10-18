@@ -8,6 +8,7 @@
 
 import { NS } from './namespaces.ts'
 import { ChangeElementCommand } from './history.js'
+import { restoreAttr } from './dom-utils.ts'
 import {
   transformPoint, getMatrix, getMatrixToContent, matrixMultiply, isIdentity
 } from './math.ts'
@@ -987,6 +988,17 @@ export const createPathMethod = (canvas: SvgCanvas): PathMethodApi => {
         after: this.elem.getAttribute('d'),
         ...detail
       })
+      const after = this.elem.getAttribute('d')
+      // The edit was made on the live path (the grips follow it); the model is handed the result as the step. The live path is put
+      // back first so the step starts from the path as it was, and the renderer writes the new `d` again.
+      if (this.elem.id && before !== null && after !== null && before !== after) {
+        restoreAttr(this.elem, 'd', before)
+        if (svgCanvas.setElementAttributes(text ?? 'Edit path', this.elem, { d: after })) {
+          svgCanvas.call('changed', [this.elem])
+          return
+        }
+        restoreAttr(this.elem, 'd', after)
+      }
       svgCanvas.endChanges({ cmd, elem: this.elem })
     }
 

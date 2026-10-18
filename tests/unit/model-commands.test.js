@@ -352,6 +352,23 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('path edits', () => {
+    it('are committed through the model: one step, undo gives the old d back', () => {
+      const pathEl = canvas.addSVGElementsFromJson({ element: 'path', attr: { id: 'pth', d: 'M0,0 L10,10' } })
+      canvas.undoMgr.snapshots.baseline()
+      const path = new canvas.PathClass(pathEl)
+      path.storeD()
+      pathEl.setAttribute('d', 'M0,0 L20,20') // the live edit
+      const size = canvas.undoMgr.getUndoStackSize()
+      path.endChanges('Move path point(s)')
+      expect(pathEl.getAttribute('d')).toBe('M0,0 L20,20')
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Move path point(s)')
+      canvas.undoMgr.undo()
+      expect(pathEl.getAttribute('d')).toBe('M0,0 L10,10')
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

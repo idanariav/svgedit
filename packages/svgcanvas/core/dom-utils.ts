@@ -252,9 +252,12 @@ export let setHref = (elem: Element, val: string): void => {
  * Put an element's `transform` back to what it was (a live gesture preview is undone before the gesture is stated on the model).
  * An empty string removes the attribute.
  */
-export const restoreTransformAttr = (el: Element, was: string): void => {
-  if (was) el.setAttribute('transform', was)
-  else el.removeAttribute('transform')
+export const restoreTransformAttr = (el: Element, was: string): void => restoreAttr(el, 'transform', was || null)
+
+/** Put an attribute back to what it was (null removes it): the undo of a live preview before the change is stated on the model. */
+export const restoreAttr = (el: Element, name: string, was: string | null): void => {
+  if (was !== null) el.setAttribute(name, was)
+  else el.removeAttribute(name)
 }
 
 /**

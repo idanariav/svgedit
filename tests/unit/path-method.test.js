@@ -160,7 +160,8 @@ describe('path-method Path#smoothSelectedNodes', () => {
       getZoom () { return 1 },
       getElement (id) { return svg.querySelector(`#${id}`) },
       addPtsToSelection () {},
-      endChanges () {}
+      endChanges () {},
+      setElementAttributes () { return false }
     }
     attachUnits(svgCanvas)
     Object.assign(svgCanvas, pathInit(svgCanvas))
@@ -248,6 +249,7 @@ describe('path-method Path#endChanges', () => {
       getElement (id) { return svg.querySelector(`#${id}`) },
       addPtsToSelection () {},
       endChanges () {},
+      setElementAttributes () { return false }, // no model here: the history command records the step
       logDebugEvent
     }
     attachUnits(svgCanvas)
