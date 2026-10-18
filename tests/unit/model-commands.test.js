@@ -202,6 +202,29 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('layer visibility, move-to-layer and merge', () => {
+    it('are single undoable steps through the model', () => {
+      const layers = () => [...canvas.getSvgContent().querySelectorAll(':scope > g.layer')]
+      canvas.createLayer('Second')
+      const second = canvas.getCurrentDrawing().getCurrentLayer()
+      expect(canvas.setLayerVisibility('Second', false)).toBe(true)
+      expect(second.getAttribute('display')).toBe('none')
+      canvas.undoMgr.undo()
+      expect(second.getAttribute('display')).not.toBe('none')
+      canvas.selectOnly([els[0]])
+      expect(canvas.moveSelectedToLayer('Second')).toBe(true)
+      expect(els[0].parentNode).toBe(second)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Move Elements to Layer')
+      canvas.undoMgr.undo()
+      expect(els[0].parentNode).toBe(layer)
+      const n = layers().length
+      canvas.mergeLayer()
+      expect(layers().length).toBe(n - 1)
+      canvas.undoMgr.undo()
+      expect(layers().length).toBe(n)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

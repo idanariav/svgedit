@@ -141,3 +141,36 @@ describe('model-render: reconcile', () => {
     expect(serializeSvg({ prolog: [], root: model, epilog: [] })).toBe(serializeSvg({ prolog: [], root: readDom(dom), epilog: [] }))
   })
 })
+
+describe('reconcile: an element that moves to another parent keeps its node', () => {
+  it('when the new parent comes before the old one', async () => {
+    const { parseSvg } = await import('../../packages/svgcanvas/core/model/index.ts')
+    const a = parseSvg('<svg><g id="p"/><g id="q"><rect id="r"/></g></svg>').root
+    const b = parseSvg('<svg><g id="p"><rect id="r"/></g><g id="q"/></svg>').root
+    const dom = renderNode(document, a, { '': 'http://www.w3.org/2000/svg' })
+    const rect = dom.querySelector('[id="r"]')
+    reconcile(dom, a, b, { '': 'http://www.w3.org/2000/svg' }, { pool: new Map() })
+    expect(dom.querySelector('[id="r"]')).toBe(rect)
+    expect(rect.parentNode.id).toBe('p')
+  })
+})
+
+describe('reconcile: a node moving into an element that comes after its old parent, and back', () => {
+  it('keeps the node both ways and leaves the other children aligned', async () => {
+    const { parseSvg } = await import('../../packages/svgcanvas/core/model/index.ts')
+    const ns = { '': 'http://www.w3.org/2000/svg' }
+    const a = parseSvg('<svg><g id="p"><rect id="r"/><rect id="s"/></g><g id="q"/></svg>').root
+    const b = parseSvg('<svg><g id="p"><rect id="s"/></g><g id="q"><rect id="r"/></g></svg>').root
+    const dom = renderNode(document, a, ns)
+    const r = dom.querySelector('[id="r"]')
+    const s = dom.querySelector('[id="s"]')
+    const pool = new Map()
+    reconcile(dom, a, b, ns, { pool })
+    expect(dom.querySelector('[id="q"]').firstChild).toBe(r)
+    expect(dom.querySelector('[id="p"]').firstChild).toBe(s)
+    reconcile(dom, b, a, ns, { pool })
+    expect(dom.querySelector('[id="p"]').firstChild).toBe(r)
+    expect(dom.querySelector('[id="p"]').lastChild).toBe(s)
+    expect(readDom(dom)).toEqual(a)
+  })
+})

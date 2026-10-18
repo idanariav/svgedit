@@ -120,9 +120,22 @@ export const reconcile = (dom: Node, prev: ModelNode, next: ModelNode, scope: Sc
 }
 
 /** `renderNode`, but an element the pool still holds comes back as that node, patched to `next`. */
-const build = (doc: Document, next: ModelNode, scope: Scope, options: ReconcileOptions): Node => {
+const build = (doc: Document, next: ModelNode, scope: Scope, options: ReconcileOptions, parent?: Element): Node => {
   const id = idOf(next)
-  const kept = id !== undefined ? options.pool?.get(id) : undefined
+  let kept = id !== undefined ? options.pool?.get(id) : undefined
+  if (!kept && id !== undefined && options.pool && parent && next.kind === 'element') {
+    // An element that moves to another parent is built here before the parent it leaves is patched: take the live node now
+    // (that parent skips it later, as it is no longer its child), so the move keeps the node and what is attached to it.
+    let top: Element = parent
+    while (top.parentElement?.nodeName === 'svg') top = top.parentElement
+    const live = Array.from(top.querySelectorAll(`[id="${id}"]`)).find((e) => e.parentNode !== parent && e.nodeName === next.name)
+    if (live?.parentNode) {
+      kept = { dom: live, model: readDom(live) as ModelElement }
+      const from = live.parentNode as Element
+      from.removeChild(live)
+      options.touched?.(from)
+    }
+  }
   if (kept && next.kind === 'element' && kept.dom.nodeName === next.name) {
     options.pool?.delete(id as string)
     reconcile(kept.dom, kept.model ?? (readDom(kept.dom) as ModelElement), next, scope, options)
@@ -134,8 +147,27 @@ const build = (doc: Document, next: ModelNode, scope: Scope, options: ReconcileO
   return fresh
 }
 
+/**
+ * The DOM child that shows each model child, or undefined where an element with an id has left (it moved to another parent
+ * which was patched first and took the node). Both lists are in the same order, so one walk matches them.
+ */
+const align = (actual: readonly Node[], prev: readonly ModelNode[]): Array<Node | undefined> => {
+  if (actual.length === prev.length) return [...actual]
+  let j = 0
+  return prev.map((p) => {
+    const node = actual[j]
+    const id = idOf(p)
+    if (!node) return undefined
+    const here = node.nodeType === 1 ? (node as Element).getAttribute('id') ?? undefined : undefined
+    if (id !== undefined && here !== id) return undefined
+    j++
+    return node
+  })
+}
+
 const reconcileChildren = (el: Element, prev: readonly ModelNode[], next: readonly ModelNode[], scope: Scope, options: ReconcileOptions): void => {
-  const domKids = Array.from(el.childNodes)
+  const actual = Array.from(el.childNodes)
+  const domKids = align(actual, prev)
   // DOM child i shows prev child i; ids find a child that moved, position finds the rest
   const byId = new Map<string, number>()
   prev.forEach((p, i) => { const id = idOf(p); if (id !== undefined && !byId.has(id)) byId.set(id, i) })
@@ -146,14 +178,14 @@ const reconcileChildren = (el: Element, prev: readonly ModelNode[], next: readon
     if (from === undefined && id === undefined && i < prev.length && idOf(prev[i]) === undefined && !used.has(i)) from = i
     if (from !== undefined && !used.has(from) && domKids[from] && sameKind(prev[from], n)) {
       used.add(from)
-      return reconcile(domKids[from], prev[from], n, scope, options)
+      return reconcile(domKids[from] as Node, prev[from], n, scope, options)
     }
-    return build(el.ownerDocument as Document, n, scope, options)
+    return build(el.ownerDocument as Document, n, scope, options, el)
   })
   const keep = new Set(out)
   let removed = false
   domKids.forEach((k, i) => {
-    if (k.parentNode !== el || keep.has(k)) return
+    if (!k || k.parentNode !== el || keep.has(k)) return
     const id = idOf(prev[i])
     if (id !== undefined && k.nodeType === 1 && options.pool) options.pool.set(id, { dom: k as Element, model: prev[i] as ModelElement })
     el.removeChild(k)
@@ -162,7 +194,7 @@ const reconcileChildren = (el: Element, prev: readonly ModelNode[], next: readon
   if (removed) options.touched?.(el)
   // Put the children in order moving as few as possible: the ones that are already in the right order relative to each other
   // (the longest increasing run of old positions) stay, the others are inserted before their next sibling, last to first.
-  const oldAt = new Map<Node, number>(domKids.map((k, i) => [k, i]))
+  const oldAt = new Map<Node, number>(actual.map((k, i) => [k, i]))
   const stay = longestRun(out.map((k) => oldAt.get(k) ?? -1))
   for (let i = out.length - 1; i >= 0; i--) {
     if (stay.has(i)) continue

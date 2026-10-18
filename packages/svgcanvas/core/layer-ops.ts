@@ -10,7 +10,7 @@
 import type SvgCanvas from '../svgcanvas.ts'
 import HistoryRecordingService from './historyrecording.js'
 import { toXml } from './encoding-utils.ts'
-import { removeIds, withChildren, moveNextTo, moveToEnd } from './model/edit.ts'
+import { removeIds, withChildren, moveNextTo, moveToEnd, setAttrsById, appendIdsTo, mergeInto } from './model/edit.ts'
 import { text } from './model/node.ts'
 import { warn } from '../common/logger.ts'
 
@@ -206,21 +206,18 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    * `false`, otherwise it returns `true`. This is an undo-able action.
    */
   const setLayerVisibility = (layerName: string, bVisible: boolean): boolean => {
-    const { ChangeElementCommand } = svgCanvas.history
     const drawing = svgCanvas.getCurrentDrawing()
     const layerGroup = drawing.getLayerByName(layerName)
     if (!layerGroup) {
       warn('setLayerVisibility: layer not found', layerName, 'draw')
       return false
     }
-    const oldDisplay = layerGroup.getAttribute('display')
-    const layer = drawing.setLayerVisibility(layerName, bVisible)
-    if (!layer) {
-      return false
+    if (!layerGroup.id) layerGroup.id = svgCanvas.getNextId('layer') // the model addresses elements by id
+    const layer = layerGroup
+    const display = bVisible ? 'inline' : 'none'
+    if (layer.getAttribute('display') !== display) {
+      svgCanvas.snapshotHistory.edit('Layer Visibility', (root) => setAttrsById(root, layer.id, { display }))
     }
-    svgCanvas.addCommandToHistory(
-      new ChangeElementCommand(layer, { display: oldDisplay }, 'Layer Visibility')
-    )
 
     if (layer === drawing.getCurrentLayer()) {
       svgCanvas.clearSelection()
@@ -345,7 +342,6 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    * is returned. Otherwise it returns `true`. This is an undo-able action.
    */
   const moveSelectedToLayer = (layerName: string): boolean => {
-    const { BatchCommand, MoveElementCommand } = svgCanvas.history
     // find the layer
     const drawing = svgCanvas.getCurrentDrawing()
     const layer = drawing.getLayerByName(layerName)
@@ -353,44 +349,52 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
       return false
     }
 
-    const batchCmd = new BatchCommand('Move Elements to Layer')
-
-    // loop for each selected element and move it
+    if (!layer.id) layer.id = svgCanvas.getNextId('layer') // the model addresses elements by id
+    const ids: string[] = []
     const selElems = svgCanvas.getSelectedElements()
-    let i = selElems.length
-    while (i--) {
+    for (let i = selElems.length - 1; i >= 0; i--) {
       const elem = selElems[i]
-      const oldLayer = elem?.parentNode
-      if (!elem || !oldLayer || oldLayer === layer) {
-        continue
-      }
-      const oldNextSibling = elem.nextSibling
-      layer.append(elem)
-      batchCmd.addSubCommand(
-        new MoveElementCommand(elem, oldNextSibling, oldLayer)
-      )
+      if (elem?.id && elem.parentNode && elem.parentNode !== layer) ids.push(elem.id)
     }
-
-    if (batchCmd.isEmpty()) {
+    if (!ids.length) {
       warn('moveSelectedToLayer: no elements moved', null, 'draw')
       return false
     }
-    svgCanvas.addCommandToHistory(batchCmd)
-
+    svgCanvas.snapshotHistory.edit('Move Elements to Layer', (root) => appendIdsTo(root, layer.id, ids))
     return true
   }
 
+  /** Merge the current layer into the one below it (through the model); the one below becomes current. */
+  const mergeOne = (): void => {
+    const drawing = svgCanvas.getCurrentDrawing()
+    const cur = drawing.getCurrentLayer()
+    const prev = cur?.previousElementSibling
+    const index = drawing.indexCurrentLayer()
+    if (!cur || !prev || index < 1) return
+    const prevName = drawing.getLayerName(index - 1)
+    for (const g of [cur, prev]) if (!g.id) g.id = svgCanvas.getNextId('layer') // the model addresses elements by id
+    svgCanvas.snapshotHistory.edit('Merge Layer', (root) => mergeInto(root, cur.id, prev.id))
+    drawing.identifyLayers()
+    drawing.setCurrentLayer(prevName)
+  }
+
   const mergeLayer = (hrService?: HrService): void => {
-    svgCanvas.getCurrentDrawing().mergeLayer(historyRecordingService(svgCanvas, hrService))
+    if (hrService) svgCanvas.getCurrentDrawing().mergeLayer(hrService)
+    else mergeOne()
     svgCanvas.clearSelection()
     svgCanvas.leaveContext()
     svgCanvas.changeSvgContent()
   }
 
   const mergeAllLayers = (hrService?: HrService): void => {
-    svgCanvas
-      .getCurrentDrawing()
-      .mergeAllLayers(historyRecordingService(svgCanvas, hrService))
+    const drawing = svgCanvas.getCurrentDrawing()
+    if (hrService) drawing.mergeAllLayers(hrService)
+    else {
+      svgCanvas.transact('Merge all Layers', () => {
+        drawing.setCurrentLayer(drawing.getLayerName(drawing.getNumLayers() - 1))
+        while (drawing.getNumLayers() > 1) mergeOne()
+      })
+    }
     svgCanvas.clearSelection()
     svgCanvas.leaveContext()
     svgCanvas.changeSvgContent()

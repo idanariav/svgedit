@@ -184,3 +184,28 @@ export const wrapIds = (root: ModelElement, containerId: string, group: ModelEle
   const wrapped = element(group.name, group.attrs, [...group.children, ...nodes])
   return withChildren(stripped, at, (kids) => [...kids, wrapped])
 }
+
+/** Move the elements with these ids to the end of the element `containerId` names, in the order given. */
+export const appendIdsTo = (root: ModelElement, containerId: string, ids: readonly string[]): ModelElement => {
+  const nodes: ModelElement[] = []
+  let stripped = root
+  for (const id of ids) {
+    if (id === containerId) continue
+    const node = findById(stripped, id)
+    if (!node) continue
+    nodes.push(node)
+    stripped = removeIds(stripped, [id])
+  }
+  const at = nodes.length ? pathOfId(stripped, containerId) : undefined
+  return at ? withChildren(stripped, at, (kids) => [...kids, ...nodes]) : root
+}
+
+/** Merge the element `fromId` into the element `toId`: its children, but its `<title>`, go last into `toId`, then it goes. */
+export const mergeInto = (root: ModelElement, fromId: string, toId: string): ModelElement => {
+  const from = findById(root, fromId)
+  if (!from || !pathOfId(root, toId)) return root
+  const moved = from.children.filter((c) => !(c.kind === 'element' && c.name === 'title'))
+  const without = removeIds(root, [fromId])
+  const at = pathOfId(without, toId) as NodePath
+  return withChildren(without, at, (kids) => [...kids, ...moved])
+}
