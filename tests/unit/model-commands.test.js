@@ -225,6 +225,26 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('group and ungroup', () => {
+    it('keep the nodes of the children, each in one undoable step', () => {
+      canvas.selectOnly([els[1], els[2]])
+      canvas.groupSelectedElements()
+      const g = canvas.getSelectedElements()[0]
+      expect(g.tagName).toBe('g')
+      expect(els[1].parentNode).toBe(g)
+      const size = canvas.undoMgr.getUndoStackSize()
+      canvas.ungroupSelectedElement()
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
+      expect(g.isConnected).toBe(false)
+      expect(els[1].parentNode).toBe(layer)
+      expect(canvas.getSelectedElements()).toContain(els[1])
+      canvas.undoMgr.undo()
+      expect(els[1].parentNode.tagName).toBe('g')
+      canvas.undoMgr.undo()
+      expect(els[1].parentNode).toBe(layer)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

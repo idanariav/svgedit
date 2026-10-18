@@ -209,3 +209,12 @@ export const mergeInto = (root: ModelElement, fromId: string, toId: string): Mod
   const at = pathOfId(without, toId) as NodePath
   return withChildren(without, at, (kids) => [...kids, ...moved])
 }
+
+/** Replace the element with this id by its children (a `<title>` goes with it), at its place. */
+export const unwrapId = (root: ModelElement, id: string): ModelElement => {
+  const path = pathOfId(root, id)
+  if (!path || !path.length) return root
+  const node = getAt(root, path) as ModelElement
+  const kept = node.children.filter((c) => !(c.kind === 'element' && c.name === 'title'))
+  return withChildren(root, path.slice(0, -1), (kids) => kids.flatMap((k) => (k === node ? kept : [k])))
+}

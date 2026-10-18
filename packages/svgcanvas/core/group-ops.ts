@@ -8,7 +8,7 @@
 
 import { NS } from './namespaces.ts'
 import { element } from './model/node.ts'
-import { wrapIds } from './model/edit.ts'
+import { wrapIds, unwrapId } from './model/edit.ts'
 import * as hstry from './history.js'
 import { warn, error } from '../common/logger.ts'
 import { getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.ts'
@@ -584,6 +584,20 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
 
     // Look for parent "a"
     if (g.tagName === 'g' || g.tagName === 'a') {
+      const group = g
+      const kids = Array.from(group.children).filter((c) => c.tagName !== 'title')
+      if (group.id && kids.every((c) => c.id)) {
+        // The properties go down to the children (measuring, still DOM work), then the model drops the group: one step
+        let children: Element[] = []
+        svgCanvas.transact('Ungroup Elements', () => {
+          pushGroupProperty(group as SVGGElement, true)
+          svgCanvas.clearSelection()
+          svgCanvas.snapshotHistory.edit('Ungroup Elements', (root) => unwrapId(root, group.id))
+          children = kids.map((c) => svgCanvas.getElement(c.id)).filter((c): c is Element => Boolean(c))
+        })
+        svgCanvas.addToSelection(children)
+        return
+      }
       const batchCmd = new BatchCommand('Ungroup Elements')
       const cmd = pushGroupProperty(g as SVGGElement, true)
       if (cmd) {

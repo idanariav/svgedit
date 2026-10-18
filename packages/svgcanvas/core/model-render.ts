@@ -89,6 +89,8 @@ export interface ReconcileOptions {
   pool?: NodePool
   /** Called for every element whose attributes changed, that was created or put back, and for the parent of a removed node. */
   touched?: (el: Element) => void
+  /** The connected element a move is looked for under (set by the first `reconcile` that has a pool). */
+  root?: Element
 }
 
 /**
@@ -123,12 +125,10 @@ export const reconcile = (dom: Node, prev: ModelNode, next: ModelNode, scope: Sc
 const build = (doc: Document, next: ModelNode, scope: Scope, options: ReconcileOptions, parent?: Element): Node => {
   const id = idOf(next)
   let kept = id !== undefined ? options.pool?.get(id) : undefined
-  if (!kept && id !== undefined && options.pool && parent && next.kind === 'element') {
+  if (!kept && id !== undefined && options.pool && options.root && parent && next.kind === 'element') {
     // An element that moves to another parent is built here before the parent it leaves is patched: take the live node now
     // (that parent skips it later, as it is no longer its child), so the move keeps the node and what is attached to it.
-    let top: Element = parent
-    while (top.parentElement?.nodeName === 'svg') top = top.parentElement
-    const live = Array.from(top.querySelectorAll(`[id="${id}"]`)).find((e) => e.parentNode !== parent && e.nodeName === next.name)
+    const live = Array.from((options.root as Element).querySelectorAll(`[id="${id}"]`)).find((e) => e.parentNode !== parent && e.nodeName === next.name)
     if (live?.parentNode) {
       kept = { dom: live, model: readDom(live) as ModelElement }
       const from = live.parentNode as Element
@@ -138,13 +138,28 @@ const build = (doc: Document, next: ModelNode, scope: Scope, options: ReconcileO
   }
   if (kept && next.kind === 'element' && kept.dom.nodeName === next.name) {
     options.pool?.delete(id as string)
-    reconcile(kept.dom, kept.model ?? (readDom(kept.dom) as ModelElement), next, scope, options)
+    // what the node shows now, not what it showed when it was pooled: a move may have taken children out of it since
+    reconcile(kept.dom, readDom(kept.dom) as ModelElement, next, scope, options)
     options.touched?.(kept.dom)
     return kept.dom
+  }
+  if (next.kind === 'element' && options.pool && next.children.length) {
+    // A new element may hold nodes that are moving in from elsewhere: build its children the same way
+    const shell = renderNode(doc, element(next.name, next.attrs, []), scope) as Element
+    const inner = scopeOf(next, scope)
+    for (const c of next.children) shell.appendChild(build(doc, c, inner, options, shell))
+    options.touched?.(shell)
+    return shell
   }
   const fresh = renderNode(doc, next, scope)
   if (fresh.nodeType === 1) options.touched?.(fresh as Element)
   return fresh
+}
+
+const outermostSvg = (el: Element): Element => {
+  let top = el
+  while (top.parentElement?.nodeName === 'svg') top = top.parentElement
+  return top
 }
 
 /**
@@ -166,6 +181,7 @@ const align = (actual: readonly Node[], prev: readonly ModelNode[]): Array<Node 
 }
 
 const reconcileChildren = (el: Element, prev: readonly ModelNode[], next: readonly ModelNode[], scope: Scope, options: ReconcileOptions): void => {
+  if (options.pool) options.root ??= outermostSvg(el)
   const actual = Array.from(el.childNodes)
   const domKids = align(actual, prev)
   // DOM child i shows prev child i; ids find a child that moved, position finds the rest
