@@ -26,6 +26,8 @@ export interface GestureState {
   /** A drag or rotate has recorded its start transforms. */
   hasDragStartTransform: boolean
   dragStartTransforms: Map<Element, string> | null
+  /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
+  dragPlan: Map<Element, import('./model-commands.ts').Affine> | null
   hasResizeStartTransform: boolean
   groupResizeStart: Map<Element, SVGMatrix> | null
   areaResize: AreaResize | null
@@ -48,6 +50,7 @@ export const createGestureState = (): GestureState => ({
   groupRotateBBox: null,
   hasDragStartTransform: false,
   dragStartTransforms: null,
+  dragPlan: null,
   hasResizeStartTransform: false,
   groupResizeStart: null,
   areaResize: null,

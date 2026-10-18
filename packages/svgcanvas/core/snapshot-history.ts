@@ -87,6 +87,9 @@ export class SnapshotHistory {
   private dirty = false
   /** the snapshot the DOM is showing: how many commands are applied */
   private at = 0
+  /** a live preview is on (see `preview`): the drawing as it was when it began, and as it is shown now */
+  private previewBase: ModelElement | null = null
+  private previewShown: ModelElement | null = null
 
   constructor (target: SnapshotTarget) {
     this.target = target
@@ -98,7 +101,11 @@ export class SnapshotHistory {
     this.listening = true
     const signal = this.target.signal()
     for (const type of ['pointerdown', 'mousedown', 'keydown', 'click', 'input', 'change']) {
-      globalThis.document?.addEventListener(type, () => this.baseline(), { capture: true, signal })
+      globalThis.document?.addEventListener(type, () => {
+        // a press while a preview is still on: that gesture never ended, so the drawing goes back to where it began
+        if (this.previewBase && (type === 'pointerdown' || type === 'mousedown')) this.cancelPreview()
+        this.baseline()
+      }, { capture: true, signal })
     }
     signal.addEventListener('abort', () => this.observer?.disconnect())
   }
@@ -163,7 +170,7 @@ export class SnapshotHistory {
    * a change back along with the action.
    */
   baseline (): void {
-    if (this.target.held()) return
+    if (this.target.held() || this.previewBase) return
     this.refresh()
   }
 
@@ -246,6 +253,49 @@ export class SnapshotHistory {
   show (shown: ModelElement, want: ModelElement): void {
     this.target.before()
     this.target.patched(this.render(shown, want))
+  }
+
+  /** A preview is on: the DOM shows a drawing that has not been recorded. */
+  get previewing (): boolean {
+    return this.previewBase !== null
+  }
+
+  /**
+   * Show a change that is not final (a drag in progress): `fn` maps the drawing as it was when the preview began to the one to
+   * show. Each call replaces the last one; the renderer writes the DOM, so a gesture does not edit the real elements itself.
+   * Nothing is recorded until `endPreview`; `cancelPreview` shows the drawing as it was.
+   */
+  preview (fn: (root: ModelElement) => ModelElement): void {
+    if (!this.previewBase) {
+      this.baseline()
+      this.previewBase = this.current()
+      this.previewShown = this.previewBase
+    }
+    const next = fn(this.previewBase)
+    if (next === this.previewShown) return
+    this.render(this.previewShown as ModelElement, next)
+    this.previewShown = next
+  }
+
+  /** The preview is final: it is the step `label`. Returns false when it changed nothing. */
+  endPreview (label: string): boolean {
+    const base = this.previewBase
+    const shown = this.previewShown
+    this.previewBase = null
+    this.previewShown = null
+    if (!base || !shown || shown === base) return false
+    if (!this.target.held()) this.stage(shown)
+    this.target.record(label)
+    return true
+  }
+
+  /** Show the drawing as it was before the preview. */
+  cancelPreview (): void {
+    const base = this.previewBase
+    const shown = this.previewShown
+    this.previewBase = null
+    this.previewShown = null
+    if (base && shown && shown !== base) this.render(shown, base)
   }
 
   /**

@@ -12,7 +12,7 @@
 import SvgPath from 'svgpath'
 import { BatchCommand } from './history.js'
 import { readDom } from './model-render.ts'
-import { withChildren, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
+import { findById, withChildren, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
 import { getRotationAngle } from './dom-utils.ts'
 import { BBOX_AFFECTING_ATTRS } from './history.js'
 import { LAYOUT_ATTRS, isAreaText } from './text-rows.ts'
@@ -68,6 +68,13 @@ export interface ModelCommandsApi {
   commitUndoableChange(restore: (el: Element, name: string, was: string | null) => void): void
   /** Remove these elements (and what is inside them) through the model, as one step. False, touching nothing, if one has no id. */
   removeElements(label: string, els: Element[]): boolean
+  /**
+   * Whether a drag of these elements can be shown through the model (each has an id and only a translation or scale for a transform,
+   * and can take it in its own coordinates); the map is what each one's transform amounts to before the drag, or null.
+   */
+  dragPlan(elems: Element[]): Map<Element, Affine> | null
+  /** Show the elements moved by (dx, dy) from where `plan` has them: the renderer writes the DOM, nothing is recorded yet. */
+  previewDrag(plan: Map<Element, Affine>, dx: number, dy: number): void
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -108,6 +115,15 @@ export const parseAffine = (transform: string | null): Affine | null => {
   return out
 }
 
+/** The few things `affineEdit` reads of an element, from a DOM element or from a model element alike. */
+const attrHost = (el: Element | ModelElement): { tagName: string, get: (name: string) => string | null, has: (name: string) => boolean, names: string[] } => {
+  if ('kind' in el) {
+    const get = (name: string): string | null => el.attrs.find((a) => a.name === name)?.value ?? null
+    return { tagName: el.name, get, has: (name) => get(name) !== null, names: el.attrs.map((a) => a.name) }
+  }
+  return { tagName: el.tagName, get: (name) => el.getAttribute(name), has: (name) => el.hasAttribute(name), names: Array.from(el.attributes, (a) => a.name) }
+}
+
 /** The coordinates a plain shape is positioned by, and the axis each one moves along. */
 const POINT_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   rect: [['x', 'x'], ['y', 'y']],
@@ -127,15 +143,16 @@ const NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i
  * null when that is not all it takes: a clip, mask or feature data (arrow trim, effects…) that reacts through the DOM path,
  * a value with units, a flip of something that needs a matrix or a gradient flip, a circle scaled unevenly.
  */
-export const affineEdit = (el: Element, map: Affine): Record<string, string | null> | null => {
-  if (el.hasAttribute('clip-path') || el.hasAttribute('mask')) return null
-  if (Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) return null
+export const affineEdit = (target: Element | ModelElement, map: Affine): Record<string, string | null> | null => {
+  const el = attrHost(target)
+  if (el.has('clip-path') || el.has('mask')) return null
+  if (el.names.some((n) => n.startsWith('se:') || n.startsWith('data-se'))) return null
   const points = POINT_ATTRS[el.tagName]
   if (!points) return null
   const flips = map.a < 0 || map.d < 0
-  if (flips && (el.tagName === 'image' || /url\(/.test(`${el.getAttribute('fill')}${el.getAttribute('stroke')}`))) return null
+  if (flips && (el.tagName === 'image' || /url\(/.test(`${el.get('fill')}${el.get('stroke')}`))) return null
   const get = (name: string): number | null => {
-    const raw = el.getAttribute(name)
+    const raw = el.get(name)
     if (raw === null) return 0
     return NUMBER.test(raw) ? parseFloat(raw) : null
   }
@@ -155,8 +172,8 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
       const sh = map.d * h
       set.x = String(p[0] + Math.min(0, sw))
       set.y = String(p[1] + Math.min(0, sh))
-      if (el.hasAttribute('width') || map.a !== 1) set.width = String(Math.abs(sw))
-      if (el.hasAttribute('height') || map.d !== 1) set.height = String(Math.abs(sh))
+      if (el.has('width') || map.a !== 1) set.width = String(Math.abs(sw))
+      if (el.has('height') || map.d !== 1) set.height = String(Math.abs(sh))
       break
     }
     case 'ellipse': {
@@ -190,7 +207,7 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
       break
     }
     case 'polyline': case 'polygon': {
-      const nums = (el.getAttribute('points') ?? '').trim().split(/[\s,]+/).filter(Boolean).map(Number)
+      const nums = (el.get('points') ?? '').trim().split(/[\s,]+/).filter(Boolean).map(Number)
       if (nums.length < 2 || nums.length % 2 || !nums.every(Number.isFinite)) return null
       const out: string[] = []
       for (let i = 0; i < nums.length; i += 2) out.push(`${map.a * nums[i] + map.e},${map.d * nums[i + 1] + map.f}`)
@@ -199,8 +216,8 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
     }
     case 'path': {
       // a path that keeps parameters of its own beside `d` (an arc's centre and radii…) is edited where it owns them
-      if (Array.from(el.attributes).some((a) => a.name.startsWith('data-') && a.name !== 'data-freehand')) return null
-      const d = el.getAttribute('d')
+      if (el.names.some((n) => n.startsWith('data-') && n !== 'data-freehand')) return null
+      const d = el.get('d')
       if (!d) return null
       try {
         set.d = new SvgPath(d).scale(map.a, map.d).translate(map.e, map.f).round(6).toString()
@@ -211,7 +228,7 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
     }
     default: return null
   }
-  if (el.hasAttribute('transform')) set.transform = null
+  if (el.has('transform')) set.transform = null
   return set
 }
 
@@ -397,6 +414,11 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
   }
 
   const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
+    // a drag shown through the model ends here: the preview is the step
+    if (svgCanvas.snapshotHistory.previewing) {
+      svgCanvas.snapshotHistory.endPreview('position')
+      return true
+    }
     // the grid snaps what a bake writes: that is the DOM path's job
     if (svgCanvas.getGridSnapping?.()) return false
     const plan: Array<{ el: Element, was: string, set: Record<string, string | null> }> = []
@@ -460,7 +482,32 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
+  const dragPlan = (elems: Element[]): Map<Element, Affine> | null => {
+    if (svgCanvas.getGridSnapping?.() || !elems.length) return null
+    const plan = new Map<Element, Affine>()
+    for (const el of elems) {
+      const own = el.id ? parseAffine(el.getAttribute('transform')) : null
+      if (!own || !affineEdit(el, own)) return null
+      plan.set(el, own)
+    }
+    return plan
+  }
+
+  const previewDrag = (plan: Map<Element, Affine>, dx: number, dy: number): void => {
+    svgCanvas.snapshotHistory.preview((root) => {
+      let out = root
+      for (const [el, own] of plan) {
+        const node = findById(root, el.id)
+        const set = node && affineEdit(node, compose({ a: 1, d: 1, e: dx, f: dy }, own))
+        if (set) out = setAttrsById(out, el.id, set)
+      }
+      return out
+    })
+  }
+
   return {
+    dragPlan,
+    previewDrag,
     removeElements,
     commitUndoableChange,
     commitTransforms,

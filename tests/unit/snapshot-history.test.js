@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { SnapshotHistory, readSnapshot, share } from '../../packages/svgcanvas/core/snapshot-history.ts'
-import { parseSvg, element } from '../../packages/svgcanvas/core/model/index.ts'
+import { parseSvg, element, setAttr, updateAt } from '../../packages/svgcanvas/core/model/index.ts'
+import { pathOfId } from '../../packages/svgcanvas/core/model/edit.ts'
 
 const SVG = 'http://www.w3.org/2000/svg'
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -61,7 +62,8 @@ describe('SnapshotHistory', () => {
       signal: () => new AbortController().signal,
       content: () => content,
       before: () => {},
-      patched: () => {}
+      patched: () => {},
+      record: () => { stack++; history.pushed(stack) }
     })
     history.reset()
   })
@@ -136,5 +138,32 @@ describe('SnapshotHistory', () => {
     expect(content.getAttribute('width')).toBe('200')
     expect(content.contains(overlay)).toBe(true)
     expect(readSnapshot(content).attrs.some((a) => a.name === 'width')).toBe(false)
+  })
+
+  describe('preview', () => {
+    const setX = (id, x) => (root) => {
+      const path = pathOfId(root, id)
+      return updateAt(root, path, (n) => setAttr(n, 'x', x))
+    }
+
+    it('shows a change without recording it; ending it records one step; cancelling puts the drawing back', () => {
+      history.preview(setX('a', '5'))
+      history.preview(setX('a', '9')) // replaces the last one, from the same start
+      expect(xs()).toEqual(['a:9', 'b:2'])
+      expect(history.previewing).toBe(true)
+      expect(stack).toBe(0)
+      expect(history.endPreview('drag')).toBe(true)
+      expect(history.previewing).toBe(false)
+      history.preview(setX('b', '7'))
+      history.cancelPreview()
+      expect(xs()).toEqual(['a:9', 'b:2'])
+    })
+
+    it('a baseline while a preview is on does not take the preview as the start', () => {
+      history.preview(setX('a', '5'))
+      history.baseline()
+      history.cancelPreview()
+      expect(xs()).toEqual(['a:1', 'b:2'])
+    })
   })
 })

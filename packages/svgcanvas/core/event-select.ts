@@ -151,10 +151,12 @@ export const init = (canvas: SvgCanvas): {
     if (!svgCanvas.gesture.hasDragStartTransform && selectedElements.length > 0) {
       // Store original transforms BEFORE adding the drag transform (for undo)
       svgCanvas.gesture.dragStartTransforms = new Map()
+      svgCanvas.gesture.dragPlan = svgCanvas.dragPlan(selectedElements.filter(Boolean))
       for (const selectedElement of selectedElements) {
         if (!selectedElement) { continue }
         // Capture the transform attribute before we modify it
         svgCanvas.gesture.dragStartTransforms.set(selectedElement, selectedElement.getAttribute('transform') || '')
+        if (svgCanvas.gesture.dragPlan) continue // shown through the model: no transform is put on the element
         const slist = getTransformList(selectedElement)
         if (!slist) { continue }
         if (slist.numberOfItems) {
@@ -252,9 +254,11 @@ export const init = (canvas: SvgCanvas): {
         const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(svgCanvas, dx, dy)
         // Candidate delta for transformAgain — committed in mouseUp.
         svgCanvas.pendingMoveDelta = { dx, dy }
+        const plan = svgCanvas.gesture.dragPlan
+        if (plan) svgCanvas.previewDrag(plan, ldx, ldy)
         selectedElements.forEach((el) => {
           if (el) {
-            updateTransformList(svgRoot, el, ldx, ldy)
+            if (!plan) updateTransformList(svgRoot, el, ldx, ldy)
             // update our internal bbox that we're tracking while dragging
             svgCanvas.selectorManager.requestSelector(el).resize()
           }
@@ -262,7 +266,7 @@ export const init = (canvas: SvgCanvas): {
         // Live readout for the position panels (attributes stay untouched
         // until mouseup's recalculateDimensions, so panels need this delta
         // to show the in-progress position instead of the pre-drag value).
-        svgCanvas.dragLiveMoveDelta = { dx: ldx, dy: ldy }
+        svgCanvas.dragLiveMoveDelta = plan ? { dx: 0, dy: 0 } : { dx: ldx, dy: ldy } // a model preview has moved the attributes already
         svgCanvas.call('transition', selectedElements)
       }
     }
@@ -485,6 +489,7 @@ export const init = (canvas: SvgCanvas): {
 
         // Clear the stored transforms AND reset the flag together
         svgCanvas.gesture.dragStartTransforms = null
+        svgCanvas.gesture.dragPlan = null
         svgCanvas.gesture.hasDragStartTransform = false
 
         const len = selectedElements.length
