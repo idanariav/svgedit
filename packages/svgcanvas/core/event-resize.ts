@@ -219,7 +219,8 @@ export const init = (canvas: SvgCanvas): {
     if (!svgCanvas.gesture.hasResizeStartTransform) {
       const pos = getRotationAngle(selected) ? 1 : 0
       // A plain shape is resized in front of the renderer: the model shows each size, the element gets no dummy transforms
-      svgCanvas.gesture.dragPlan = !hasMatrix && !pos ? svgCanvas.dragPlan([selected]) : null
+      const turnable = ['rect', 'ellipse', 'circle', 'image', 'foreignObject'].includes(selected.tagName)
+      svgCanvas.gesture.dragPlan = !hasMatrix && (!pos || turnable) ? svgCanvas.dragPlan([selected], Boolean(pos)) : null
       svgCanvas.gesture.resizeStartBox = svgCanvas.gesture.dragPlan ? requireBBox(selected) : null
       if (svgCanvas.gesture.dragPlan) {
         // nothing to insert
@@ -309,7 +310,9 @@ export const init = (canvas: SvgCanvas): {
     if (plan) {
       const px = left + tx
       const py = top + ty
-      svgCanvas.previewScale(plan, { a: sx, d: sy, e: px - sx * px, f: py - sy * py })
+      const scaleMap = { a: sx, d: sy, e: px - sx * px, f: py - sy * py }
+      if (plan.get(selected)?.rot) svgCanvas.previewTurnedScale(plan, scaleMap)
+      else svgCanvas.previewScale(plan, scaleMap)
       svgCanvas.selectorManager.requestSelector(selected).resize()
       svgCanvas.dragLiveResizeBox = undefined // the attributes show the size already
       svgCanvas.call('transition', selectedElements)

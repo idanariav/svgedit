@@ -76,7 +76,12 @@ export interface ModelCommandsApi {
   /** Show the elements moved by (dx, dy) from where `plan` has them: the renderer writes the DOM, nothing is recorded yet. */
   previewDrag(plan: Map<Element, DragEntry>, dx: number, dy: number): void
   /** Show the elements scaled by `scale` (about the origin the caller put in it) after the transform each has in `plan`. */
-  previewScale(plan: Map<Element, Affine>, scale: Affine): void
+  previewScale(plan: Map<Element, DragEntry>, scale: Affine): void
+  /**
+   * `previewScale` for an element turned by `rotate()`: `scale` is in the element's own (unturned) frame. The geometry is scaled
+   * there, and the rotation keeps turning about the middle of the new geometry, which sits where the turned one's middle lands.
+   */
+  previewTurnedScale(plan: Map<Element, DragEntry>, scale: Affine): void
   /** Show every element in `plan` mapped by `map` after the transform it has in `plan` (a selection scaled or moved as one). */
   previewAfter(plan: Map<Element, Affine>, map: Affine): void
   /**
@@ -549,8 +554,35 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
       return out
     })
   }
-  const previewScale = (plan: Map<Element, Affine>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
-  const previewAfter = (plan: Map<Element, Affine>, map: Affine): void => previewWith(plan, (own) => compose(map, own))
+  const previewScale = (plan: Map<Element, DragEntry>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
+  const previewTurnedScale = (plan: Map<Element, DragEntry>, scale: Affine): void => {
+    svgCanvas.snapshotHistory.preview((root) => {
+      let out = root
+      for (const [el, entry] of plan) {
+        const rot = entry.rot
+        const node = findById(root, el.id)
+        const set = rot && node && affineEdit(node, scale)
+        if (!rot || !set) continue
+        const num = (name: string, node2: ModelElement): number => Number(set[name] ?? node2.attrs.find((a) => a.name === name)?.value ?? 0)
+        const round = (v: number) => Number(v.toFixed(6))
+        const rectLike = ['rect', 'image', 'foreignObject'].includes(node.name)
+        const [kx, ky] = rectLike ? ['x', 'y'] : ['cx', 'cy']
+        const mx = rectLike ? num('x', node) + num('width', node) / 2 : num('cx', node)
+        const my = rectLike ? num('y', node) + num('height', node) / 2 : num('cy', node)
+        const rad = rot.angle * Math.PI / 180
+        const ox = mx - rot.cx
+        const oy = my - rot.cy
+        const c1x = rot.cx + Math.cos(rad) * ox - Math.sin(rad) * oy
+        const c1y = rot.cy + Math.sin(rad) * ox + Math.cos(rad) * oy
+        set[kx] = String(round(num(kx, node) + c1x - mx))
+        set[ky] = String(round(num(ky, node) + c1y - my))
+        set.transform = `rotate(${rot.angle} ${round(c1x)} ${round(c1y)})`
+        out = setAttrsById(out, el.id, set)
+      }
+      return out
+    })
+  }
+  const previewAfter = (plan: Map<Element, DragEntry>, map: Affine): void => previewWith(plan, (own) => compose(map, own))
 
   const rotationPlan = (el: Element): { id: string, cx: number, cy: number } | null => {
     if (!el.id) return null
@@ -605,6 +637,7 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     dragPlan,
     previewDrag,
     previewScale,
+    previewTurnedScale,
     previewAfter,
     removeElements,
     commitUndoableChange,

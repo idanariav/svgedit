@@ -425,6 +425,21 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a resize of a turned shape shown through the model', () => {
+    it('scales in the shape\'s own frame and keeps turning about the middle of the new geometry', () => {
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('y', '20'); r.setAttribute('width', '40'); r.setAttribute('height', '30')
+      r.setAttribute('transform', 'rotate(90 30 35)')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([r], true)
+      canvas.previewTurnedScale(plan, { a: 2, d: 1, e: -10, f: 0 }) // twice as wide, about the left edge
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['-10', '40', '80', '30'])
+      expect(r.getAttribute('transform')).toBe('rotate(90 30 55)')
+      canvas.snapshotHistory.cancelPreview()
+      expect(r.getAttribute('transform')).toBe('rotate(90 30 35)')
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {
