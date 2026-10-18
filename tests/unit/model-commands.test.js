@@ -339,6 +339,28 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a drag and a resize shown through the model', () => {
+    it('the renderer shows each step; ending it is one step; the element never carries a transform', () => {
+      canvas.undoMgr.snapshots.baseline()
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('y', '20'); r.setAttribute('width', '40'); r.setAttribute('height', '30')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([r])
+      expect(plan).not.toBeNull()
+      canvas.previewDrag(plan, 5, 5)
+      canvas.previewDrag(plan, 7, 9)
+      expect([r.getAttribute('x'), r.getAttribute('y')]).toEqual(['17', '29'])
+      expect(r.hasAttribute('transform')).toBe(false)
+      canvas.previewScale(plan, { a: 2, d: 2, e: -10, f: -20 }) // about (10, 20)
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['10', '20', '80', '60'])
+      const size = canvas.undoMgr.getUndoStackSize()
+      expect(canvas.bakeDrag(new Map([[r, '']]), () => {})).toBe(true)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
+      canvas.undoMgr.undo()
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['10', '20', '40', '30'])
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {

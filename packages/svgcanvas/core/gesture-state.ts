@@ -28,6 +28,8 @@ export interface GestureState {
   dragStartTransforms: Map<Element, string> | null
   /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
   dragPlan: Map<Element, import('./model-commands.ts').Affine> | null
+  /** the geometry box of the element a resize shown through the model began from */
+  resizeStartBox: { x: number, y: number, width: number, height: number } | null
   hasResizeStartTransform: boolean
   groupResizeStart: Map<Element, SVGMatrix> | null
   areaResize: AreaResize | null
@@ -51,6 +53,7 @@ export const createGestureState = (): GestureState => ({
   hasDragStartTransform: false,
   dragStartTransforms: null,
   dragPlan: null,
+  resizeStartBox: null,
   hasResizeStartTransform: false,
   groupResizeStart: null,
   areaResize: null,

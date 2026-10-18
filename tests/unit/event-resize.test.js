@@ -28,6 +28,7 @@ describe('event-resize', () => {
     let startX = 0; let startY = 0
     let initBbox = null
     svgCanvas = {
+      dragPlan: () => null, // no model here: the transforms are put on the element
       gesture: createGestureState(),
       setStarted: vi.fn(),
       setStartX: vi.fn((v) => { startX = v }),

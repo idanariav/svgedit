@@ -75,6 +75,8 @@ export interface ModelCommandsApi {
   dragPlan(elems: Element[]): Map<Element, Affine> | null
   /** Show the elements moved by (dx, dy) from where `plan` has them: the renderer writes the DOM, nothing is recorded yet. */
   previewDrag(plan: Map<Element, Affine>, dx: number, dy: number): void
+  /** Show the elements scaled by `scale` (about the origin the caller put in it) after the transform each has in `plan`. */
+  previewScale(plan: Map<Element, Affine>, scale: Affine): void
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -493,21 +495,25 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return plan
   }
 
-  const previewDrag = (plan: Map<Element, Affine>, dx: number, dy: number): void => {
+  const previewWith = (plan: Map<Element, Affine>, total: (own: Affine) => Affine): void => {
     svgCanvas.snapshotHistory.preview((root) => {
       let out = root
       for (const [el, own] of plan) {
         const node = findById(root, el.id)
-        const set = node && affineEdit(node, compose({ a: 1, d: 1, e: dx, f: dy }, own))
+        const set = node && affineEdit(node, total(own))
         if (set) out = setAttrsById(out, el.id, set)
       }
       return out
     })
   }
+  const previewDrag = (plan: Map<Element, Affine>, dx: number, dy: number): void =>
+    previewWith(plan, (own) => compose({ a: 1, d: 1, e: dx, f: dy }, own))
+  const previewScale = (plan: Map<Element, Affine>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
 
   return {
     dragPlan,
     previewDrag,
+    previewScale,
     removeElements,
     commitUndoableChange,
     commitTransforms,

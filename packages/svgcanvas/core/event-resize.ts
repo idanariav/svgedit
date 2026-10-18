@@ -207,7 +207,12 @@ export const init = (canvas: SvgCanvas): {
     // resize grip without any drag must leave the element untouched.
     if (!svgCanvas.gesture.hasResizeStartTransform) {
       const pos = getRotationAngle(selected) ? 1 : 0
-      if (hasMatrix) {
+      // A plain shape is resized in front of the renderer: the model shows each size, the element gets no dummy transforms
+      svgCanvas.gesture.dragPlan = !hasMatrix && !pos ? svgCanvas.dragPlan([selected]) : null
+      svgCanvas.gesture.resizeStartBox = svgCanvas.gesture.dragPlan ? requireBBox(selected) : null
+      if (svgCanvas.gesture.dragPlan) {
+        // nothing to insert
+      } else if (hasMatrix) {
         tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
         tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
         tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
@@ -218,7 +223,7 @@ export const init = (canvas: SvgCanvas): {
       }
       svgCanvas.gesture.hasResizeStartTransform = true
     }
-    const box = hasMatrix ? svgCanvas.getInitBbox() : requireBBox(selected)
+    const box = hasMatrix ? svgCanvas.getInitBbox() : (svgCanvas.gesture.dragPlan ? svgCanvas.gesture.resizeStartBox as NonNullable<typeof svgCanvas.gesture.resizeStartBox> : requireBBox(selected))
     let left = box.x
     let top = box.y
     let { width, height } = box
@@ -289,6 +294,16 @@ export const init = (canvas: SvgCanvas): {
     scale.setScale(sx, sy)
 
     translateBack.setTranslate(left + tx, top + ty)
+    const plan = svgCanvas.gesture.dragPlan
+    if (plan) {
+      const px = left + tx
+      const py = top + ty
+      svgCanvas.previewScale(plan, { a: sx, d: sy, e: px - sx * px, f: py - sy * py })
+      svgCanvas.selectorManager.requestSelector(selected).resize()
+      svgCanvas.dragLiveResizeBox = undefined // the attributes show the size already
+      svgCanvas.call('transition', selectedElements)
+      return
+    }
     if (hasMatrix) {
       const diff = angle ? 1 : 0
       tlist.replaceItem(translateOrigin, 2 + diff)
