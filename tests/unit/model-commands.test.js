@@ -325,6 +325,20 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('flipSelectedElements', () => {
+    it('is one model step that undo takes back', () => {
+      canvas.selectOnly([els[0], els[1]])
+      canvas.undoMgr.snapshots.baseline()
+      const before = canvas.undoMgr.getUndoStackSize()
+      canvas.flipSelectedElements(-1, 1)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(before + 1)
+      expect(els[0].getAttribute('transform')).toMatch(/^matrix\(-1 /)
+      expect(els[1].getAttribute('transform')).toMatch(/^matrix\(-1 /)
+      canvas.undoMgr.undo()
+      expect(els[0].hasAttribute('transform')).toBe(false)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

@@ -52,6 +52,8 @@ export interface ModelCommandsApi {
    * the model instead, as one step. Returns false, having touched nothing, unless every one of them can take it that way.
    */
   bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
+  /** `setElementAttributes` for several elements at once: one step. False, touching nothing, if one has no id. */
+  setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
 }
@@ -377,7 +379,18 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
+  const setElementsAttributes = (label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean => {
+    if (!entries.length || entries.some(({ el }) => !el.id)) return false
+    svgCanvas.snapshotHistory.edit(label, (root) => {
+      let out = root
+      for (const { el, attrs } of entries) out = setAttrsById(out, el.id, attrs)
+      return out
+    })
+    return true
+  }
+
   return {
+    setElementsAttributes,
     bakeDrag,
     bakeTranslation,
     setElementAttributes,

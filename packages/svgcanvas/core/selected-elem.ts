@@ -605,8 +605,8 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
  */
   const flipSelectedElements = (scaleX: number, scaleY: number): void => {
     const selectedElements = svgCanvas.getSelectedElements()
-    const batchCmd = new BatchCommand('Flip Elements')
     const svgRoot = svgCanvas.getSvgRoot()
+    const flips: Array<{ el: Element, attrs: Record<string, string | null> }> = []
 
     ;(selectedElements as Array<SVGGraphicsElement | null>).forEach((selected) => {
       if (!selected) return
@@ -614,7 +614,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       const localBBox = selected.getBBox()
       if (!localBBox) return
 
-      const existingTransform = selected.getAttribute('transform') || ''
       const tlist = getTransformList(selected) as SVGTransformList
       const elemMatrix = transformListToTransform(tlist).matrix
 
@@ -653,26 +652,14 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       // rotated or non-uniformly scaled elements.
       const combinedMatrix = matrixMultiply(flipMatrix, elemMatrix)
 
-      const flipTransform = svgRoot.createSVGTransform()
-      flipTransform.setMatrix(combinedMatrix)
-
-      tlist.clear()
-      tlist.appendItem(flipTransform)
-
-      if ((selected.getAttribute('transform') || '') !== existingTransform) {
-        batchCmd.addSubCommand(
-          new ChangeElementCommand(selected, { transform: existingTransform })
-        )
-      }
-
-      svgCanvas
-        .selectorManager
-        .requestSelector(selected)
-        .resize()
+      const { a, b, c, d, e, f } = combinedMatrix
+      flips.push({ el: selected, attrs: { transform: `matrix(${a} ${b} ${c} ${d} ${e} ${f})` } })
     })
 
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
+    // The flips are stated on the model: one step, the renderer writes the transforms (the model addresses elements by id)
+    for (const { el } of flips) el.id ||= svgCanvas.getNextId()
+    if (svgCanvas.setElementsAttributes('Flip Elements', flips)) {
+      for (const { el } of flips) svgCanvas.selectorManager.requestSelector(el).resize()
       svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
   }
