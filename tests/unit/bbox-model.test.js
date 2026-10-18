@@ -73,4 +73,28 @@ describe('getStrokedBBox', () => {
     // scaled to 20 wide, plus the unscaled 2 on each side
     expect(box.width).toBeCloseTo(24, 6)
   })
+
+  it('includes what the strokes of a group\'s children paint, though the group has none', () => {
+    const g = make('g', {})
+    make('rect', { x: 10, y: 10, width: 40, height: 30, stroke: '#000', 'stroke-width': 12, fill: 'none' }, g)
+    make('rect', { x: 80, y: 20, width: 20, height: 20, stroke: '#000', 'stroke-width': 4, fill: 'none' }, g)
+    expect(round(getStrokedBBox([g], noop, { resetOrientation: noop }, same))).toEqual({ x: 4, y: 4, width: 98, height: 42 })
+  })
+
+  it('measures a turned group by what it paints, and a union of groups without the first one\'s loose box', () => {
+    const turned = make('g', { transform: 'rotate(90)' })
+    make('rect', { x: 0, y: 0, width: 40, height: 10, stroke: '#000', 'stroke-width': 2, fill: 'none' }, turned)
+    // 41x11 painted ink, quarter-turned: 11 wide, 41 tall, from (-11,-1)
+    expect(round(getStrokedBBox([turned], noop, { resetOrientation: noop }, same))).toEqual({ x: -11, y: -1, width: 12, height: 42 })
+    const other = make('g', {})
+    make('rect', { x: 100, y: 0, width: 10, height: 10, fill: 'none' }, other)
+    expect(round(getStrokedBBox([turned, other], noop, { resetOrientation: noop }, same))).toEqual({ x: -11, y: -1, width: 121, height: 42 })
+  })
+
+  it('leaves a group holding text to the DOM box and its own half-width', () => {
+    const g = make('g', { stroke: '#000', 'stroke-width': 4 })
+    make('text', {}, g)
+    g.getBBox = () => ({ x: 0, y: 0, width: 50, height: 10 })
+    expect(round(getStrokedBBox([g], noop, { resetOrientation: noop }, same))).toEqual({ x: -2, y: -2, width: 54, height: 14 })
+  })
 })

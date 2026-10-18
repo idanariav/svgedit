@@ -18,6 +18,7 @@ import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.ts'
 import { geometricBounds, strokedBounds } from './model/bounds.ts'
+import type { Bounds } from './model/bounds.ts'
 import { parseMatrix } from './model/matrix.ts'
 import { readDom } from './model-render.ts'
 import type { ModelElement } from './model/node.ts'
@@ -544,7 +545,7 @@ interface Growth { left: number, top: number, right: number, bottom: number }
  * also the miter tips and square-cap corners, which stick out further at a sharp corner, and (for a shape with a `transform`
  * that keeps shapes: a turn, a flip, a uniform scale) the stroke as the transform turns and scales it. The DOM box and the
  * model's box are not mixed: only the model's *growth* is taken, so it applies to whichever box the caller measured. A group
- * keeps the half-width of its own stroke (what its children paint is not part of its box, as before).
+ * keeps the half-width of its own stroke here; its children's strokes are `paintedGroupBox`.
  */
 const getStrokeGrowth = (elem: Element): Growth => {
   const offset = getStrokeOffsetForBBox(elem)
@@ -565,6 +566,25 @@ const getStrokeGrowth = (elem: Element): Growth => {
     right: Math.max(floor, painted.x + painted.width - geometric.x - geometric.width),
     bottom: Math.max(floor, painted.y + painted.height - geometric.y - geometric.height)
   }
+}
+
+/** The model walks every descendant (about 6 ms for 500, against 0.05 ms for the browser's box), and this runs on gesture steps. */
+const GROUP_MODEL_LIMIT = 600
+
+/**
+ * The box a group paints, in its parent's space: the union of what its children paint under their own transforms, each with the
+ * stroke it inherits, and the group's own `transform` applied (exact, unlike the DOM box turned by that transform). Null when
+ * the model cannot measure something in it (text, images, `use`), `transform` does not keep strokes' shape, or the group
+ * holds more than `GROUP_MODEL_LIMIT` elements: the caller keeps the DOM box.
+ */
+const paintedGroupBox = (elem: Element): Bounds | null => {
+  if (elem.nodeName !== 'g' && elem.nodeName !== 'a') return null
+  if (elem.getElementsByTagName('*').length > GROUP_MODEL_LIMIT) return null
+  const m = parseMatrix(elem.getAttribute('transform'))
+  const chain = modelChain(elem)
+  if (!m || !chain.length) return null
+  chain[chain.length - 1] = readDom(elem) as ModelElement
+  return strokedBounds(chain, m) ?? null
 }
 
 /**
@@ -608,12 +628,24 @@ export const getStrokedBBox = (
 
   // If only one elem, don't call the potentially slow getBBoxWithTransform method again.
   if (elems.length === 1) {
-    const grow = getStrokeGrowth(elems[0])
-    minX -= grow.left
-    minY -= grow.top
-    maxX += grow.right
-    maxY += grow.bottom
+    const group = paintedGroupBox(elems[0])
+    if (group) {
+      minX = group.x
+      minY = group.y
+      maxX = group.x + group.width
+      maxY = group.y + group.height
+    } else {
+      const grow = getStrokeGrowth(elems[0])
+      minX -= grow.left
+      minY -= grow.top
+      maxX += grow.right
+      maxY += grow.bottom
+    }
   } else {
+    // start empty: the first element's plain box (which for a turned group is loose) must not stay in the union
+    const [firstMinX, firstMinY, firstMaxX, firstMaxY] = [minX, minY, maxX, maxY]
+    minX = minY = Infinity
+    maxX = maxY = -Infinity
     elems.forEach(elem => {
       const curBb = getBBoxWithTransform(
         elem,
@@ -621,16 +653,19 @@ export const getStrokedBBox = (
         pathActions
       )
       if (curBb) {
-        const grow = getStrokeGrowth(elem)
-        minX = Math.min(minX, curBb.x - grow.left)
-        minY = Math.min(minY, curBb.y - grow.top)
+        const group = paintedGroupBox(elem)
+        const grow = group ? { left: 0, top: 0, right: 0, bottom: 0 } : getStrokeGrowth(elem)
+        const box = group ?? curBb
+        minX = Math.min(minX, box.x - grow.left)
+        minY = Math.min(minY, box.y - grow.top)
         // TODO: The old code had this test for max, but not min. I suspect this test should be for both min and max
         if (elem.nodeType === 1) {
-          maxX = Math.max(maxX, curBb.x + curBb.width + grow.right)
-          maxY = Math.max(maxY, curBb.y + curBb.height + grow.bottom)
+          maxX = Math.max(maxX, box.x + box.width + grow.right)
+          maxY = Math.max(maxY, box.y + box.height + grow.bottom)
         }
       }
     })
+    if (minX === Infinity) [minX, minY, maxX, maxY] = [firstMinX, firstMinY, firstMaxX, firstMaxY]
   }
 
   fullBb.x = shortFloat(minX)

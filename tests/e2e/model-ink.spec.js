@@ -124,6 +124,33 @@ test.describe('Model boxes against rendered ink', () => {
     console.log('getStrokedBBox vs rendered ink:', JSON.stringify(report))
   })
 
+  test("the editor's getStrokedBBox of a group includes what its children's strokes paint", async ({ page }) => {
+    const shapes = [
+      ['children stroked, group not', '<g id="s1"><rect x="10" y="10" width="40" height="30" fill="none" stroke="#000" stroke-width="12"/><rect x="80" y="20" width="20" height="20" fill="#888" stroke="#000" stroke-width="4"/></g>'],
+      ['turned group, mitered children', '<g id="s2" transform="translate(20 10) rotate(30)"><polygon points="0,0 60,10 25,50" fill="none" stroke="#000" stroke-width="6" stroke-miterlimit="10"/><rect x="70" y="0" width="20" height="20" fill="none" stroke="#000" stroke-width="3"/></g>'],
+      ['nested groups', '<g id="s3" transform="translate(5 5)"><g transform="scale(2)"><rect x="0" y="0" width="20" height="10" fill="none" stroke="#000" stroke-width="5"/></g></g>'],
+      ['no strokes', '<g id="s4"><rect x="5" y="5" width="30" height="20" fill="#888"/></g>']
+    ]
+    await page.evaluate((markup) => window.svgEditor.svgCanvas.setSvgString(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><g class="layer"><title>L</title>${markup}</g></svg>`), shapes.map(([, m]) => m).join(''))
+    const got = await page.evaluate((ids) => ids.map((id) => {
+      const b = window.svgEditor.svgCanvas.getStrokedBBox([document.getElementById(id)])
+      return [b.x, b.y, b.x + b.width, b.y + b.height]
+    }), shapes.map((_, i) => `s${i + 1}`))
+    const painted = await ink(page, shapes.map(([, markup], i) => ({ markup: markup.replace(/ id="s\d"/, ''), region: [got[i][0] - 12, got[i][1] - 12, got[i][2] - got[i][0] + 24, got[i][3] - got[i][1] + 24] })))
+    shapes.forEach(([name], i) => {
+      const worst = Math.max(...got[i].map((v, k) => Math.abs(v - painted[i][k])))
+      expect(worst, name).toBeLessThan(Math.max(0.2, 4 * painted[i][4]))
+    })
+    // several at once: the union of their painted boxes, not of loose ones
+    const union = await page.evaluate(() => {
+      const b = window.svgEditor.svgCanvas.getStrokedBBox(['s2', 's1'].map((id) => document.getElementById(id)))
+      return [b.x, b.y, b.x + b.width, b.y + b.height]
+    })
+    const expected = [Math.min(got[0][0], got[1][0]), Math.min(got[0][1], got[1][1]), Math.max(got[0][2], got[1][2]), Math.max(got[0][3], got[1][3])]
+    union.forEach((v, k) => expect(v, `union ${k}`).toBeCloseTo(expected[k], 1))
+  })
+
   test('a turned curve or rect is measured by its extent, and measuring adds nothing to the drawing', async ({ page }) => {
     const shapes = [
       ['curve, 30', '<path id="s1" d="M20 20 C60 -20 100 60 140 20 L140 80" fill="#000" stroke="none" transform="rotate(30 80 40)"/>'],
