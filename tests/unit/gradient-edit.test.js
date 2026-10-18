@@ -1,7 +1,7 @@
 import {
   IDENTITY, multiply, invert, applyMatrix, parseTransform, readGradient, gradientOf, ensureOwnGradient,
   ownStops, readStops, setLinear, setRadial, addStop, copyStop, placeStop, removeStop, setStopColor, colorAt,
-  gradientToLocal
+  gradientToLocal, defaultStopColors, linearGradientNode
 } from '../../packages/svgcanvas/core/gradient-edit.ts'
 
 const NS = 'http://www.w3.org/2000/svg'
@@ -244,5 +244,25 @@ describe('gradient-edit', function () {
       const svg = drawing('<linearGradient id="g"><stop offset="25%"/><stop offset="150%"/></linearGradient>', '')
       assert.deepEqual(readStops(svg, svg.querySelector('#g')).map((s) => s.offset), [0.25, 1])
     })
+  })
+})
+
+describe('new gradients', () => {
+  it('starts from the shape\'s colour and goes to white, or to black when the colour is light', () => {
+    assert.deepEqual(defaultStopColors('#336699'), ['#336699', '#ffffff'])
+    assert.deepEqual(defaultStopColors('#FFEEAA'), ['#ffeeaa', '#000000'])
+    assert.deepEqual(defaultStopColors('#ffffff'), ['#ffffff', '#000000'])
+  })
+
+  it('falls back to white to black without a usable paint', () => {
+    assert.deepEqual(defaultStopColors(null), ['#ffffff', '#000000'])
+    assert.deepEqual(defaultStopColors('not a colour'), ['#ffffff', '#000000'])
+  })
+
+  it('builds a two-stop linear gradient node on box units', () => {
+    const node = linearGradientNode('g7', { x: 0.1, y: 0.25 }, { x: 0.9, y: 0.75 }, ['#112233', '#ffffff'])
+    assert.equal(node.name, 'linearGradient')
+    assert.deepEqual(node.attrs.map((a) => [a.name, a.value]), [['id', 'g7'], ['x1', '0.1'], ['y1', '0.25'], ['x2', '0.9'], ['y2', '0.75']])
+    assert.deepEqual(node.children.map((s) => [s.attrs[0].value, s.attrs[1].value]), [['0', '#112233'], ['1', '#ffffff']])
   })
 })

@@ -13,9 +13,11 @@
  * elements share is copied for this one first (clone-on-write). Every gesture is one undo step (the tool
  * registry's transaction).
  *
- * Works on the fill, or the stroke when only that is a gradient (the options bar chooses). Not in v1: making a
- * gradient out of a solid paint by dragging (use the colour picker), snapping, rotating or squashing a radial
- * gradient (its `gradientTransform`), groups — see `roadmap.md`.
+ * Works on the fill, or the stroke when only that is a gradient (the options bar chooses). A press-and-drag on a
+ * shape whose chosen paint is a plain colour (or none) makes a linear gradient along the drag, in the same gesture: the
+ * shape's colour fading to white (black for a light colour; white to black for no paint), written through the model
+ * (`model/edit.ts`), then the end handle follows the pointer; a click makes the default left-to-right one. Not yet:
+ * a radial one, snapping, rotating or squashing a radial gradient (its `gradientTransform`), groups — see `roadmap.md`.
  *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/tools/src/xform/gradient.rs`
  * (the annotator), MIT OR Apache-2.0.
@@ -24,9 +26,10 @@
  */
 
 import {
-  multiply, invert, applyMatrix, readGradient, gradientOf, ensureOwnGradient, ownStops, setLinear, setRadial,
-  addStop, copyStop, placeStop, removeStop, setStopColor
+  IDENTITY, multiply, invert, applyMatrix, readGradient, gradientOf, ensureOwnGradient, ownStops, setLinear, setRadial,
+  addStop, copyStop, placeStop, removeStop, setStopColor, gradientToLocal, paintValue, findById, defaultStopColors, linearGradientNode
 } from '@svgedit/svgcanvas/core/gradient-edit.ts'
+import { addDefinition, setPaintById } from '@svgedit/svgcanvas/core/model/edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { closestRoot } from '../../domScope.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
@@ -123,6 +126,8 @@ export default defineFeature({
     /** The selected stop's element (follows a clone-on-write by index). */
     let selectedStop: Element | null = null
     let drag: Drag | null = null
+    /** A press on a shape with no gradient: a drag past the click threshold gives it one, a click gives it the default. */
+    let pending: { el: Element, prop: 'fill' | 'stroke', press: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point, screen: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point } | null = null
     let hover: string | null = null
     let toolCtx: import('@svgedit/svgcanvas').ToolContext | null = null
 
@@ -185,6 +190,39 @@ export default defineFeature({
       const fresh = read(t.el, t.prop, t.grad)
       if (fresh) Object.assign(t, fresh)
       return fresh
+    }
+
+    // ---- creating -------------------------------------------------------------------
+
+    /** A shape the press can give a gradient: it has an id, and its chosen paint is a plain colour or none (a stroke needs one). */
+    const creatable = (el: Element | null | undefined, prop: 'fill' | 'stroke'): el is Element => {
+      if (!el || !el.id || !SHAPES.includes(el.tagName.toLowerCase())) return false
+      const paint = paintValue(el, prop)
+      if (paint && /url\(/.test(paint)) return false
+      return prop === 'fill' || (paint !== null && paint !== 'none')
+    }
+
+    /**
+     * Give `(el, prop)` a new linear gradient through the model: from `from` to `to` (document units), or across the box
+     * left to right. Returns the gradient element, or null when the shape has no box to measure it by.
+     */
+    const createGradient = (el: Element, prop: 'fill' | 'stroke', from: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point | null, to: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point | null) => {
+      let box = null
+      try {
+        const b = (el as SVGGraphicsElement).getBBox()
+        box = { x: b.x, y: b.y, width: b.width, height: b.height }
+      } catch (e) { /* not rendered */ }
+      const toLocal = gradientToLocal(true, box, IDENTITY)
+      const L = localToDoc(el)
+      const Tinv = toLocal && L ? invert(multiply(L, toLocal)) : null
+      if (!Tinv) return null
+      const p1 = from ? applyMatrix(Tinv, from) : { x: 0, y: 0 }
+      const p2 = to ? applyMatrix(Tinv, to) : { x: 1, y: 0 }
+      const paint = paintValue(el, prop)
+      const id = svgCanvas.getNextId()
+      const node = linearGradientNode(id, p1, p2, defaultStopColors(paint && paint !== 'none' ? toHex(paint) : null))
+      svgCanvas.snapshotHistory.edit('Create gradient', (root) => setPaintById(addDefinition(root, node), el.id, prop, `url(#${id})`))
+      return findById(scope(), id)
     }
 
     // ---- geometry in document units ------------------------------------------------
@@ -285,6 +323,12 @@ export default defineFeature({
       hover = null
       draw(toolCtx)
     }
+
+    /**
+     * The registry clears the overlays when a gesture commits, which is after `pointerUp` returns, and an idle move only redraws
+     * when the hovered part changes: draw the annotator again once the commit is done.
+     */
+    const redrawAfterCommit = () => { setTimeout(redrawIdle, 0) }
 
     // ---- editing -------------------------------------------------------------------------
 
@@ -415,6 +459,7 @@ export default defineFeature({
       deactivate (ctx) {
         target = null
         drag = null
+        pending = null
         hover = null
         selectedStop = null
         ctx.clearOverlays()
@@ -430,6 +475,15 @@ export default defineFeature({
           if (other) {
             t = other
             part = hit(t, docPoint(ev), ctx.zoom)
+          }
+        }
+        pending = null
+        if (!part) {
+          // Nothing of an annotator was hit: a shape with no gradient yet (the pressed one, else the one selected) can get one
+          const selected = svgCanvas.getSelectedElements().filter(Boolean)
+          const candidate = [svgCanvas.getMouseTarget(ev.event), selected.length === 1 ? selected[0] : null].find((e) => creatable(e, preferred))
+          if (candidate && candidate !== t?.el) {
+            pending = { el: candidate, prop: preferred, press: docPoint(ev), screen: { x: ev.screenX, y: ev.screenY } }
           }
         }
         target = t
@@ -461,6 +515,34 @@ export default defineFeature({
       },
 
       pointerMove (ctx, ev) {
+        if (pending && !drag) {
+          if (Math.hypot(ev.screenX - pending.screen.x, ev.screenY - pending.screen.y) < CLICK_PX) return
+          const p = pending
+          pending = null
+          const grad = createGradient(p.el, p.prop, p.press, docPoint(ev))
+          if (!grad) return
+          svgCanvas.selectOnly([p.el], true)
+          const fresh = read(p.el, p.prop, grad)
+          if (!fresh) return
+          target = fresh
+          selectedStop = null
+          // the end handle follows the pointer from here on, as if it had been grabbed
+          const m = fresh.model
+          drag = {
+            part: { kind: 'end' },
+            press: p.press,
+            grab: { x: 0, y: 0 },
+            base: { p1: { ...m.p1 }, p2: { ...m.p2 }, r: m.r, focal: { ...m.focal } },
+            screen: p.screen,
+            moved: true,
+            copy: false,
+            node: null,
+            index: undefined
+          }
+          svgCanvas.setCursorHint('grabbing')
+          draw(ctx)
+          return
+        }
         if (!drag) {
           const part = target ? hit(target, docPoint(ev), ctx.zoom) : null
           const key = part ? (part.kind === 'stop' ? `stop${part.index}` : part.kind) : null
@@ -485,6 +567,23 @@ export default defineFeature({
       },
 
       pointerUp (ctx, ev) {
+        redrawAfterCommit()
+        if (pending && !drag) {
+          // a click on a shape with no gradient: the default one, across its box
+          const p = pending
+          pending = null
+          svgCanvas.setCursorHint(null)
+          const grad = createGradient(p.el, p.prop, null, null)
+          const fresh = grad && read(p.el, p.prop, grad)
+          if (fresh) {
+            svgCanvas.selectOnly([p.el], true)
+            target = fresh
+            selectedStop = null
+            finish(p.el)
+          }
+          draw(ctx)
+          return undefined
+        }
         const d = drag
         drag = null
         svgCanvas.setCursorHint(null) // the pointer moves again before it needs a hint
@@ -534,6 +633,7 @@ export default defineFeature({
 
       cancel () {
         drag = null
+        pending = null
         redrawIdle()
       },
 

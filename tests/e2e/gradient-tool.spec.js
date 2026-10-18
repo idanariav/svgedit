@@ -55,6 +55,14 @@ test.describe('Gradient tool', () => {
     expect(counts).toEqual({ lines: 4, chips: 3 })
   })
 
+  test('the annotator is still there after an edit gesture commits', async ({ page }) => {
+    await select(page, 'a')
+    await tool(page)
+    await drag(page, { x: 300, y: 100 }, { x: 250, y: 200 })
+    await page.waitForTimeout(50)
+    expect(await page.evaluate(() => document.getElementById('toolOverlay').querySelectorAll('rect').length)).toBe(3)
+  })
+
   test('dragging the end handle moves x2 / y2, as one undo step, and does not touch the shared gradient', async ({ page }) => {
     await select(page, 'a')
     await tool(page)
@@ -204,5 +212,134 @@ test.describe('Gradient tool', () => {
     expect((await stops(page, 'lg'))[1][1]).toBe('#00ff00')
     expect(await attr(page, '#lg stop:last-child', 'stop-opacity')).toBe('0.5')
     expect(await undoSize(page)).toBe(undo0 + 1)
+  })
+})
+
+// Creating a gradient: a drag on a shape whose paint is a plain colour makes a linear gradient along the drag (through the model),
+// a click makes the default one; the annotator takes over from there. Document and canvas coordinates are the same at zoom 1.
+test.describe('Gradient tool: creating a gradient', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+    await page.evaluate(() => {
+      window.svgEditor.setConfig({ gridSnapping: false })
+      window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
+      window.svgEditor.configObj.pref('tabletMode', false, true)
+      document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
+    })
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lg"><stop offset="0" stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff"/></linearGradient></defs>
+      <g class="layer">
+        <title>Layer 1</title>
+        <rect id="solid" x="100" y="100" width="200" height="100" fill="#336699" stroke="#cc3300" stroke-width="4"/>
+        <rect id="light" x="340" y="100" width="200" height="100" fill="#ffeeaa"/>
+        <rect id="bare" x="100" y="260" width="200" height="100" fill="none" stroke="#222222"/>
+        <rect id="moved" x="100" y="400" width="200" height="60" fill="#00aa44" transform="translate(300 0)"/>
+        <rect id="held" x="20" y="20" width="40" height="40" fill="#aa00aa"/>
+      </g>
+    </svg>`)
+  })
+
+  const tool = (page) => page.evaluate(() => window.svgEditor.commands.run('tool_gradient'))
+  const pointer = (page, specs) => page.evaluate((s) => window.svgEditor.automation.pointer(s), specs)
+  const drag = (page, from, to, mods) => pointer(page, [{ kind: 'drag', ...from, to, steps: 10, mods }])
+  const click = (page, x, y) => pointer(page, [{ kind: 'click', x, y }])
+  const undoSize = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())
+  const attr = (page, sel, name) => page.evaluate(([s, n]) => document.querySelector(s)?.getAttribute(n) ?? null, [sel, name])
+  const gradOf = async (page, id, prop = 'fill') => ((await attr(page, `#${id}`, prop)) ?? '').replace(/^url\(#|\)$/g, '')
+  const stops = (page, gradId) => page.evaluate((g) => [...document.getElementById(g).querySelectorAll('stop')].map((s) => [Number(s.getAttribute('offset')), s.getAttribute('stop-color')]), gradId)
+  const vector = (page, gradId) => page.evaluate((g) => ['x1', 'y1', 'x2', 'y2'].map((n) => Number(document.getElementById(g).getAttribute(n))), gradId)
+
+  test('a drag across a solid shape makes a gradient along the drag, from its colour to white, as one undo step', async ({ page }) => {
+    await tool(page)
+    const undo0 = await undoSize(page)
+    await drag(page, { x: 150, y: 120 }, { x: 250, y: 180 })
+    const grad = await gradOf(page, 'solid')
+    expect(grad).toMatch(/^\S+$/)
+    expect(await stops(page, grad)).toEqual([[0, '#336699'], [1, '#ffffff']])
+    const [x1, y1, x2, y2] = await vector(page, grad)
+    expect([x1, y1, x2, y2].map((v) => +v.toFixed(2))).toEqual([0.25, 0.2, 0.75, 0.8])
+    expect(await attr(page, '#solid', 'stroke')).toBe('#cc3300') // the stroke is not touched
+    expect(await undoSize(page)).toBe(undo0 + 1)
+
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await attr(page, '#solid', 'fill')).toBe('#336699')
+    expect(await page.evaluate((g) => Boolean(document.getElementById(g)), grad)).toBe(false)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.redo())
+    expect(await gradOf(page, 'solid')).toBe(grad)
+    expect(await stops(page, grad)).toEqual([[0, '#336699'], [1, '#ffffff']])
+  })
+
+  test('the annotator is up when the drag ends, and the next drag edits the new gradient', async ({ page }) => {
+    await tool(page)
+    await drag(page, { x: 150, y: 120 }, { x: 250, y: 180 })
+    await page.waitForTimeout(50) // the annotator is drawn again once the gesture has committed
+    const counts = await page.evaluate(() => {
+      const o = document.getElementById('toolOverlay')
+      return { chips: o.querySelectorAll('rect').length, selected: window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean).map((e) => e.id) }
+    })
+    expect(counts).toEqual({ chips: 3, selected: ['solid'] }) // two stop chips and the end handle
+    const grad = await gradOf(page, 'solid')
+    const undo0 = await undoSize(page)
+    await drag(page, { x: 250, y: 180 }, { x: 300, y: 100 }) // the end handle
+    expect(await gradOf(page, 'solid')).toBe(grad)
+    expect(await undoSize(page)).toBe(undo0 + 1)
+    const [, , x2, y2] = await vector(page, grad)
+    expect([+x2.toFixed(2), +y2.toFixed(2)]).toEqual([1, 0])
+  })
+
+  test('a click makes the default gradient across the box, left to right', async ({ page }) => {
+    await tool(page)
+    const undo0 = await undoSize(page)
+    await click(page, 200, 150)
+    const grad = await gradOf(page, 'solid')
+    expect(await vector(page, grad)).toEqual([0, 0, 1, 0])
+    expect(await stops(page, grad)).toEqual([[0, '#336699'], [1, '#ffffff']])
+    expect(await undoSize(page)).toBe(undo0 + 1)
+  })
+
+  test('a light colour fades to black, and no paint goes white to black', async ({ page }) => {
+    await tool(page)
+    await click(page, 400, 150)
+    expect(await stops(page, await gradOf(page, 'light'))).toEqual([[0, '#ffeeaa'], [1, '#000000']])
+    await click(page, 200, 300)
+    expect(await stops(page, await gradOf(page, 'bare'))).toEqual([[0, '#ffffff'], [1, '#000000']])
+  })
+
+  test('Shift keeps the vector on a 45 degree step', async ({ page }) => {
+    await tool(page)
+    await drag(page, { x: 150, y: 150 }, { x: 250, y: 160 }, { shift: true })
+    const [x1, y1, x2, y2] = await vector(page, await gradOf(page, 'solid'))
+    expect(+y2.toFixed(3)).toBe(+y1.toFixed(3)) // 6 degrees snaps to horizontal
+    expect(x2).toBeGreaterThan(x1)
+  })
+
+  test('the vector is placed through the shape\'s own transform', async ({ page }) => {
+    await tool(page)
+    // "moved" sits at x 400..600 on the page (translate(300 0)), y 400..460
+    await drag(page, { x: 450, y: 430 }, { x: 550, y: 430 })
+    const [x1, y1, x2, y2] = await vector(page, await gradOf(page, 'moved'))
+    expect([x1, y1, x2, y2].map((v) => +v.toFixed(2))).toEqual([0.25, 0.5, 0.75, 0.5])
+  })
+
+  test('with the Stroke option, the stroke gets the gradient and the fill stays', async ({ page }) => {
+    await tool(page)
+    await page.evaluate(() => {
+      const el = document.querySelector('#tool_options_panel [data-option="paint"]')
+      el.value = 'stroke'
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await click(page, 200, 150)
+    const grad = await gradOf(page, 'solid', 'stroke')
+    expect(await stops(page, grad)).toEqual([[0, '#cc3300'], [1, '#ffffff']])
+    expect(await attr(page, '#solid', 'fill')).toBe('#336699')
+  })
+
+  test('a press on a shape that already has a gradient edits it instead of making another', async ({ page }) => {
+    await tool(page)
+    await click(page, 200, 150)
+    const grad = await gradOf(page, 'solid')
+    await drag(page, { x: 150, y: 190 }, { x: 160, y: 190 }) // on the bar's start handle area: no second gradient
+    expect(await gradOf(page, 'solid')).toBe(grad)
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent linearGradient').length)).toBe(2) // lg + the new one
   })
 })

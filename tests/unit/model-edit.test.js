@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseSvg, getAt } from '../../packages/svgcanvas/core/model/index.ts'
-import { pathOfId, findById, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, withChildren } from '../../packages/svgcanvas/core/model/edit.ts'
+import { parseSvg, getAt, element } from '../../packages/svgcanvas/core/model/index.ts'
+import { pathOfId, findById, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, withChildren, addDefinition, setPaintById } from '../../packages/svgcanvas/core/model/edit.ts'
 
 const doc = (inner) => parseSvg(`<svg xmlns="http://www.w3.org/2000/svg"><g id="L" class="layer"><title>L</title>${inner}</g><g id="M" class="layer"><title>M</title><rect id="m1"/></g></svg>`).root
 const idsIn = (root, layer) => findById(root, layer).children.filter((c) => c.kind === 'element').map((c) => c.attrs.find((a) => a.name === 'id')?.value ?? c.name)
@@ -82,5 +82,42 @@ describe('wrapIds with a group and a child of it', () => {
     const out = wrapIds(root, 'l', element('g', [{ name: 'id', value: 'grp' }], []), ['k', 'p'])
     expect(findById(out, 'grp').children.map((n) => n.attrs.find((x) => x.name === 'id').value)).toEqual(['k', 'p'])
     expect(findById(out, 'p').children).toHaveLength(0)
+  })
+})
+
+describe('model edits: definitions and paint', () => {
+  const grad = (id) => element('linearGradient', [{ name: 'id', value: id }])
+  const svg = (inner) => parseSvg(`<svg xmlns="http://www.w3.org/2000/svg"><!--c-->${inner}</svg>`).root
+
+  it('addDefinition appends to the first <defs>, wherever it is', () => {
+    const root = svg('<defs id="d"><linearGradient id="old"/></defs><g class="layer"><title>L</title></g>')
+    const out = addDefinition(root, grad('g1'))
+    expect(findById(out, 'd').children.map((c) => c.attrs[0].value)).toEqual(['old', 'g1'])
+    expect(out.children[2]).toBe(root.children[2]) // the layer is untouched
+  })
+
+  it('addDefinition makes a <defs> as the editor does: second child of the root, else last', () => {
+    const withLayer = addDefinition(svg('<g class="layer"><title>L</title></g>'), grad('g1'))
+    expect(withLayer.children.map((c) => c.name ?? c.kind)).toEqual(['comment', 'defs', 'g'])
+    const bare = addDefinition(parseSvg('<svg xmlns="http://www.w3.org/2000/svg"/>').root, grad('g1'))
+    expect(bare.children.map((c) => c.name)).toEqual(['defs'])
+  })
+
+  it('setPaintById sets the attribute, keeps the rest, and is an identity when nothing changes', () => {
+    const root = svg('<g class="layer"><title>L</title><rect id="r" fill="#f00" stroke="#000"/></g>')
+    const out = setPaintById(root, 'r', 'fill', 'url(#g)')
+    expect(findById(out, 'r').attrs.map((a) => [a.name, a.value])).toEqual([['id', 'r'], ['fill', 'url(#g)'], ['stroke', '#000']])
+    expect(setPaintById(out, 'r', 'fill', 'url(#g)')).toBe(out)
+    expect(setPaintById(root, 'nope', 'fill', 'url(#g)')).toBe(root)
+  })
+
+  it('setPaintById changes a declaration in style (which the browser reads first) and the attribute only if there is one', () => {
+    const root = svg('<g class="layer"><title>L</title><rect id="r" style="fill:#f00;opacity:.5"/><rect id="s" fill="#00f" style="fill: #f00"/></g>')
+    const r = findById(setPaintById(root, 'r', 'fill', 'url(#g)'), 'r')
+    expect(r.attrs.find((a) => a.name === 'style').value).toBe('fill:url(#g);opacity:.5')
+    expect(r.attrs.some((a) => a.name === 'fill')).toBe(false)
+    const s = findById(setPaintById(root, 's', 'fill', 'url(#g)'), 's')
+    expect(s.attrs.find((a) => a.name === 'style').value).toBe('fill: url(#g)')
+    expect(s.attrs.find((a) => a.name === 'fill').value).toBe('url(#g)')
   })
 })

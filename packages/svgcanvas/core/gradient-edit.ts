@@ -22,6 +22,8 @@
  */
 
 import { NS } from './namespaces.ts'
+import { element } from './model/node.ts'
+import type { ModelElement } from './model/node.ts'
 
 export interface Matrix { a: number, b: number, c: number, d: number, e: number, f: number }
 export interface Point { x: number, y: number }
@@ -414,4 +416,28 @@ export const removeStop = (stop: Element): boolean => {
   if (!grad || grad.querySelectorAll(':scope > stop').length <= 2) return false
   stop.remove()
   return true
+}
+
+// ---- creating --------------------------------------------------------------------
+
+/**
+ * The two stops a new gradient starts with for a shape painted `hex` (`#rrggbb`, or null for no usable paint): the shape's
+ * colour, then white, or black when the colour is already light, so the shape keeps its look at the start. No paint gives
+ * white to black (Illustrator's default gradient).
+ */
+export const defaultStopColors = (hex: string | null): [string, string] => {
+  const rgb = hex ? parseRgb(hex) : null
+  if (!rgb || !hex) return ['#ffffff', '#000000']
+  const luminance = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255
+  return [hex.toLowerCase(), luminance > 0.85 ? '#000000' : '#ffffff']
+}
+
+/** A linear gradient on `objectBoundingBox` units from `p1` to `p2` (fractions of the box) with two stops, as a model element. */
+export const linearGradientNode = (id: string, p1: Point, p2: Point, colors: readonly [string, string]): ModelElement => {
+  const stop = (offset: number, color: string): ModelElement => element('stop', [{ name: 'offset', value: String(offset) }, { name: 'stop-color', value: color }, { name: 'stop-opacity', value: '1' }])
+  return element('linearGradient', [
+    { name: 'id', value: id },
+    { name: 'x1', value: fmt(p1.x) }, { name: 'y1', value: fmt(p1.y) },
+    { name: 'x2', value: fmt(p2.x) }, { name: 'y2', value: fmt(p2.y) }
+  ], [stop(0, colors[0]), stop(1, colors[1])])
 }

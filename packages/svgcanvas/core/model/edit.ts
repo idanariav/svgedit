@@ -218,3 +218,44 @@ export const unwrapId = (root: ModelElement, id: string): ModelElement => {
   const kept = node.children.filter((c) => !(c.kind === 'element' && c.name === 'title'))
   return withChildren(root, path.slice(0, -1), (kids) => kids.flatMap((k) => (k === node ? kept : [k])))
 }
+
+/**
+ * Add `node` (a gradient, a filter…) to the drawing's `<defs>`: the first `<defs>` in document order, or a new one made where the
+ * editor's `findDefs` puts it (second child of the root, else last). Returns the new root.
+ */
+export const addDefinition = (root: ModelElement, node: ModelElement): ModelElement => {
+  const find = (el: ModelElement, path: number[]): NodePath | undefined => {
+    for (let i = 0; i < el.children.length; i++) {
+      const c = el.children[i]
+      if (c.kind !== 'element') continue
+      if (c.name === 'defs') return [...path, i]
+      const deeper = find(c, [...path, i])
+      if (deeper) return deeper
+    }
+    return undefined
+  }
+  const at = find(root, [])
+  if (at) return withChildren(root, at, (kids) => [...kids, node])
+  const defs = element('defs', [], [node])
+  return withChildren(root, [], (kids) => (kids.length > 1 ? [kids[0], defs, ...kids.slice(1)] : [...kids, defs]))
+}
+
+/**
+ * Point the `fill` or `stroke` of the element with this id at `value` (`url(#g)`, a colour): where the element declares it in
+ * `style` that declaration changes (the browser reads `style` first), and the presentation attribute is set when it has one or
+ * the style does not. Returns `root` when the element is not there or already has this paint.
+ */
+export const setPaintById = (root: ModelElement, id: string, prop: 'fill' | 'stroke', value: string): ModelElement => {
+  const path = pathOfId(root, id)
+  if (!path) return root
+  return updateAt(root, path, (n) => {
+    if (n.kind !== 'element') return n
+    const style = n.attrs.find((a) => a.name === 'style')?.value
+    const re = new RegExp(`((?:^|;)\\s*${prop}\\s*:\\s*)[^;]+`, 'i')
+    let out: ModelElement = n
+    const inStyle = style !== undefined && re.test(style)
+    if (inStyle) out = setAttr(out, 'style', (style as string).replace(re, `$1${value}`))
+    if (!inStyle || n.attrs.some((a) => a.name === prop)) out = setAttr(out, prop, value)
+    return out
+  })
+}
