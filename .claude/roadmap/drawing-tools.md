@@ -19,7 +19,6 @@ Done: `freeDistort` (bilinear) and `perspective` (projective, Heckbert's square-
 - **A corner jumps to the pointer** by up to the grab radius (10 px) on the first move; the grab offset is not kept.
 - **Reset** is the ✕ on the effect's row in the Effects panel; there is no double-click-a-grip or Enter-to-reset gesture.
 - **In the tablet shell's More tools flyout** (touch only: the Shift constraint is not available there).
-- **The element's own transform only.** The grips and the pointer are mapped through the element's `transform`, not those of the groups above it (as in the Width tool); a shape inside a transformed group that is entered misplaces the grips.
 - A pathological stack (a distort entry before another effect that changes the anchor count a lot) can hit `MAX_FX_ANCHORS`; the drag then stops updating, it does not corrupt the shape.
 
 ## Gradient tool (`core/gradient-edit.js`, `ext-gradient-tool`): follow-ups from T2.8

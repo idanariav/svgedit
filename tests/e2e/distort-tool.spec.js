@@ -156,3 +156,78 @@ test.describe('Distort tool', () => {
     expect(await param(page, 'rot', 'bottomRightY')).toBeCloseTo(1, 2)
   })
 })
+
+// A shape inside a transformed group: the grips are where the shape is on the page (the groups above it count), whether the group
+// is entered or not. The corner is found from the shape's own screen matrix, so the test does not use the code under test.
+test.describe('Distort tool: a shape inside a transformed group', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+    await page.evaluate(() => {
+      window.svgEditor.setConfig({ gridSnapping: false })
+      window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
+      window.svgEditor.configObj.pref('tabletMode', false, true)
+      document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
+    })
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer">
+        <title>Layer 1</title>
+        <g id="grp" transform="translate(150 60) rotate(10 60 40)"><rect id="inner" x="10" y="10" width="100" height="60" fill="#cccccc" stroke="#000000" stroke-width="2"/></g>
+      </g>
+    </svg>`)
+  })
+
+  /** The shape's bottom right corner in document units, and the unit coordinates a document point has in the shape's box. */
+  const geometry = (page) => page.evaluate(() => {
+    const el = document.getElementById('inner')
+    const inv = document.querySelector('#svgcontent').getScreenCTM().inverse()
+    const m = inv.multiply(el.getScreenCTM())
+    const b = el.getBBox()
+    const corner = new DOMPoint(b.x + b.width, b.y + b.height).matrixTransform(m)
+    return { corner: { x: corner.x, y: corner.y }, m: [m.a, m.b, m.c, m.d, m.e, m.f], box: { x: b.x, y: b.y, w: b.width, h: b.height } }
+  })
+  const unitOf = (g, p) => {
+    const [a, b, c, d, e, f] = g.m
+    const det = a * d - b * c
+    const lx = (d * (p.x - e) - c * (p.y - f)) / det
+    const ly = (-b * (p.x - e) + a * (p.y - f)) / det
+    return { x: (lx - g.box.x) / g.box.w, y: (ly - g.box.y) / g.box.h }
+  }
+  const param = (page, key) => page.evaluate((k) => Number(new RegExp(`${k}=([-\\d.e]+)`).exec(document.getElementById('inner').getAttribute('se:fx') ?? '')?.[1]), key)
+
+  for (const entered of [false, true]) {
+    test(`dragging the shape's real corner distorts it (group ${entered ? 'entered' : 'not entered'})`, async ({ page }) => {
+      await page.evaluate((enter) => {
+        const c = window.svgEditor.svgCanvas
+        if (enter) c.setContext('grp')
+        c.selectOnly([document.getElementById('inner')], true)
+        return window.svgEditor.commands.run('tool_distort')
+      }, entered)
+      const g = await geometry(page)
+      const to = { x: g.corner.x + 30, y: g.corner.y + 20 }
+      await page.evaluate(([a, b]) => window.svgEditor.automation.pointer([{ kind: 'drag', ...a, to: b, steps: 10 }]), [g.corner, to])
+      const want = unitOf(g, to)
+      expect(await param(page, 'bottomRightX')).toBeCloseTo(want.x, 2)
+      expect(await param(page, 'bottomRightY')).toBeCloseTo(want.y, 2)
+    })
+  }
+
+  test('the grips are drawn on the corners of the shape as it appears', async ({ page }) => {
+    await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly([document.getElementById('inner')], true)
+      return window.svgEditor.commands.run('tool_distort')
+    })
+    const g = await geometry(page)
+    const near = await page.evaluate((c) => {
+      const o = document.getElementById('toolOverlay')
+      const content = document.querySelector('#svgcontent')
+      const inv = content.getScreenCTM().inverse()
+      // a grip's centre in document units, whatever element it is made of
+      return Array.from(o.querySelectorAll('rect, circle')).some((e) => {
+        const bb = e.getBoundingClientRect()
+        const p = new DOMPoint(bb.x + bb.width / 2, bb.y + bb.height / 2).matrixTransform(inv)
+        return Math.hypot(p.x - c.x, p.y - c.y) < 3
+      })
+    }, g.corner)
+    expect(near).toBe(true)
+  })
+})

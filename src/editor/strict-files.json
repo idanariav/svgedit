@@ -219,6 +219,7 @@
   "src/editor/toolDragReorder.ts",
   "src/editor/toolOrder.ts",
   "src/editor/toolShortcutBadges.ts",
+  "src/editor/toolSpace.ts",
   "src/editor/tooltips.ts",
   "src/editor/uiMode.ts",
   "src/editor/userDataAdapter.ts"

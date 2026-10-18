@@ -21,7 +21,8 @@
 
 import { centerline, pointAt, locate, type Centerline } from '@svgedit/svgcanvas/core/width-outline.ts'
 import { profileAt, withPoint, withoutPoint, movedPoint, isProfile, type WidthPoint } from '@svgedit/svgcanvas/core/width-profile.ts'
-import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
+import { invert } from '@svgedit/svgcanvas/core/gradient-edit.ts'
+import { toolSpace } from '../../toolSpace.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'width-tool'
@@ -75,10 +76,8 @@ export default defineFeature({
     /** the diamond shown where a press would add a point */
     let hover: { p: Pt, l: Pt, r: Pt } | null = null
 
-    const matrixOf = (el: Element) => {
-      const tlist = getTransformList(el)
-      return tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
-    }
+    /** Document units for the pointer and the stroke alike, through every group above it (`toolSpace.ts`). */
+    const space = toolSpace(svgCanvas)
 
     /** The target for an element, or null when it cannot take a width profile. */
     const targetFor = (el: Element | null | undefined): Target | null => {
@@ -100,15 +99,14 @@ export default defineFeature({
       }
       const line = centerline(d ?? '')
       if (!line || !(width > 0)) return null
-      const m = matrixOf(el)
-      const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
-      const matrix = m || identity
-      const inverse = m ? m.inverse() : identity
+      const matrix = space.localToDoc(el)
+      if (!matrix) return null
+      const inverse = invert(matrix) ?? { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
       return { el, line, half: width / 2, points: svgCanvas.getWidthProfile(el) ?? UNIFORM.map((p) => ([...p] as [number, number, number])), matrix, inverse }
     }
 
     const apply = (m: { a: number, b: number, c: number, d: number, e: number, f: number }, p: Pt) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
-    const toLocal = (t: Target, ev: import('@svgedit/svgcanvas').ToolEvent) => apply(t.inverse, { x: ev.rawX, y: ev.rawY })
+    const toLocal = (t: Target, ev: import('@svgedit/svgcanvas').ToolEvent) => apply(t.inverse, space.docPoint(ev))
 
     /** The stroke a press or hover is about: the selected one, else the one under the pointer. */
     const pickTarget = (ev: import('@svgedit/svgcanvas').ToolEvent) => {

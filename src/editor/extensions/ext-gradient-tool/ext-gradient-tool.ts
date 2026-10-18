@@ -32,6 +32,7 @@ import {
 import { addDefinition, setPaintById } from '@svgedit/svgcanvas/core/model/edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
 import { closestRoot } from '../../domScope.ts'
+import { toolSpace } from '../../toolSpace.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'gradient-tool'
@@ -58,7 +59,6 @@ const mk = (tag: string, attrs: Record<string, unknown>) => {
   return e
 }
 
-const toMatrix = (m: DOMMatrix) => ({ a: m.a, b: m.b, c: m.c, d: m.d, e: m.e, f: m.f })
 const sub = (p: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point, q: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point) => ({ x: p.x - q.x, y: p.y - q.y })
 const add = (p: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point, q: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point) => ({ x: p.x + q.x, y: p.y + q.y })
 const dist = (p: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point, q: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point) => Math.hypot(p.x - q.x, p.y - q.y)
@@ -135,26 +135,10 @@ export default defineFeature({
 
     // ---- coordinates ------------------------------------------------------------
 
-    /** The first layer's screen matrix: the one every pointer event is mapped through. */
-    const rootMatrix = () => {
-      const g = scope().querySelector('g')
-      const m = g?.getScreenCTM?.()
-      return m ? toMatrix(m) : null
-    }
-
-    /** A pointer event in document units. */
-    const docPoint = (ev: import('@svgedit/svgcanvas').ToolEvent) => {
-      const inv = invert(rootMatrix() ?? { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
-      return inv ? applyMatrix(inv, { x: ev.screenX, y: ev.screenY }) : { x: ev.rawX, y: ev.rawY }
-    }
-
-    /** The element's local space → document units, through every group above it. */
-    const localToDoc = (el: Element) => {
-      const root = rootMatrix()
-      const own = (el as SVGGraphicsElement).getScreenCTM?.()
-      const inv = root && invert(root)
-      return inv && own ? multiply(inv, toMatrix(own)) : null
-    }
+    /** Document units for the pointer and the shape alike, through every group above the shape (`toolSpace.ts`). */
+    const space = toolSpace(svgCanvas)
+    const docPoint = space.docPoint
+    const localToDoc = space.localToDoc
 
     // ---- target ------------------------------------------------------------------
 

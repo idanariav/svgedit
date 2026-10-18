@@ -222,3 +222,41 @@ test.describe('Width tool', () => {
     expect(plain).toEqual({ profile: null, stroke: '#000000', fill: 'none', d: 'M100,200 L500,200' })
   })
 })
+
+// A stroke inside a transformed group: the point is added where the pointer is on the page, whether the group is entered or not.
+test.describe('Width tool: a stroke inside a transformed group', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+    await page.evaluate(() => {
+      window.svgEditor.setConfig({ gridSnapping: false })
+      window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
+      window.svgEditor.configObj.pref('tabletMode', false, true)
+      document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
+    })
+    // on the page the line runs (200,200) → (500,200); stroke 5 × 2 = 10 wide
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer">
+        <title>Layer 1</title>
+        <g id="grp" transform="translate(100 100) scale(2)"><line id="ln" x1="50" y1="50" x2="200" y2="50" stroke="#000000" stroke-width="5" fill="none"/></g>
+      </g>
+    </svg>`)
+  })
+
+  for (const entered of [false, true]) {
+    test(`dragging outward from the stroke adds a width point where it was pressed (group ${entered ? 'entered' : 'not entered'})`, async ({ page }) => {
+      await page.evaluate((enter) => {
+        const c = window.svgEditor.svgCanvas
+        if (enter) c.setContext('grp')
+        c.selectOnly([document.getElementById('ln')], true)
+        return window.svgEditor.commands.run('tool_width')
+      }, entered)
+      await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'drag', x: 350, y: 200, to: { x: 350, y: 170 }, steps: 12 }]))
+      const p = await page.evaluate(() => document.getElementById('ln')?.getAttribute('se:width-profile')?.split(';').map((s) => s.split(':').map(Number)) ?? null)
+      expect(p).toHaveLength(3)
+      expect(p[1][0]).toBeCloseTo(0.5, 2) // halfway along the line
+      // 30 page units out is 15 in the group's units; the half width is 2.5 there: 6 times it
+      expect(p[1][1]).toBeCloseTo(6, 1)
+      expect(p[1][2]).toBeCloseTo(6, 1)
+    })
+  }
+})

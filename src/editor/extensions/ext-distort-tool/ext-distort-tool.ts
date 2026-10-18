@@ -25,7 +25,8 @@
 import {
   DISTORT_EFFECTS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad
 } from '@svgedit/svgcanvas/core/distort.ts'
-import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
+import { invert } from '@svgedit/svgcanvas/core/gradient-edit.ts'
+import { toolSpace } from '../../toolSpace.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'distort-tool'
@@ -65,14 +66,14 @@ export default defineFeature({
       /** `freeDistort` or `perspective` */
       name: string
       corners: Array<{ x: number, y: number }>
-      /** local → layer */
+      /** local → document units */
       matrix: { a: number, b: number, c: number, d: number, e: number, f: number }
       inverse: { a: number, b: number, c: number, d: number, e: number, f: number }
     }
     /**
      * The shape being distorted: its element, the frame the unit corners refer to (its source box, local
      * coordinates), its stack and where the distort entry is in it (-1 = none yet), the corners in unit
-     * coordinates and the element's transform to the layer.
+     * coordinates and the element's transform to document units, through its groups.
      */
 
     /** The mode new distortions start in (an existing one keeps its own). */
@@ -82,10 +83,8 @@ export default defineFeature({
     let hover = -1
     let toolCtx: import('@svgedit/svgcanvas').ToolContext | null = null
 
-    const matrixOf = (el: Element) => {
-      const tlist = getTransformList(el)
-      return tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
-    }
+    /** Document units for the pointer and the shape alike, through every group above the shape (`toolSpace.ts`). */
+    const space = toolSpace(svgCanvas)
 
     const targetFor = (el: Element | null | undefined): Target | null => {
       if (!el || !svgCanvas.canApplyLiveEffect(el)) return null
@@ -93,8 +92,8 @@ export default defineFeature({
       if (!box) return null
       const stack = svgCanvas.getLiveEffects(el)
       const index = stack.findIndex((e) => DISTORT_EFFECTS.includes(e.name))
-      const m = matrixOf(el)
-      const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
+      const m = space.localToDoc(el)
+      if (!m) return null
       return {
         el,
         frame: distortFrame(box),
@@ -102,8 +101,8 @@ export default defineFeature({
         index,
         name: index >= 0 ? stack[index].name : preferred,
         corners: index >= 0 ? cornersFromParams((stack[index].params as Record<string, number>)) : IDENTITY_CORNERS.map((c) => ({ ...c })),
-        matrix: m || identity,
-        inverse: m ? m.inverse() : identity
+        matrix: m,
+        inverse: invert(m) ?? { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
       }
     }
 
@@ -112,15 +111,16 @@ export default defineFeature({
       return elems.length === 1 ? targetFor(elems[0]) : null
     }
 
-    /** The corners in the layer's coordinates (document units). */
+    /** The corners in document units. */
     const docCorners = (t: Target) => t.corners.map((c: Pt) => apply(t.matrix, { x: t.frame.x + c.x * t.frame.w, y: t.frame.y + c.y * t.frame.h }))
 
     const hitCorner = (t: Target, ev: import('@svgedit/svgcanvas').ToolEvent, zoom: number) => {
       const grab = GRAB_PX / zoom
+      const at = space.docPoint(ev)
       let best = -1
       let bestDist = grab
       docCorners(t).forEach((p: { x: number; y: number; }, i: number) => {
-        const dist = Math.hypot(p.x - ev.rawX, p.y - ev.rawY)
+        const dist = Math.hypot(p.x - at.x, p.y - at.y)
         if (dist <= bestDist) {
           best = i
           bestDist = dist
@@ -261,7 +261,7 @@ export default defineFeature({
         if (!target) return
         if (!drag.moved && Math.hypot(ev.screenX - drag.press.x, ev.screenY - drag.press.y) < CLICK_PX) return
         drag.moved = true
-        const u = toUnit(target, { x: ev.x, y: ev.y })
+        const u = toUnit(target, ctx.snap(space.docPoint(ev)))
         const from = drag.corners0[drag.i]
         // Shift moves the corner along its dominant axis only.
         if (ev.mods.shift) {
