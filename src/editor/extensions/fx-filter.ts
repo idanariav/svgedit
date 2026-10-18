@@ -331,7 +331,7 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
       attr: filterAttr,
       children
     })
-    setRegion(filter, elem, spec)
+    if (filter) setRegion(filter, elem, spec)
     return filter
   }
 
