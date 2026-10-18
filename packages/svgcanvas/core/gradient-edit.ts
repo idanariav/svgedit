@@ -432,12 +432,20 @@ export const defaultStopColors = (hex: string | null): [string, string] => {
   return [hex.toLowerCase(), luminance > 0.85 ? '#000000' : '#ffffff']
 }
 
+const stopNode = (offset: number, color: string): ModelElement => element('stop', [{ name: 'offset', value: String(offset) }, { name: 'stop-color', value: color }, { name: 'stop-opacity', value: '1' }])
+
 /** A linear gradient on `objectBoundingBox` units from `p1` to `p2` (fractions of the box) with two stops, as a model element. */
-export const linearGradientNode = (id: string, p1: Point, p2: Point, colors: readonly [string, string]): ModelElement => {
-  const stop = (offset: number, color: string): ModelElement => element('stop', [{ name: 'offset', value: String(offset) }, { name: 'stop-color', value: color }, { name: 'stop-opacity', value: '1' }])
-  return element('linearGradient', [
+export const linearGradientNode = (id: string, p1: Point, p2: Point, colors: readonly [string, string]): ModelElement =>
+  element('linearGradient', [
     { name: 'id', value: id },
     { name: 'x1', value: fmt(p1.x) }, { name: 'y1', value: fmt(p1.y) },
     { name: 'x2', value: fmt(p2.x) }, { name: 'y2', value: fmt(p2.y) }
-  ], [stop(0, colors[0]), stop(1, colors[1])])
-}
+  ], [stopNode(0, colors[0]), stopNode(1, colors[1])])
+
+/** A radial gradient on `objectBoundingBox` units: centre `c`, radius `r` (fractions of the box), focal point at the centre. */
+export const radialGradientNode = (id: string, c: Point, r: number, colors: readonly [string, string]): ModelElement =>
+  element('radialGradient', [
+    { name: 'id', value: id },
+    { name: 'cx', value: fmt(c.x) }, { name: 'cy', value: fmt(c.y) }, { name: 'r', value: fmt(Math.max(r, 1e-5)) },
+    { name: 'fx', value: fmt(c.x) }, { name: 'fy', value: fmt(c.y) }
+  ], [stopNode(0, colors[0]), stopNode(1, colors[1])])

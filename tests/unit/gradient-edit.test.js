@@ -1,7 +1,7 @@
 import {
   IDENTITY, multiply, invert, applyMatrix, parseTransform, readGradient, gradientOf, ensureOwnGradient,
   ownStops, readStops, setLinear, setRadial, addStop, copyStop, placeStop, removeStop, setStopColor, colorAt,
-  gradientToLocal, defaultStopColors, linearGradientNode
+  gradientToLocal, defaultStopColors, linearGradientNode, radialGradientNode
 } from '../../packages/svgcanvas/core/gradient-edit.ts'
 
 const NS = 'http://www.w3.org/2000/svg'
@@ -264,5 +264,17 @@ describe('new gradients', () => {
     assert.equal(node.name, 'linearGradient')
     assert.deepEqual(node.attrs.map((a) => [a.name, a.value]), [['id', 'g7'], ['x1', '0.1'], ['y1', '0.25'], ['x2', '0.9'], ['y2', '0.75']])
     assert.deepEqual(node.children.map((s) => [s.attrs[0].value, s.attrs[1].value]), [['0', '#112233'], ['1', '#ffffff']])
+  })
+
+  it('builds a two-stop radial gradient node on box units, focal point at the centre', () => {
+    const node = radialGradientNode('g8', { x: 0.25, y: 0.5 }, 0.4, ['#112233', '#ffffff'])
+    assert.equal(node.name, 'radialGradient')
+    assert.deepEqual(node.attrs.map((a) => [a.name, a.value]), [['id', 'g8'], ['cx', '0.25'], ['cy', '0.5'], ['r', '0.4'], ['fx', '0.25'], ['fy', '0.5']])
+    assert.equal(node.children.length, 2)
+  })
+
+  it('never gives a radial gradient a zero radius', () => {
+    const node = radialGradientNode('g9', { x: 0.5, y: 0.5 }, 0, ['#000000', '#ffffff'])
+    assert.ok(Number(node.attrs.find((a) => a.name === 'r').value) > 0)
   })
 })

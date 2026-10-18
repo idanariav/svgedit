@@ -14,10 +14,10 @@
  * registry's transaction).
  *
  * Works on the fill, or the stroke when only that is a gradient (the options bar chooses). A press-and-drag on a
- * shape whose chosen paint is a plain colour (or none) makes a linear gradient along the drag, in the same gesture: the
+ * shape whose chosen paint is a plain colour (or none) makes a linear gradient along the drag (a radial one centred on the press, with the options bar's New set to Radial), in the same gesture: the
  * shape's colour fading to white (black for a light colour; white to black for no paint), written through the model
  * (`model/edit.ts`), then the end handle follows the pointer; a click makes the default left-to-right one. Not yet:
- * a radial one, snapping, rotating or squashing a radial gradient (its `gradientTransform`), groups — see `roadmap.md`.
+ * snapping, rotating or squashing a radial gradient (its `gradientTransform`), groups — see `roadmap.md`.
  *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/tools/src/xform/gradient.rs`
  * (the annotator), MIT OR Apache-2.0.
@@ -27,7 +27,7 @@
 
 import {
   IDENTITY, multiply, invert, applyMatrix, readGradient, gradientOf, ensureOwnGradient, ownStops, setLinear, setRadial,
-  addStop, copyStop, placeStop, removeStop, setStopColor, gradientToLocal, paintValue, findById, defaultStopColors, linearGradientNode
+  addStop, copyStop, placeStop, removeStop, setStopColor, gradientToLocal, paintValue, findById, defaultStopColors, linearGradientNode, radialGradientNode
 } from '@svgedit/svgcanvas/core/gradient-edit.ts'
 import { addDefinition, setPaintById } from '@svgedit/svgcanvas/core/model/edit.ts'
 import Paint from '@svgedit/svgcanvas/core/paint.ts'
@@ -122,6 +122,8 @@ export default defineFeature({
 
     /** Which paint the tool edits when both are gradients. */
     let preferred: 'fill' | 'stroke' = 'fill'
+    /** What a new gradient is: a press-and-drag sets its start and end (linear) or its centre and radius (radial). */
+    let creating: 'linear' | 'radial' = 'linear'
     let target: Target | null = null
     /** The selected stop's element (follows a clone-on-write by index). */
     let selectedStop: Element | null = null
@@ -187,8 +189,8 @@ export default defineFeature({
     }
 
     /**
-     * Give `(el, prop)` a new linear gradient through the model: from `from` to `to` (document units), or across the box
-     * left to right. Returns the gradient element, or null when the shape has no box to measure it by.
+     * Give `(el, prop)` a new gradient (of the kind in `creating`) through the model: from `from` to `to` (document units; a
+     * radial one has its centre at `from`), or across the box (a radial one fills it). Returns the gradient element, or null when the shape has no box to measure it by.
      */
     const createGradient = (el: Element, prop: 'fill' | 'stroke', from: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point | null, to: import('@svgedit/svgcanvas/core/gradient-edit.ts').Point | null) => {
       let box = null
@@ -200,11 +202,17 @@ export default defineFeature({
       const L = localToDoc(el)
       const Tinv = toLocal && L ? invert(multiply(L, toLocal)) : null
       if (!Tinv) return null
-      const p1 = from ? applyMatrix(Tinv, from) : { x: 0, y: 0 }
-      const p2 = to ? applyMatrix(Tinv, to) : { x: 1, y: 0 }
       const paint = paintValue(el, prop)
       const id = svgCanvas.getNextId()
-      const node = linearGradientNode(id, p1, p2, defaultStopColors(paint && paint !== 'none' ? toHex(paint) : null))
+      const colors = defaultStopColors(paint && paint !== 'none' ? toHex(paint) : null)
+      let node
+      if (creating === 'radial') {
+        const c = from ? applyMatrix(Tinv, from) : { x: 0.5, y: 0.5 }
+        const edge = to ? applyMatrix(Tinv, to) : { x: 1, y: 0.5 }
+        node = radialGradientNode(id, c, Math.hypot(edge.x - c.x, edge.y - c.y), colors)
+      } else {
+        node = linearGradientNode(id, from ? applyMatrix(Tinv, from) : { x: 0, y: 0 }, to ? applyMatrix(Tinv, to) : { x: 1, y: 0 }, colors)
+      }
       svgCanvas.snapshotHistory.edit('Create gradient', (root) => setPaintById(addDefinition(root, node), el.id, prop, `url(#${id})`))
       return findById(scope(), id)
     }
@@ -622,6 +630,13 @@ export default defineFeature({
       },
 
       options: () => [{
+        id: 'kind',
+        type: 'select',
+        label: tr('kind'),
+        title: tr('kindTitle'),
+        value: creating,
+        choices: [{ value: 'linear', label: tr('linear') }, { value: 'radial', label: tr('radial') }]
+      }, {
         id: 'paint',
         type: 'select',
         label: tr('paint'),
@@ -631,6 +646,10 @@ export default defineFeature({
       }],
 
       setOption (id, value) {
+        if (id === 'kind') {
+          creating = value === 'radial' ? 'radial' : 'linear'
+          return
+        }
         if (id !== 'paint') return
         preferred = value === 'stroke' ? 'stroke' : 'fill'
         selectedStop = null

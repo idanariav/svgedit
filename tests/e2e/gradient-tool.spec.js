@@ -342,4 +342,53 @@ test.describe('Gradient tool: creating a gradient', () => {
     expect(await gradOf(page, 'solid')).toBe(grad)
     expect(await page.evaluate(() => document.querySelectorAll('#svgcontent linearGradient').length)).toBe(2) // lg + the new one
   })
+
+  const setKind = (page, value) => page.evaluate((v) => {
+    const el = document.querySelector('#tool_options_panel [data-option="kind"]')
+    el.value = v
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+  const radial = (page, gradId) => page.evaluate((g) => {
+    const el = document.getElementById(g)
+    return { tag: el.tagName, v: ['cx', 'cy', 'r', 'fx', 'fy'].map((n) => Number(el.getAttribute(n))) }
+  }, gradId)
+
+  test('the options bar offers Linear and Radial for a new gradient', async ({ page }) => {
+    await tool(page)
+    await expect(page.locator('#tool_options_panel [data-option="kind"]')).toHaveCount(1)
+  })
+
+  test('with Radial chosen a drag makes a radial gradient centred where it starts, as one undo step', async ({ page }) => {
+    await tool(page)
+    await setKind(page, 'radial')
+    const undo0 = await undoSize(page)
+    await drag(page, { x: 200, y: 150 }, { x: 300, y: 150 })
+    const grad = await gradOf(page, 'solid')
+    const g = await radial(page, grad)
+    expect(g.tag).toBe('radialGradient')
+    expect(g.v.slice(0, 2).map((v) => +v.toFixed(2))).toEqual([0.5, 0.5]) // the press: the middle of the box
+    expect(g.v[2]).toBeCloseTo(0.5, 2) // 100 units of a 200 wide box
+    expect(g.v.slice(3).map((v) => +v.toFixed(2))).toEqual([0.5, 0.5]) // the focal point starts at the centre
+    expect(await stops(page, grad)).toEqual([[0, '#336699'], [1, '#ffffff']])
+    expect(await undoSize(page)).toBe(undo0 + 1)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await attr(page, '#solid', 'fill')).toBe('#336699')
+  })
+
+  test('a drag off the middle puts the centre at the press', async ({ page }) => {
+    await tool(page)
+    await setKind(page, 'radial')
+    await drag(page, { x: 150, y: 120 }, { x: 200, y: 120 })
+    const g = await radial(page, await gradOf(page, 'solid'))
+    expect(g.v.slice(0, 2).map((v) => +v.toFixed(2))).toEqual([0.25, 0.2])
+  })
+
+  test('with Radial chosen a click fills the box: centred, radius a half', async ({ page }) => {
+    await tool(page)
+    await setKind(page, 'radial')
+    await click(page, 200, 150)
+    const g = await radial(page, await gradOf(page, 'solid'))
+    expect(g.tag).toBe('radialGradient')
+    expect(g.v).toEqual([0.5, 0.5, 0.5, 0.5, 0.5])
+  })
 })
