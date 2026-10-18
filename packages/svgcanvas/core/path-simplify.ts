@@ -23,7 +23,7 @@ import { warn } from '../common/logger.ts'
 import { restoreAttr } from './dom-utils.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { simplifyWith, fitFreehand } from './path-fit.ts'
-import { findPenEnd, extendWith, endDirection } from './pen-continue.ts'
+import { findPenEnd, extendWith, endDirection, localD } from './pen-continue.ts'
 import type { PenEnd } from './pen-continue.ts'
 
 // The pencil's default fidelity: the most the committed curve may stray from
@@ -226,8 +226,8 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
     const fitted = fitFreehand(stroke, tolerance, { startDirection: endDirection(end) })
     if (fitted.anchors.length >= 2) {
       const closeTol = Math.max(4 * tolerance, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
-      const d = anchorsToD([extendWith(end, fitted, closeTol)])
-      svgCanvas.transact('Continue path', () => end.elem.setAttribute('d', d))
+      const d = localD(end.elem, extendWith(end, fitted, closeTol))
+      if (d !== null) svgCanvas.transact('Continue path', () => end.elem.setAttribute('d', d))
     }
     if (!svgCanvas.getToolLocked()) {
       svgCanvas.setMode('select')

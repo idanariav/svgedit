@@ -22,7 +22,7 @@ import { deleteNodesD, averageNodesD, addAnchorPointsD } from './path-edit.ts'
 import { anchorsToD } from './anchor-path.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { PathElement, PathObject, PathSegItem } from './path-types.ts'
-import { findPenEnd, continuationD, drawnSubpath, joinDrawn } from './pen-continue.ts'
+import { findPenEnd, continuationD, drawnSubpath, joinDrawn, localD } from './pen-continue.ts'
 import type { PenEnd } from './pen-continue.ts'
 import type { XY } from './canvas-state.ts'
 
@@ -440,10 +440,10 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
     }
 
     /**
-     * Give `survivor` the finished geometry (and drop the paths it absorbed) as one
+     * Give `survivor` the finished geometry (path data in the layer's space) (and drop the paths it absorbed) as one
      * undo step, in place of the throwaway drawing.
      */
-    #commitInto (survivor: Element, d: string, absorbed: Element[], drawnPath: Element) {
+    #commitInto (survivor: Element, containerD: string, absorbed: Element[], drawnPath: Element) {
       const label = absorbed.length || (this.#continued && survivor !== this.#continued.elem) ? 'Join paths' : 'Continue path'
       svgCanvas.getCurrentDrawing().releaseId(drawnPath.id)
       drawnPath.remove()
@@ -453,6 +453,9 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         grip.setAttribute('display', 'none')
       }
       this.#hideEndHint()
+      // `containerD` is in the layer's space; the survivor keeps its own transform.
+      const sp = drawnSubpath(containerD)
+      const d = (sp && localD(survivor, sp)) ?? containerD
       svgCanvas.transact(label, () => {
         survivor.setAttribute('d', d)
         for (const el of absorbed) el.remove()

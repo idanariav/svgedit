@@ -50,6 +50,26 @@ test.describe('Pen continues and joins open paths', () => {
     expect(await points(page, 'a')).toEqual([[100, 100], [200, 100]])
   })
 
+  test('a path with a transform is carried on where it appears, and keeps its transform', async ({ page }) => {
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title>
+        <path id="t" transform="translate(100 50) rotate(90)" d="M0,0 L100,0" fill="none" stroke="#ff0000" stroke-width="4"/>
+      </g></svg>`)
+    // its end (100,0) appears at (100,150): rotate 90 turns (x,0) to (0,x), then it moves by (100,50)
+    await pen(page)
+    await click(page, 102, 151)
+    await click(page, 200, 220)
+    await click(page, 200, 220)
+    await expect(paths(page)).toHaveCount(1)
+    expect(await page.locator('#svgcontent #t').getAttribute('transform')).toMatch(/rotate\(90/)
+    // (200,220) in the layer is (170,-100) in the path's own space
+    const pts = await points(page, 't')
+    expect(pts[0]).toEqual([0, 0])
+    expect(pts[1]).toEqual([100, 0])
+    expect(pts[2][0]).toBeCloseTo(170, 0)
+    expect(pts[2][1]).toBeCloseTo(-100, 0)
+  })
+
   test('pressing the first point carries it on from that side', async ({ page }) => {
     await pen(page)
     await click(page, 99, 99)

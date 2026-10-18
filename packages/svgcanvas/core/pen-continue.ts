@@ -43,15 +43,54 @@ const openSubpath = (elem: Element): SubPath | null => {
   return hit.subpath
 }
 
-const isPlain = (elem: Element): boolean => {
-  if (LIVE_ATTRS.some((a) => elem.hasAttribute(a))) return false
+/** Geometry other than the path's own `d` drives these: extending `d` would desync them. */
+const isLive = (elem: Element): boolean => LIVE_ATTRS.some((a) => elem.hasAttribute(a))
+
+type Mat = { a: number, b: number, c: number, d: number, e: number, f: number }
+
+/** The element's own `transform` as a matrix (null when it has none, or none that can be undone). */
+const ownMatrix = (elem: Element): Mat | null => {
   const tlist = getTransformList(elem)
-  return !(tlist && tlist.numberOfItems && !isIdentity(transformListToTransform(tlist).matrix))
+  if (!tlist || !tlist.numberOfItems) return null
+  const { matrix } = transformListToTransform(tlist)
+  return isIdentity(matrix) ? null : matrix
+}
+
+const inverseOf = (m: Mat): Mat | null => {
+  const det = m.a * m.d - m.b * m.c
+  if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return null
+  return {
+    a: m.d / det,
+    b: -m.b / det,
+    c: -m.c / det,
+    d: m.a / det,
+    e: (m.c * m.f - m.d * m.e) / det,
+    f: (m.b * m.e - m.a * m.f) / det
+  }
+}
+
+const mapPt = (m: Mat, p: Pt): Pt => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
+
+const mapSubpath = (sp: SubPath, m: Mat): SubPath => ({
+  closed: sp.closed,
+  anchors: sp.anchors.map((an) => ({ p: mapPt(m, an.p), hIn: mapPt(m, an.hIn), hOut: mapPt(m, an.hOut) }))
+})
+
+/**
+ * Path data for `elem` from a subpath in its parent's space: undoes the element's own `transform`, which stays on the
+ * element. Null when that transform cannot be undone.
+ */
+export const localD = (elem: Element, parentSpace: SubPath): string | null => {
+  const m = ownMatrix(elem)
+  if (!m) return anchorsToD([parentSpace])
+  const inv = inverseOf(m)
+  return inv ? anchorsToD([mapSubpath(parentSpace, inv)]) : null
 }
 
 /**
- * The open, plain, untransformed path whose end is within `tolerance` of (x, y).
- * Paths with live geometry (`se:taper-d`, `se:orig-d`, `se:fx-d`) are skipped:
+ * The open path whose end is within `tolerance` of (x, y), which is in the container's space. A path with its
+ * own `transform` is offered in that space too: its `point` and `subpath` are mapped through the transform, and
+ * `localD` writes the result back. Paths with live geometry (`se:taper-d`, `se:orig-d`, `se:fx-d`) are skipped:
  * extending them would desync their source. So are paths with several subpaths
  * and closed ones (they have no end).
  * @param container the layer or group that new shapes are drawn into (anything with `children`)
@@ -63,12 +102,15 @@ export const findPenEnd = (
   let best: (PenEnd & { dist: number }) | null = null
   for (const elem of container?.children ?? []) {
     if (elem.tagName !== 'path' || exclude.includes(elem)) continue
-    const subpath = openSubpath(elem)
-    if (!subpath) continue
+    const local = openSubpath(elem)
+    if (!local || isLive(elem)) continue
+    const m = ownMatrix(elem)
+    if (m && !inverseOf(m)) continue
+    const subpath = m ? mapSubpath(local, m) : local
     for (const atEnd of [false, true]) {
       const { p } = subpath.anchors[atEnd ? subpath.anchors.length - 1 : 0]
       const dist = Math.hypot(p.x - x, p.y - y)
-      if (dist <= tolerance && (!best || dist < best.dist) && isPlain(elem)) best = { elem, atEnd, point: p, subpath, dist }
+      if (dist <= tolerance && (!best || dist < best.dist)) best = { elem, atEnd, point: p, subpath, dist }
     }
   }
   if (!best) return null

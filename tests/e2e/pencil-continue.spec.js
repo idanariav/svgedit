@@ -48,6 +48,24 @@ test.describe('Pencil continues the selected open path', () => {
     return Array.from({ length: n.length / 2 }, (_, i) => [n[2 * i], n[2 * i + 1]])
   }
 
+  test('a selected path with a transform is carried on where it appears, and keeps its transform', async ({ page }) => {
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title>
+        <path id="t" transform="translate(100 50) rotate(90)" d="M0,0 L100,0" fill="none" stroke="#ff0000" stroke-width="3"/>
+      </g></svg>`)
+    await select(page, 't')
+    await pencil(page)
+    // the end (100,0) appears at (100,150); the stroke runs right from there
+    await draw(page, settle(strokeOf([{ x: 101, y: 151 }, { x: 200, y: 151 }, { x: 300, y: 151 }])))
+    await expect(paths(page)).toHaveCount(1)
+    expect(await page.locator('#svgcontent #t').getAttribute('transform')).toMatch(/rotate\(90/)
+    const pts = await pairs(page, 't')
+    // layer (x,151) is local (101,100-x)
+    const last = pts[pts.length - 1]
+    expect(last[0]).toBeCloseTo(101, 0)
+    expect(last[1]).toBeCloseTo(-200, 0)
+  })
+
   test('a stroke from the last point of the selected path extends it: one path, one undo step', async ({ page }) => {
     await select(page, 'a')
     await pencil(page)

@@ -1,7 +1,7 @@
 import '../../packages/svgcanvas/core/path-seg-shim.js'
 import { joinEnds, reversedSubpath } from '../../packages/svgcanvas/core/path-edit.ts'
 import { parseAnchors, anchorsToD } from '../../packages/svgcanvas/core/anchor-path.ts'
-import { findPenEnd, continuationD, drawnSubpath, joinDrawn, extendWith, endDirection } from '../../packages/svgcanvas/core/pen-continue.ts'
+import { findPenEnd, localD, continuationD, drawnSubpath, joinDrawn, extendWith, endDirection } from '../../packages/svgcanvas/core/pen-continue.ts'
 
 const sub = (d) => parseAnchors(d)[0]
 const NS = 'http://www.w3.org/2000/svg'
@@ -81,6 +81,24 @@ describe('Pen continue and join', () => {
       for (const x of [0, 10, 100, 110, 200, 210, 300, 310, 400, 410, 500, 510]) {
         assert.equal(findPenEnd(layer, x, 0, 6), null, `x=${x}`)
       }
+    })
+
+    it('offers a transformed path in the layer\'s space and writes back in its own', () => {
+      const p = add('M0,0 L10,0', { transform: 'translate(100 50) rotate(90)' })
+      // (10,0) turns to (0,10), then moves to (100,60)
+      assert.equal(findPenEnd(layer, 10, 0, 3), null)
+      const end = findPenEnd(layer, 100, 60, 3)
+      assert.equal(end.elem, p)
+      assert.ok(Math.abs(end.point.x - 100) < 1e-9 && Math.abs(end.point.y - 60) < 1e-9)
+      // a new point at (90,60) in the layer is (10,10) in the path's own space
+      const more = extendWith(end, {
+        closed: false,
+        anchors: [
+          { p: { x: 100, y: 60 }, hIn: { x: 100, y: 60 }, hOut: { x: 100, y: 60 } },
+          { p: { x: 90, y: 60 }, hIn: { x: 90, y: 60 }, hOut: { x: 90, y: 60 } }
+        ]
+      }, 0.1)
+      assert.equal(localD(p, more), 'M0,0 L10,0 L10,10')
     })
 
     it('tracks a path whose data changed', () => {
