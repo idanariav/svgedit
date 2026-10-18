@@ -26,7 +26,8 @@
 import {
   CORNER_KINDS, CORNER_RADIUS_ATTR, CORNER_SOURCE_ATTR, cornerRadiusChange, isCornerStateCurrent, cornerWidgetAt, fittedCornerRadius, maxCornerRadius
 } from '@svgedit/svgcanvas/core/corner-radius.ts'
-import { getTransformList, transformListToTransform } from '@svgedit/svgcanvas/core/math.ts'
+import { invert } from '@svgedit/svgcanvas/core/gradient-edit.ts'
+import { toolSpace } from '../../toolSpace.ts'
 import { refreshToolOptions } from '../../panels/toolOptionsBar.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
@@ -104,13 +105,15 @@ export default defineFeature({
     let toolCtx: import('@svgedit/svgcanvas').ToolContext | null = null
     let drag: { w: Widget, press: { x: number, y: number }, start: { x: number, y: number }, radius0: number, targets: number[], fresh: boolean, alt: boolean, shift: boolean, moved: boolean, radius: number, at: { x: number, y: number } } | null = null
 
+    /** Document units for the pointer and the shape alike, through every group above the shape (`toolSpace.ts`). */
+    const space = toolSpace(svgCanvas)
+
     const targetFor = (el: Element | null | undefined): Target | null => {
       if (!el || el.nodeType !== 1) return null
       if (el.tagName === 'path' && el.hasAttribute(CORNER_SOURCE_ATTR)) reconcile(el)
       if (!svgCanvas.canRoundCorners(el)) return null
-      const tlist = getTransformList(el)
-      const m = tlist && tlist.numberOfItems ? transformListToTransform(tlist).matrix : null
-      const matrix = m || IDENTITY
+      const matrix = space.localToDoc(el)
+      if (!matrix) return null
       const det = Math.abs(matrix.a * matrix.d - matrix.b * matrix.c)
       if (det < 1e-12) return null
       // Screen pixels per unit of the element's own space.
@@ -123,7 +126,7 @@ export default defineFeature({
         picked = new Set()
         pickedEl = el
       }
-      return { el, widgets, matrix, inverse: m ? m.inverse() : IDENTITY }
+      return { el, widgets, matrix, inverse: invert(matrix) ?? IDENTITY }
     }
 
     const selectedTarget = () => {
@@ -131,11 +134,12 @@ export default defineFeature({
       return elems.length === 1 ? targetFor(elems[0]) : null
     }
 
-    const hit = (t: Target, ev: { rawX: number, rawY: number }, zoom: number) => {
+    const hit = (t: Target, ev: { screenX: number, screenY: number, rawX: number, rawY: number }, zoom: number) => {
       let best: Widget | null = null
       let bestDist = GRAB_PX / zoom
+      const at = space.docPoint(ev)
       for (const w of t.widgets) {
-        const dist = Math.hypot(w.at.x - ev.rawX, w.at.y - ev.rawY)
+        const dist = Math.hypot(w.at.x - at.x, w.at.y - at.y)
         if (dist <= bestDist) {
           best = w
           bestDist = dist
@@ -271,7 +275,7 @@ export default defineFeature({
           drag = {
             w,
             press: { x: ev.screenX, y: ev.screenY },
-            start: { x: ev.rawX, y: ev.rawY },
+            start: space.docPoint(ev),
             radius0: fittedCornerRadius(w.corner, w.radius),
             targets,
             fresh: isFresh(t, targets),
@@ -279,7 +283,7 @@ export default defineFeature({
             shift: ev.mods.shift || pickMore,
             moved: false,
             radius: w.radius,
-            at: { x: ev.rawX, y: ev.rawY }
+            at: space.docPoint(ev)
           }
         }
         draw(ctx)
@@ -301,12 +305,12 @@ export default defineFeature({
         drag.moved = true
         // The pointer's travel in the element's own space, along the corner's bisector.
         const a = apply(target.inverse, drag.start)
-        const b = apply(target.inverse, { x: ev.rawX, y: ev.rawY })
+        const b = apply(target.inverse, space.docPoint(ev))
         const radius = Math.round(
           Math.min(Math.max(drag.radius0 + cornerRadiusChange(drag.w.corner, { x: b.x - a.x, y: b.y - a.y }), 0), maxCornerRadius(drag.w.corner)) * 100
         ) / 100
         drag.radius = radius
-        drag.at = { x: ev.rawX, y: ev.rawY }
+        drag.at = space.docPoint(ev)
         const el = cut(target, radius, drag.targets, drag.fresh)
         const t = targetFor(el)
         if (t) {
