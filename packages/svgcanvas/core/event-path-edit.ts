@@ -78,7 +78,8 @@ export const init = (canvas: SvgCanvas): {
   // The pointer moving over the canvas with no button down in `path` / `fhpath` mode: the Pen (or the pencil, for
   // the selected path) marks the open end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
   const hover = (evt: MouseEvent): void => {
-    const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
+    // The space a press draws in: the entered group's, else the layer's.
+    const ctm = ((svgCanvas.getCurrentGroup() ?? svgCanvas.$id('svgcontent')?.querySelector('g')) as SVGGraphicsElement | null)?.getScreenCTM?.()
     if (!ctm) return
     const pt = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
     const zoom = svgCanvas.getZoom()

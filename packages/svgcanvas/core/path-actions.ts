@@ -392,8 +392,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
      * the carried-on path itself are not offered (clicking its far end closes it).
      */
     #penEnd (x: number, y: number, drawnPath: Element | null): PenEnd | null {
-      if (svgCanvas.getCurrentGroup()) return null // the drawing's coordinates are not the group's
-      const layer = svgCanvas.getCurrentDrawing().getCurrentLayer()
+      const layer = svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()
       const exclude = [drawnPath, this.#continued?.elem].filter(Boolean) as Element[]
       return findPenEnd(layer, x, y, PEN_END_REACH / svgCanvas.getZoom(), exclude)
     }
@@ -508,7 +507,12 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
         parentGroup.append(ring)
       }
-      assignAttributes(ring, { cx: end.point.x * zoom, cy: end.point.y * zoom, display: 'inline' })
+      // The end is in the space of the layer or entered group the drawing goes into; the ring is in document units.
+      const container = (svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()) as SVGGraphicsElement | null
+      const root = svgCanvas.getSvgContent().querySelector('g')?.getScreenCTM?.()
+      const own = container?.getScreenCTM?.()
+      const shown = root && own ? new DOMPoint(end.point.x, end.point.y).matrixTransform(root.inverse().multiply(own)) : end.point
+      assignAttributes(ring, { cx: shown.x * zoom, cy: shown.y * zoom, display: 'inline' })
     }
 
     #hideEndHint () {

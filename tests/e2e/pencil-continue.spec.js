@@ -66,6 +66,22 @@ test.describe('Pencil continues the selected open path', () => {
     expect(last[1]).toBeCloseTo(-200, 0)
   })
 
+  test('a path in an entered, transformed group is carried on where the group puts it', async ({ page }) => {
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title><g id="grp" transform="translate(100 50) rotate(90)">
+        <path id="t" d="M0,0 L100,0" fill="none" stroke="#ff0000" stroke-width="3"/>
+      </g></g></svg>`)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setContext('grp'))
+    await select(page, 't')
+    await pencil(page)
+    await draw(page, settle(strokeOf([{ x: 101, y: 151 }, { x: 200, y: 151 }, { x: 300, y: 151 }])))
+    await expect(page.locator('#svgcontent path')).toHaveCount(1)
+    const pts = await pairs(page, 't')
+    const last = pts[pts.length - 1]
+    expect(last[0]).toBeCloseTo(101, 0)
+    expect(last[1]).toBeCloseTo(-200, 0)
+  })
+
   test('a stroke from the last point of the selected path extends it: one path, one undo step', async ({ page }) => {
     await select(page, 'a')
     await pencil(page)

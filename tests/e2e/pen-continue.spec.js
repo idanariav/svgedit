@@ -70,6 +70,30 @@ test.describe('Pen continues and joins open paths', () => {
     expect(pts[2][1]).toBeCloseTo(-100, 0)
   })
 
+  test('inside an entered, transformed group the ring and the carried-on path are where the group puts them', async ({ page }) => {
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title><g id="grp" transform="translate(100 50) rotate(90)">
+        <path id="t" d="M0,0 L100,0" fill="none" stroke="#ff0000" stroke-width="4"/>
+      </g></g></svg>`)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setContext('grp'))
+    await pen(page)
+    // the end (100,0) of the path appears at (100,150) on the page
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 101, y: 151 }]))
+    await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'inline')
+    const ring = await page.locator('#pen_end_hint').evaluate((c) => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))])
+    const zoom = await page.evaluate(() => window.svgEditor.svgCanvas.getZoom())
+    expect(ring[0] / zoom).toBeCloseTo(100, 0)
+    expect(ring[1] / zoom).toBeCloseTo(150, 0)
+    await click(page, 101, 151)
+    await click(page, 200, 220)
+    await click(page, 200, 220)
+    await expect(page.locator('#svgcontent path')).toHaveCount(1)
+    const pts = await points(page, 't')
+    expect(pts[1]).toEqual([100, 0])
+    expect(pts[2][0]).toBeCloseTo(170, 0)
+    expect(pts[2][1]).toBeCloseTo(-100, 0)
+  })
+
   test('pressing the first point carries it on from that side', async ({ page }) => {
     await pen(page)
     await click(page, 99, 99)

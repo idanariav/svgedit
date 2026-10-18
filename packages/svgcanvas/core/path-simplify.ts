@@ -203,8 +203,8 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
    */
   const pencilEnd = (x: number, y: number): PenEnd | null => {
     const selected = svgCanvas.getSelectedElements().filter(Boolean)
-    if (selected.length !== 1 || svgCanvas.getCurrentGroup()) return null
-    if (selected[0].parentNode !== svgCanvas.getCurrentDrawing().getCurrentLayer()) return null
+    if (selected.length !== 1) return null
+    if (selected[0].parentNode !== (svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer())) return null
     return findPenEnd({ children: [selected[0]] }, x, y, CONTINUE_REACH / (svgCanvas.getZoom() || 1))
   }
 
