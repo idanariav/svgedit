@@ -143,7 +143,9 @@ const POINT_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']],
   polyline: [],
   polygon: [],
-  path: []
+  path: [],
+  g: [],
+  a: []
 }
 const NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i
 
@@ -234,6 +236,12 @@ export const affineEdit = (target: Element | ModelElement, map: Affine): Record<
         return null
       }
       break
+    }
+    case 'g': case 'a': {
+      // a group keeps the map as its own transform (what is inside it is not rewritten)
+      const identity = map.a === 1 && map.d === 1 && map.e === 0 && map.f === 0
+      set.transform = identity ? null : `matrix(${map.a} 0 0 ${map.d} ${map.e} ${map.f})`
+      return set
     }
     default: return null
   }

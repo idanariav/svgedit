@@ -456,8 +456,7 @@ describe('selected-elem', () => {
       svgCanvas.moveSelectedElements(1, 0)
     }
 
-    const tlist = group.transform.baseVal
-    expect(tlist.numberOfItems).toBe(1)
+    // the group's transform is one matrix however many nudges (the model writes the attribute; there is no list to grow)
     expect(group.getAttribute('transform')).toBe('matrix(1 0 0 1 5 0)')
   })
 

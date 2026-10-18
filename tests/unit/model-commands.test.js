@@ -426,6 +426,9 @@ describe('model-first commands', () => {
       const path = document.createElementNS(ns, 'path')
       path.setAttribute('d', 'M0 0 L10 10 C 10 20 20 20 30 10 Z')
       expect(affineEdit(path, { a: 2, d: 2, e: 1, f: 1 }).d).toBe('M1 1L21 21C21 41 41 41 61 21Z')
+      const g = document.createElementNS(ns, 'g')
+      expect(affineEdit(g, { a: 1, d: 1, e: 3, f: 4 })).toEqual({ transform: 'matrix(1 0 0 1 3 4)' })
+      expect(affineEdit(g, { a: 1, d: 1, e: 0, f: 0 })).toEqual({ transform: null })
       path.setAttribute('data-arc', '90') // an arc keeps its own parameters
       expect(affineEdit(path, { a: 2, d: 2, e: 1, f: 1 })).toBeNull()
     })
