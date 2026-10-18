@@ -149,6 +149,7 @@
 | `edit.ts` | Document model, layer 4: edits |
 | `features.ts` | Document model, layer 2b: the `se:*` features of one element as typed fields |
 | `index.ts` | Document model (R1 step a): a persistent tree with lossless SVG parse and serialize (`node.ts`, `parse.ts`, `serialize.ts`) and a typed read-only view of a drawing over it (`drawing.ts`) |
+| `matrix.ts` | 2D affine matrices for the document model: parse a `transform` attribute into one, compose, apply, and tell whether it keeps shapes (a rotation, a flip and a uniform scale) |
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
 | `parse.ts` | Document model: SVG/XML text -> persistent tree (see `node.ts`) |
 | `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.ts`) |

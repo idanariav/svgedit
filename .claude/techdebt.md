@@ -17,8 +17,12 @@ by up to ~0.08 user units for radii around 60 (`tests/e2e/model-bounds.spec.js` 
 The exact fix is the arc's own extrema (angles where the derivative is zero); not done because the headless `getBBox` fallback is the
 only consumer of the geometry, and the number scan it replaced ignored relative commands and curves altogether. `strokedBounds` leaves out markers and arrowheads (VectorCraft's `head_reach`) and a `<text>` has no box there
 (see `model/text-metrics.ts`); a group's box is its children's, which the model does not compute yet. `getStrokedBBox` takes the
-stroke tips from the model only for a shape without a `transform` attribute of its own (a transformed shape keeps the half-width
-margin, as before), and the first call on a very large path parses it (12 ms for 2,000 cubics; memoized by `d` after). Small.
+stroke tips from the model for a shape under a transform that keeps shapes, but a skew or an uneven scale keeps the half-width margin,
+a group's box still leaves out its children's strokes (`getStrokeGrowth` skips `g` / `a`; the model can do it, but it would change
+group selection boxes), an open path's butt ends are over-estimated by up to half the width (the margin is applied all round, as VectorCraft
+does), and `getBBoxWithTransform`'s branch for a lone `rotate(…)` still rotates the raw numbers of a path's `d` (control points and relative
+commands included) instead of asking `geometricBounds(el, m)`, which is exact (it is also where a stray empty `<path>` is added through
+`addSVGElementsFromJson` for a right-angle turn of a non-path); and the first call on a very large path parses it (12 ms for 2,000 cubics; memoized by `d` after). Small.
 
 ## getStrokedBBox's false / null
 

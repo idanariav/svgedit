@@ -50,10 +50,27 @@ describe('getStrokedBBox', () => {
     expect(plain.x + plain.width).toBeCloseTo(101, 6)
   })
 
-  it('leaves an element with a transform on the half-width margin', () => {
+  it('reaches the miter tips of a shape under a transform that keeps shapes', () => {
     const wedge = make('polygon', { points: '0,0 100,0 0,17.6', stroke: '#000', 'stroke-width': 2, 'stroke-miterlimit': 40, transform: 'translate(5 5)' })
     wedge.getBBox = () => ({ x: 0, y: 0, width: 100, height: 17.6 })
     const box = getStrokedBBox([wedge], noop, { resetOrientation: noop }, same)
-    expect(box.width).toBeLessThan(103)
+    // the DOM box of the wedge plus the spike the model finds, which is more than the half-width margin of 1 on each side
+    expect(box.width).toBeGreaterThan(105)
+  })
+
+  it('scales the stroke with a uniform scale instead of keeping its unscaled width', () => {
+    const rect = make('rect', { x: 0, y: 0, width: 10, height: 10, stroke: '#000', 'stroke-width': 4, 'stroke-linejoin': 'round', transform: 'scale(3)' })
+    rect.getBBox = () => ({ x: 0, y: 0, width: 10, height: 10 })
+    // the box is scaled to 30 wide, and the stroke (2 each side) is scaled with it to 6 each side, not left at 2
+    const box = getStrokedBBox([rect], noop, { resetOrientation: noop }, same)
+    expect(box.width).toBeCloseTo(30 + 2 * 6, 6)
+  })
+
+  it('keeps the half-width margin under a skew or an uneven scale, which the model does not guess', () => {
+    const rect = make('rect', { x: 0, y: 0, width: 10, height: 10, stroke: '#000', 'stroke-width': 4, transform: 'scale(2 1)' })
+    rect.getBBox = () => ({ x: 0, y: 0, width: 10, height: 10 })
+    const box = getStrokedBBox([rect], noop, { resetOrientation: noop }, same)
+    // scaled to 20 wide, plus the unscaled 2 on each side
+    expect(box.width).toBeCloseTo(24, 6)
   })
 })

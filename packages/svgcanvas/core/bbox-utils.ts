@@ -18,6 +18,8 @@ import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.ts'
 import { geometricBounds, strokedBounds } from './model/bounds.ts'
+import { parseMatrix } from './model/matrix.ts'
+import { readDom } from './model-render.ts'
 import type { ModelElement } from './model/node.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBox } from '../svgcanvas.ts'
@@ -317,7 +319,7 @@ export const getBBox = (elem: Element): BBoxObject | null => {
       const tag = elname.toLowerCase()
       const fromAttrs = (() => {
         // the model reads the geometry exactly (relative commands, curves, arcs) where the attributes were once scanned for numbers
-        const fromModel = tag === 'g' ? undefined : geometricBounds(shallowModel(selected))
+        const fromModel = geometricBounds(tag === 'g' ? readDom(selected) as ModelElement : shallowModel(selected))
         if (fromModel) return fromModel
         switch (tag) {
           case 'g': {
@@ -461,7 +463,8 @@ export const getBBoxWithTransform = (
 
   const transformAttr = elem.getAttribute?.('transform') ?? ''
   const hasMatrixAttr = transformAttr.includes('matrix(')
-  if (transformAttr.includes('rotate(') && !hasMatrixAttr) {
+  // only a lone `rotate(angle cx cy)`: the numbers are read off the string, which a `translate(…) rotate(…)` would mislead
+  if (/^\s*rotate\([^)]*\)\s*$/.test(transformAttr) && !hasMatrixAttr) {
     const nums = transformAttr.match(/-?\d*\.?\d+/g)?.map(Number) || []
     const [angle = 0, cx = 0, cy = 0] = nums
     const rad = angle * Math.PI / 180
@@ -588,24 +591,30 @@ const getStrokeOffsetForBBox = (elem: Element): number => {
 interface Growth { left: number, top: number, right: number, bottom: number }
 
 /**
- * How far the stroke of `elem` paints beyond its box on each side. Half the width all round; for a shape with no transform of
- * its own, also the miter tips and square-cap corners the model finds (`strokedBounds`), which stick out further at a sharp
- * corner. The DOM box and the model's box are not mixed: only the model's *growth* is taken, so it applies to whichever box the
- * caller measured.
+ * How far the stroke of `elem` paints beyond its box on each side. Half the width all round; for a shape the model can measure,
+ * also the miter tips and square-cap corners, which stick out further at a sharp corner, and (for a shape with a `transform`
+ * that keeps shapes: a turn, a flip, a uniform scale) the stroke as the transform turns and scales it. The DOM box and the
+ * model's box are not mixed: only the model's *growth* is taken, so it applies to whichever box the caller measured. A group
+ * keeps the half-width of its own stroke (what its children paint is not part of its box, as before).
  */
 const getStrokeGrowth = (elem: Element): Growth => {
   const offset = getStrokeOffsetForBBox(elem)
   const even = { left: offset, top: offset, right: offset, bottom: offset }
-  if (!offset || elem.hasAttribute('transform')) return even
+  if (!offset || elem.nodeName === 'g' || elem.nodeName === 'a') return even
+  const own = elem.hasAttribute('transform')
+  const m = parseMatrix(elem.getAttribute('transform'))
+  if (!m) return even
   const chain = modelChain(elem)
-  const geometric = chain.length ? geometricBounds(chain[chain.length - 1]) : undefined
-  const painted = geometric && strokedBounds(chain)
+  const geometric = chain.length ? geometricBounds(chain[chain.length - 1], m) : undefined
+  const painted = geometric && strokedBounds(chain, m)
   if (!geometric || !painted) return even
+  // an untransformed shape keeps the half-width as a floor (a width the model cannot read); a transformed one is scaled by it
+  const floor = own ? 0 : offset
   return {
-    left: Math.max(offset, geometric.x - painted.x),
-    top: Math.max(offset, geometric.y - painted.y),
-    right: Math.max(offset, painted.x + painted.width - geometric.x - geometric.width),
-    bottom: Math.max(offset, painted.y + painted.height - geometric.y - geometric.height)
+    left: Math.max(floor, geometric.x - painted.x),
+    top: Math.max(floor, geometric.y - painted.y),
+    right: Math.max(floor, painted.x + painted.width - geometric.x - geometric.width),
+    bottom: Math.max(floor, painted.y + painted.height - geometric.y - geometric.height)
   }
 }
 
