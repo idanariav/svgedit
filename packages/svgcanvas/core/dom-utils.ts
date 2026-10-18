@@ -249,6 +249,15 @@ export let setHref = (elem: Element, val: string): void => {
 }
 
 /**
+ * Put an element's `transform` back to what it was (a live gesture preview is undone before the gesture is stated on the model).
+ * An empty string removes the attribute.
+ */
+export const restoreTransformAttr = (el: Element, was: string): void => {
+  if (was) el.setAttribute('transform', was)
+  else el.removeAttribute('transform')
+}
+
+/**
  * Get the rotation angle of the given transform list.
  * @param tlist - List of transforms
  * @param toRad - When true returns the value in radians rather than degrees

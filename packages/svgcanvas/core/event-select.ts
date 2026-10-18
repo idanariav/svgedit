@@ -9,7 +9,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, walkTree, getRotationAngle } from './dom-utils.ts'
+import { assignAttributes, walkTree, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
@@ -373,7 +373,7 @@ export const init = (canvas: SvgCanvas): {
         // A drag of plain shapes that only carry a translation is stated on the model (one step); anything else bakes below
         const before = new Map<Element, string>()
         for (const elem of selectedElements) if (elem) before.set(elem, svgCanvas.gesture.dragStartTransforms?.get(elem) ?? '')
-        const bakedByModel = before.size > 0 && svgCanvas.bakeDrag(before, (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') })
+        const bakedByModel = before.size > 0 && svgCanvas.bakeDrag(before, restoreTransformAttr)
         if (bakedByModel) svgCanvas.call('changed', selectedElements.filter(Boolean))
 
         selectedElements.forEach((elem) => {

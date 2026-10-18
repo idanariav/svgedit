@@ -8,6 +8,7 @@
  */
 import { requireBBox } from './bbox-utils.ts'
 import { transformPoint, getMatrix, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
+import { restoreTransformAttr } from './dom-utils.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 
 /**
@@ -50,12 +51,15 @@ export const init = (canvas: SvgCanvas): {
   up: (evt: MouseEvent, ctx: { selectedElements: Element[] }) => { element: null, keep: true }
 } => {
   const svgCanvas = canvas
+  let startTransforms = new Map<Element, string>()
 
   const down = (_evt: MouseEvent, ctx: { selectedElements: Element[] }): void => {
     const { selectedElements } = ctx
     svgCanvas.setStarted(true)
     // we are starting an undoable change (a drag-rotation)
     svgCanvas.undoMgr.beginUndoableChange('transform', selectedElements)
+    // what each element's transform was, to put back when the gesture is stated on the model
+    startTransforms = new Map(selectedElements.filter(Boolean).map((el) => [el, el.getAttribute('transform') || '']))
     // multi-selection: capture each element's start matrix + the union center
     // so mouseMove can rotate the whole selection rigidly about that center.
     const rotElems = selectedElements.filter(Boolean)
@@ -109,7 +113,9 @@ export const init = (canvas: SvgCanvas): {
     svgCanvas.setCurrentMode('select')
     const isGroupRotate = !!svgCanvas.gesture.groupRotateStart
     const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
-    if (!batchCmd.isEmpty()) {
+    // The rotation is stated on the model (one step); the commands only say it happened
+    const stated = !batchCmd.isEmpty() && svgCanvas.commitTransforms('Rotate', startTransforms, restoreTransformAttr)
+    if (!batchCmd.isEmpty() && !stated) {
       svgCanvas.addCommandToHistory(batchCmd)
     }
     if (isGroupRotate) {

@@ -53,6 +53,12 @@ export interface ModelCommandsApi {
    */
   bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
   /** `setElementAttributes` for several elements at once: one step. False, touching nothing, if one has no id. */
+  /**
+   * A gesture that left a new `transform` on each of these elements (a rotation) ended: put each back to the transform it had
+   * (`before`, undone with `undoPreview`) and state the transforms on the model instead, as one step. False, touching nothing,
+   * when one has no id.
+   */
+  commitTransforms(label: string, before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -389,7 +395,15 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
+  const commitTransforms = (label: string, before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
+    const entries = [...before.keys()].map((el) => ({ el, attrs: { transform: el.getAttribute('transform') || null } }))
+    if (!entries.length || entries.some(({ el }) => !el.id)) return false
+    for (const [el, was] of before) undoPreview(el, was)
+    return setElementsAttributes(label, entries)
+  }
+
   return {
+    commitTransforms,
     setElementsAttributes,
     bakeDrag,
     bakeTranslation,

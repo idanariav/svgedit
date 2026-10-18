@@ -339,6 +339,19 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('commitTransforms', () => {
+    const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
+    it('states the transform a gesture left on the model, as one step from before it', () => {
+      canvas.undoMgr.snapshots.baseline()
+      els[0].setAttribute('transform', 'rotate(30 5 5)') // the live preview
+      expect(canvas.commitTransforms('Rotate', new Map([[els[0], '']]), undoPreview)).toBe(true)
+      expect(els[0].getAttribute('transform')).toBe('rotate(30 5 5)')
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Rotate')
+      canvas.undoMgr.undo()
+      expect(els[0].hasAttribute('transform')).toBe(false)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
