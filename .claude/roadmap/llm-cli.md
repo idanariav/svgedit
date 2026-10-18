@@ -32,6 +32,17 @@ happened in a session can be *named* rather than guessed from DOM snapshots.
    like `repair-drawings.mjs` does (raw or compressed block, saved versions). Left: `list` (needs the command registry without the
    DOM), `run` and the DOM `checkDrawing` (the editor), `write`, and an MCP front end.
 
+   *Shipped 2026-10-18 (`bounds`, no browser):* `npm run cli -- bounds <file.svg|note.md> [--version N]` says where every object
+   with an `id` is, in document coordinates (`layoutOf`, `core/model/layout.ts`): its `box` (geometry, as `getBBox`) and `visual` box
+   (with the stroke, miter tips and caps), under the transforms of the groups above it, with its layer, its group (`parent`), `hidden`
+   (itself, its group or its layer is not displayed) and `outside` (entirely off the page), plus the page `size` and the `extent` of the
+   displayed objects. `source` says how much to trust a box: `exact` (shapes, paths, images, groups of them), `estimate` (a text, from its
+   characters: the browser is the layout engine, `model/text-metrics.ts`) or `unknown` (a `use`, a group holding one, a skew under a
+   stroke). A group's `visual` includes its children's strokes (the editor's `getStrokedBBox` of a group does not). One object per line,
+   to keep an agent's token cost down. `tests/e2e/model-bounds.spec.js` checks it against the editor on every fixture (axis-aligned chains).
+   Next for the agent: a text measured by the browser written back into a drawing (so the estimate becomes exact), `overlaps` /
+   `nearest` queries, and the same boxes through `run` once commands run on the model.
+
    *Update 2026-10-15 ([R1](rearchitecture.md#step-a-status) step a):* the read side no longer needs a browser. `core/model/`
    parses a drawing in plain Node (`readDrawing`: layers, objects with ids, transforms, hidden / locked state, typed `se:`
    features) and `scripts/check-model-roundtrip.mjs` already reads `.svg` files and the plugin's `.md` drawings, so `inspect`,

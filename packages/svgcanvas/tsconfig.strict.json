@@ -74,6 +74,7 @@
   "core/model/summary.ts",
   "core/model/features.ts",
   "core/model/index.ts",
+  "core/model/layout.ts",
   "core/model/matrix.ts",
   "core/model/node.ts",
   "core/model/parse.ts",

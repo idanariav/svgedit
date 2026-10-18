@@ -207,6 +207,9 @@ const ellipseBounds = (cx: number, cy: number, rx: number, ry: number, m: Readon
 
 /** Tags that paint nothing by themselves (definitions, metadata) and so are not part of a group's box. */
 const NOT_PAINTED = new Set(['defs', 'clipPath', 'mask', 'marker', 'pattern', 'symbol', 'title', 'desc', 'metadata', 'style', 'script', 'linearGradient', 'radialGradient', 'filter'])
+/** Is `el` a definition or metadata (`defs`, `clipPath`, `title`…), which paints nothing by itself? */
+export const paintsNothing = (el: ModelElement): boolean => NOT_PAINTED.has(el.name)
+
 /** Tags whose box only a layout engine knows: a group holding one has no box here. */
 const NEEDS_RENDERER = new Set(['text', 'use', 'switch', 'svg'])
 

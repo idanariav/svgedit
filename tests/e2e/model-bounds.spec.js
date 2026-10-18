@@ -100,3 +100,51 @@ test.describe('Model shape bounds', () => {
     expect(boxes.round.x + boxes.round.width).toBeCloseTo(302, 3)
   })
 })
+
+// The headless CLI's `bounds` verb (model/layout.ts): the document-space box of every object, from the file alone. For every
+// object the model measures exactly, the editor's own getBBox taken through the object's transform chain is the oracle (only
+// where that chain keeps the axes, since the box of a turned curve is not the turned box).
+test.describe('Model layout', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+  })
+
+  test('every exactly measured object of the round-trip fixtures sits where the editor says', async ({ page }) => {
+    const { layoutOf } = await import('../../packages/svgcanvas/core/model/index.ts')
+    let compared = 0
+    let turned = 0
+    const problems = []
+    for (const name of fs.readdirSync(FIXTURES).filter((n) => n.endsWith('.svg'))) {
+      const svg = fs.readFileSync(path.join(FIXTURES, name), 'utf8')
+      const layout = layoutOf(parseSvg(svg).root)
+      await page.evaluate((text) => window.svgEditor.svgCanvas.setSvgString(text), svg)
+      const wanted = layout.objects.filter((o) => o.source === 'exact' && !o.hidden && o.box).map((o) => o.id)
+      const live = await page.evaluate((ids) => {
+        const content = document.querySelector('#svgcontent')
+        const inv = content.getScreenCTM().inverse()
+        const out = {}
+        for (const id of ids) {
+          const el = document.getElementById(id)
+          if (!el || !el.getBBox || !el.getScreenCTM) continue
+          const m = inv.multiply(el.getScreenCTM())
+          const b = el.getBBox()
+          const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f])
+          out[id] = { axisAligned: Math.abs(m.b) < 1e-9 && Math.abs(m.c) < 1e-9, box: [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])) - Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1])) - Math.min(...pts.map((p) => p[1]))] }
+        }
+        return out
+      }, wanted)
+      for (const o of layout.objects) {
+        const l = live[o.id]
+        if (!l || !o.box) continue
+        if (!l.axisAligned) { turned++; continue }
+        compared++
+        // a group the editor reports as empty (all children hidden or unmeasurable) is not a disagreement
+        if (l.box.every((v) => v === 0)) continue
+        if (o.box.some((v, i) => Math.abs(v - l.box[i]) > 0.02 + Math.abs(l.box[i]) * 1e-4)) problems.push({ fixture: name, id: o.id, tag: o.tag, model: o.box, editor: l.box.map((v) => +v.toFixed(3)) })
+      }
+    }
+    console.log(`model layout: ${compared} objects compared with the editor (${turned} skipped as turned), ${problems.length} differ`)
+    expect(compared).toBeGreaterThan(50)
+    expect(problems).toEqual([])
+  })
+})
