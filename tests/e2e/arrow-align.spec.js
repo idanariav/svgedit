@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './fixtures.js'
-import { setSvgSource, visitAndApproveStorage } from './helpers.js'
+import { setSvgSource, visitAndApproveStorage, dragInDocument } from './helpers.js'
 
 // Arrowheads: a new end head lands tip-on-end (the stroke is trimmed by the head's inset), with a
 // Centered / Tip / Extend picker in the Markers panel; connectors keep the tip on the bound shape's edge.
@@ -106,6 +106,26 @@ test.describe('Arrowhead alignment', () => {
     expect(undone['se:arrow-d']).toBe(before['se:arrow-d'])
     expect(undone.d).toBe(before.d)
     expect(undone['se:arrow-align']).toBe('tip')
+  })
+
+  test('dragging an arrowed curve with the mouse keeps the source in step and is one undo step', async ({ page }) => {
+    await select(page, 'curve')
+    await setHead(page, 'end', 'rightarrow')
+    const before = await attrs(page, 'curve')
+    await page.evaluate(() => { window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false })
+    const size = await undoSize(page)
+    // press on the curve's stroke (its start, which the head does not cover) and pull it to the right
+    await dragInDocument(page, { x: 50, y: 300 }, { x: 90, y: 320 })
+    await page.waitForTimeout(150)
+    const moved = await attrs(page, 'curve')
+    const mx = Number(moved['se:arrow-d'].match(/^M(-?[\d.]+),/)[1])
+    expect(mx).toBeCloseTo(90, 1) // the source followed the drag
+    expect(moved.transform).toBeUndefined()
+    expect(await undoSize(page)).toBe(size + 1)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    const undone = await attrs(page, 'curve')
+    expect(undone['se:arrow-d']).toBe(before['se:arrow-d'])
+    expect(undone.d).toBe(before.d)
   })
 
   test('survives save and load', async ({ page }) => {

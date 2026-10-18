@@ -496,6 +496,30 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a drag of a shape with feature data shown through the model', () => {
+    it('the move is a matrix while it lasts; the bake of the copy decides what the drawing gets', async () => {
+      const ns = 'http://www.w3.org/2000/svg'
+      const line = document.createElementNS(ns, 'line')
+      line.setAttribute('id', 'fd'); line.setAttribute('x1', '0'); line.setAttribute('y1', '0'); line.setAttribute('x2', '10'); line.setAttribute('y2', '0')
+      line.setAttribute('se:arrow-align', 'tip')
+      els[0].parentNode.append(line)
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([line], true)
+      expect(plan.get(line).scratch).toBe(true)
+      canvas.previewDrag(plan, 5, 6)
+      expect(line.getAttribute('transform')).toBe('matrix(1 0 0 1 5 6)')
+      expect(line.getAttribute('x1')).toBe('0')
+      canvas.snapshotHistory.cancelPreview()
+      expect(line.hasAttribute('transform')).toBe(false)
+      // a shape with children is not baked on a copy
+      const g = document.createElementNS(ns, 'rect')
+      g.setAttribute('id', 'withkid'); g.setAttribute('se:x', '1')
+      g.append(document.createElementNS(ns, 'title'))
+      els[0].parentNode.append(g)
+      expect(canvas.dragPlan([g], true)).toBeNull()
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {

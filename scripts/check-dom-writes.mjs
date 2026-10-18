@@ -13,8 +13,9 @@ import { join, relative, sep } from 'node:path'
 const rootDir = process.cwd()
 const BASELINE = join(rootDir, 'scripts', 'dom-writes-baseline.json')
 const ROOTS = [join(rootDir, 'packages', 'svgcanvas', 'core'), join(rootDir, 'src', 'editor', 'extensions')]
-// The renderer and the model's own seams are the places allowed to write
-const EXEMPT = new Set(['packages/svgcanvas/core/model-render.ts', 'packages/svgcanvas/core/snapshot-history.ts'])
+// The renderer and the model's own seams are the places allowed to write, and the scratch bake, which only writes into an
+// ephemeral group that is never part of the drawing
+const EXEMPT = new Set(['packages/svgcanvas/core/model-render.ts', 'packages/svgcanvas/core/snapshot-history.ts', 'packages/svgcanvas/core/scratch-bake.ts'])
 const WRITE = /\.(?:setAttribute|setAttributeNS|removeAttribute|removeAttributeNS|append|appendChild|prepend|insertBefore|insertAdjacentElement|removeChild|replaceChild|replaceWith|replaceChildren|before|after)\s*\(|\.remove\s*\(\s*\)/g
 
 /** Count the DOM-writing calls in a source text, comments excluded. */

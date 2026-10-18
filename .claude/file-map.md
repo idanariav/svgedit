@@ -107,6 +107,7 @@
 | `recalculate.ts` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
 | `sanitize.ts` | Tools for SVG sanitization |
+| `scratch-bake.ts` | Bake a finished gesture's transform on a throwaway copy, and hand back what changed (R1: the gesture is stated on the model, the measuring stays where the browser can do it) |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
 | `segment.ts` | Segment tool: divides a single selected shape into symmetric pieces using evenly-spaced dividing lines, in two generator modes: - radial: N lines radiating from a center point at 360/N apart (pie slices) - grid: N… |
 | `select-same.ts` | Select Same: extend the selection to every element that shares a property with the primary selected element |

@@ -10,6 +10,7 @@
  * @license MIT
  */
 import SvgPath from 'svgpath'
+import { bakeInScratch } from './scratch-bake.ts'
 import { BatchCommand } from './history.js'
 import { readDom } from './model-render.ts'
 import { findById, withChildren, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
@@ -148,7 +149,7 @@ export const parseMatrix = (transform: string | null): Matrix6 | null => {
 }
 
 /** What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and that rotation. */
-export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6 }
+export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6, scratch?: boolean }
 
 const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
 /** `outer` applied after `inner`. */
@@ -488,6 +489,17 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
   const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
     // a drag shown through the model ends here: the preview is the step
     if (svgCanvas.snapshotHistory.previewing) {
+      // Shapes with feature data are baked on a copy now that the move is final; the model takes what the bake changed
+      const scratch = [...(svgCanvas.gesture.dragPlan ?? [])].filter(([, entry]) => entry.scratch).map(([el]) => el)
+      const baked = scratch.map((el) => [el, bakeInScratch(svgCanvas, el)] as const)
+      const show = lastPreview
+      if (show && baked.length && baked.every(([, changes]) => changes)) {
+        svgCanvas.snapshotHistory.preview((root) => {
+          let out = show(root)
+          for (const [el, changes] of baked) out = setAttrsById(out, el.id, changes as Record<string, string | null>)
+          return out
+        })
+      }
       svgCanvas.snapshotHistory.endPreview('position')
       return true
     }
@@ -576,6 +588,13 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         // another transform (a skew, a rotation among other terms): the move is put in front of it as a matrix, geometry untouched
         const general = allowRotated && el.hasAttribute('transform') && affineEdit(el, IDENTITY) ? parseMatrix(el.getAttribute('transform')) : null
         const featureData = Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))
+        if (featureData && !el.children.length) {
+          // A shape that keeps data of a feature (arrow trim, effects…) is baked on a copy when the drag ends; until then the move is a matrix
+          const own6 = parseMatrix(el.getAttribute('transform'))
+          if (!own6) return null
+          plan.set(el, { ...IDENTITY, matrix: own6, scratch: true })
+          continue
+        }
         if (!general || featureData) return null
         plan.set(el, { ...IDENTITY, matrix: general })
         continue
@@ -596,8 +615,9 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
       return out
     })
   }
+  let lastPreview: ((root: ModelElement) => ModelElement) | null = null
   const previewDrag = (plan: Map<Element, DragEntry>, dx: number, dy: number): void => {
-    svgCanvas.snapshotHistory.preview((root) => {
+    svgCanvas.snapshotHistory.preview(lastPreview = (root) => {
       let out = root
       for (const [el, own] of plan) {
         if (own.matrix) {
