@@ -306,6 +306,18 @@ describe('model-first commands', () => {
       expect(Number(els[0].getAttribute('x'))).toBe(x0)
       expect(els[0].hasAttribute('transform')).toBe(false)
     })
+    it('states a resize (translate, scale, translate) as new sizes and positions', () => {
+      canvas.undoMgr.snapshots.baseline()
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('y', '20'); r.setAttribute('width', '40'); r.setAttribute('height', '30')
+      canvas.undoMgr.snapshots.baseline()
+      r.setAttribute('transform', 'translate(10 20) scale(2 3) translate(-10 -20)')
+      expect(canvas.bakeDrag(new Map([[r, '']]), undoPreview)).toBe(true)
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['10', '20', '80', '90'])
+      expect(r.hasAttribute('transform')).toBe(false)
+      canvas.undoMgr.undo()
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['10', '20', '40', '30'])
+    })
     it('declines (touching nothing) when one of them carries more than a translation', () => {
       els[0].setAttribute('transform', 'rotate(30)')
       expect(canvas.bakeDrag(new Map([[els[0], '']]), undoPreview)).toBe(false)

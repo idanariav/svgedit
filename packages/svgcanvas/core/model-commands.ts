@@ -48,7 +48,7 @@ export interface ModelCommandsApi {
   /** Fold the pure translation this element carries into its coordinates through the model; false when it carries more than that. */
   bakeTranslation(el: Element): boolean
   /**
-   * A drag of plain shapes ended: put each back to the transform it had before the drag (`before`) and state the move on
+   * A drag or resize of plain shapes ended: put each back to the transform it had before the drag (`before`) and state the move on
    * the model instead, as one step. Returns false, having touched nothing, unless every one of them can take it that way.
    */
   bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
@@ -56,57 +56,129 @@ export interface ModelCommandsApi {
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
 }
 
-/** The [x, y] a transform attribute shifts by when that is all it does (none, `translate(…)`, `matrix(1 0 0 1 e f)`); else null. */
-const pureTranslation = (transform: string | null): [number, number] | null => {
-  const text = (transform ?? '').trim()
-  if (!text) return [0, 0]
-  const nums = (args: string) => args.split(/[\s,]+/).filter(Boolean).map(Number)
-  let sum: [number, number] = [0, 0]
-  let rest = text
-  // a list of translations adds up
+/**
+ * An affine map without rotation or skew: x' = a x + e, y' = d y + f (what a move, a resize and a flip are, composed). Pure
+ * numbers: no browser matrix, so it runs the same in Node.
+ */
+export interface Affine { a: number, d: number, e: number, f: number }
+
+const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
+/** `outer` applied after `inner`. */
+const compose = (outer: Affine, inner: Affine): Affine => ({
+  a: outer.a * inner.a, d: outer.d * inner.d, e: outer.a * inner.e + outer.e, f: outer.d * inner.f + outer.f
+})
+
+/**
+ * The map a transform attribute makes when it is only translations, scalings and rotation-free matrices (`translate`,
+ * `scale`, `matrix`), in the order SVG applies them (the last term first); null for anything else (a rotation, a skew).
+ */
+export const parseAffine = (transform: string | null): Affine | null => {
+  let rest = (transform ?? '').trim()
+  let out = IDENTITY
   while (rest) {
-    const term = /^(translate|matrix)\(([^)]*)\)\s*/.exec(rest)
+    const term = /^(translate|scale|matrix)\(([^)]*)\)\s*/.exec(rest)
     if (!term) return null
-    const v = nums(term[2])
-    if (!v.every(Number.isFinite)) return null
-    if (term[1] === 'translate') sum = [sum[0] + v[0], sum[1] + (v[1] ?? 0)]
-    else if (v.length === 6 && v[0] === 1 && v[1] === 0 && v[2] === 0 && v[3] === 1) sum = [sum[0] + v[4], sum[1] + v[5]]
+    const v = term[2].split(/[\s,]+/).filter(Boolean).map(Number)
+    if (!v.length || !v.every(Number.isFinite)) return null
+    let next: Affine
+    if (term[1] === 'translate') next = { a: 1, d: 1, e: v[0], f: v[1] ?? 0 }
+    else if (term[1] === 'scale') next = { a: v[0], d: v[1] ?? v[0], e: 0, f: 0 }
+    else if (v.length === 6 && v[1] === 0 && v[2] === 0) next = { a: v[0], d: v[3], e: v[4], f: v[5] }
     else return null
+    out = compose(out, next)
     rest = rest.slice(term[0].length)
   }
-  return sum
+  return out
 }
 
 /** The coordinates a plain shape is positioned by, and the axis each one moves along. */
-const MOVE_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
+const POINT_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   rect: [['x', 'x'], ['y', 'y']],
   image: [['x', 'x'], ['y', 'y']],
-  use: [['x', 'x'], ['y', 'y']],
   foreignObject: [['x', 'x'], ['y', 'y']],
   circle: [['cx', 'x'], ['cy', 'y']],
   ellipse: [['cx', 'x'], ['cy', 'y']],
   line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']]
 }
+const NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i
 
 /**
- * The attributes that move this element by (mx, my) on top of the pure translation it already carries, folded into its own
- * coordinates (the `transform` is dropped), or null when that is not all there is to it: another kind of transform, a clip,
- * mask or feature data (arrow trim, effects…) that reacts to a move through the DOM path.
+ * The attributes that take this element through `map` (its own coordinates and sizes changed, the `transform` dropped), or
+ * null when that is not all it takes: a clip, mask or feature data (arrow trim, effects…) that reacts through the DOM path,
+ * a value with units, a flip of something that needs a matrix or a gradient flip, a circle scaled unevenly.
  */
-export const translationEdit = (el: Element, mx: number, my: number): Record<string, string | null> | null => {
+export const affineEdit = (el: Element, map: Affine): Record<string, string | null> | null => {
   if (el.hasAttribute('clip-path') || el.hasAttribute('mask')) return null
   if (Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) return null
-  const axes = MOVE_ATTRS[el.tagName]
-  const shift = pureTranslation(el.getAttribute('transform'))
-  if (!axes || !shift) return null
+  const points = POINT_ATTRS[el.tagName]
+  if (!points) return null
+  const flips = map.a < 0 || map.d < 0
+  if (flips && (el.tagName === 'image' || /url\(/.test(`${el.getAttribute('fill')}${el.getAttribute('stroke')}`))) return null
+  const get = (name: string): number | null => {
+    const raw = el.getAttribute(name)
+    if (raw === null) return 0
+    return NUMBER.test(raw) ? parseFloat(raw) : null
+  }
   const set: Record<string, string | null> = {}
-  for (const [name, axis] of axes) {
-    const was = parseFloat(el.getAttribute(name) ?? '0')
-    if (Number.isNaN(was)) return null
-    set[name] = String(was + (axis === 'x' ? mx + shift[0] : my + shift[1]))
+  const point = (xn: string, yn: string): [number, number] | null => {
+    const x = get(xn)
+    const y = get(yn)
+    return x === null || y === null ? null : [map.a * x + map.e, map.d * y + map.f]
+  }
+  switch (el.tagName) {
+    case 'rect': case 'image': case 'foreignObject': {
+      const w = get('width')
+      const h = get('height')
+      const p = point('x', 'y')
+      if (w === null || h === null || !p) return null
+      const sw = map.a * w
+      const sh = map.d * h
+      set.x = String(p[0] + Math.min(0, sw))
+      set.y = String(p[1] + Math.min(0, sh))
+      if (el.hasAttribute('width') || map.a !== 1) set.width = String(Math.abs(sw))
+      if (el.hasAttribute('height') || map.d !== 1) set.height = String(Math.abs(sh))
+      break
+    }
+    case 'ellipse': {
+      const rx = get('rx')
+      const ry = get('ry')
+      const c = point('cx', 'cy')
+      if (rx === null || ry === null || !c) return null
+      set.cx = String(c[0])
+      set.cy = String(c[1])
+      set.rx = String(Math.abs(map.a * rx))
+      set.ry = String(Math.abs(map.d * ry))
+      break
+    }
+    case 'circle': {
+      const r = get('r')
+      const c = point('cx', 'cy')
+      if (r === null || !c || Math.abs(map.a) !== Math.abs(map.d)) return null
+      set.cx = String(c[0])
+      set.cy = String(c[1])
+      set.r = String(Math.abs(map.a * r))
+      break
+    }
+    case 'line': {
+      const p1 = point('x1', 'y1')
+      const p2 = point('x2', 'y2')
+      if (!p1 || !p2) return null
+      set.x1 = String(p1[0])
+      set.y1 = String(p1[1])
+      set.x2 = String(p2[0])
+      set.y2 = String(p2[1])
+      break
+    }
+    default: return null
   }
   if (el.hasAttribute('transform')) set.transform = null
   return set
+}
+
+/** `affineEdit` for a move by (mx, my) on top of the translation or scale the element's transform already is. */
+export const translationEdit = (el: Element, mx: number, my: number): Record<string, string | null> | null => {
+  const own = parseAffine(el.getAttribute('transform'))
+  return own ? affineEdit(el, compose({ a: 1, d: 1, e: mx, f: my }, own)) : null
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -285,19 +357,21 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
   }
 
   const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
-    const plan: Array<{ el: Element, was: string, mx: number, my: number }> = []
+    // the grid snaps what a bake writes: that is the DOM path's job
+    if (svgCanvas.getGridSnapping?.()) return false
+    const plan: Array<{ el: Element, was: string, set: Record<string, string | null> }> = []
     for (const [el, was] of before) {
-      const now = pureTranslation(el.getAttribute('transform'))
-      const then = pureTranslation(was)
-      if (!el.id || !now || !then || !translationEdit(el, 0, 0)) return false
-      plan.push({ el, was, mx: now[0] - then[0], my: now[1] - then[1] })
+      const now = parseAffine(el.getAttribute('transform'))
+      const set = el.id && now ? affineEdit(el, now) : null
+      if (!set) return false
+      plan.push({ el, was, set })
     }
     if (!plan.length) return false
-    // the preview is undone first, so the step starts from the drawing as it was before the drag
+    // the preview is undone first, so the step starts from the drawing as it was before the gesture
     for (const { el, was } of plan) undoPreview(el, was)
     svgCanvas.snapshotHistory.edit('position', (root) => {
       let out = root
-      for (const { el, mx, my } of plan) out = setAttrsById(out, el.id, translationEdit(el, mx, my) as Record<string, string | null>)
+      for (const { el, set } of plan) out = setAttrsById(out, el.id, set)
       return out
     })
     return true
