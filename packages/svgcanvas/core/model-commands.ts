@@ -45,8 +45,68 @@ export interface ModelCommandsApi {
    * Set (a string) or remove (`null`) attributes on one element through the model, as one step; the element keeps its node.
    * Returns false, having done nothing, for an element without an id (the model addresses by id).
    */
+  /** Fold the pure translation this element carries into its coordinates through the model; false when it carries more than that. */
+  bakeTranslation(el: Element): boolean
+  /**
+   * A drag of plain shapes ended: put each back to the transform it had before the drag (`before`) and state the move on
+   * the model instead, as one step. Returns false, having touched nothing, unless every one of them can take it that way.
+   */
+  bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
+}
+
+/** The [x, y] a transform attribute shifts by when that is all it does (none, `translate(…)`, `matrix(1 0 0 1 e f)`); else null. */
+const pureTranslation = (transform: string | null): [number, number] | null => {
+  const text = (transform ?? '').trim()
+  if (!text) return [0, 0]
+  const nums = (args: string) => args.split(/[\s,]+/).filter(Boolean).map(Number)
+  let sum: [number, number] = [0, 0]
+  let rest = text
+  // a list of translations adds up
+  while (rest) {
+    const term = /^(translate|matrix)\(([^)]*)\)\s*/.exec(rest)
+    if (!term) return null
+    const v = nums(term[2])
+    if (!v.every(Number.isFinite)) return null
+    if (term[1] === 'translate') sum = [sum[0] + v[0], sum[1] + (v[1] ?? 0)]
+    else if (v.length === 6 && v[0] === 1 && v[1] === 0 && v[2] === 0 && v[3] === 1) sum = [sum[0] + v[4], sum[1] + v[5]]
+    else return null
+    rest = rest.slice(term[0].length)
+  }
+  return sum
+}
+
+/** The coordinates a plain shape is positioned by, and the axis each one moves along. */
+const MOVE_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
+  rect: [['x', 'x'], ['y', 'y']],
+  image: [['x', 'x'], ['y', 'y']],
+  use: [['x', 'x'], ['y', 'y']],
+  foreignObject: [['x', 'x'], ['y', 'y']],
+  circle: [['cx', 'x'], ['cy', 'y']],
+  ellipse: [['cx', 'x'], ['cy', 'y']],
+  line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']]
+}
+
+/**
+ * The attributes that move this element by (mx, my) on top of the pure translation it already carries, folded into its own
+ * coordinates (the `transform` is dropped), or null when that is not all there is to it: another kind of transform, a clip,
+ * mask or feature data (arrow trim, effects…) that reacts to a move through the DOM path.
+ */
+export const translationEdit = (el: Element, mx: number, my: number): Record<string, string | null> | null => {
+  if (el.hasAttribute('clip-path') || el.hasAttribute('mask')) return null
+  if (Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) return null
+  const axes = MOVE_ATTRS[el.tagName]
+  const shift = pureTranslation(el.getAttribute('transform'))
+  if (!axes || !shift) return null
+  const set: Record<string, string | null> = {}
+  for (const [name, axis] of axes) {
+    const was = parseFloat(el.getAttribute(name) ?? '0')
+    if (Number.isNaN(was)) return null
+    set[name] = String(was + (axis === 'x' ? mx + shift[0] : my + shift[1]))
+  }
+  if (el.hasAttribute('transform')) set.transform = null
+  return set
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -217,7 +277,35 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
+  const bakeTranslation = (el: Element): boolean => {
+    const set = el.id ? translationEdit(el, 0, 0) : null
+    if (!set || !el.hasAttribute('transform')) return false
+    svgCanvas.snapshotHistory.edit('position', (root) => setAttrsById(root, el.id, set))
+    return true
+  }
+
+  const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
+    const plan: Array<{ el: Element, was: string, mx: number, my: number }> = []
+    for (const [el, was] of before) {
+      const now = pureTranslation(el.getAttribute('transform'))
+      const then = pureTranslation(was)
+      if (!el.id || !now || !then || !translationEdit(el, 0, 0)) return false
+      plan.push({ el, was, mx: now[0] - then[0], my: now[1] - then[1] })
+    }
+    if (!plan.length) return false
+    // the preview is undone first, so the step starts from the drawing as it was before the drag
+    for (const { el, was } of plan) undoPreview(el, was)
+    svgCanvas.snapshotHistory.edit('position', (root) => {
+      let out = root
+      for (const { el, mx, my } of plan) out = setAttrsById(out, el.id, translationEdit(el, mx, my) as Record<string, string | null>)
+      return out
+    })
+    return true
+  }
+
   return {
+    bakeDrag,
+    bakeTranslation,
     setElementAttributes,
     insertLooseElements,
     insertElementFromJson,

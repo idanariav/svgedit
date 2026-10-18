@@ -289,6 +289,30 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('bakeDrag', () => {
+    const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
+    it('states a finished drag of plain shapes on the model, as one step from before the drag', () => {
+      canvas.undoMgr.snapshots.baseline()
+      const x0 = Number(els[0].getAttribute('x'))
+      const x1 = Number(els[1].getAttribute('x'))
+      els[0].setAttribute('transform', 'translate(7 3)') // the live preview of the drag
+      els[1].setAttribute('transform', 'translate(7 3)')
+      expect(canvas.bakeDrag(new Map([[els[0], ''], [els[1], '']]), undoPreview)).toBe(true)
+      expect(Number(els[0].getAttribute('x'))).toBe(x0 + 7)
+      expect(Number(els[1].getAttribute('x'))).toBe(x1 + 7)
+      expect(els[0].hasAttribute('transform')).toBe(false)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(1)
+      canvas.undoMgr.undo()
+      expect(Number(els[0].getAttribute('x'))).toBe(x0)
+      expect(els[0].hasAttribute('transform')).toBe(false)
+    })
+    it('declines (touching nothing) when one of them carries more than a translation', () => {
+      els[0].setAttribute('transform', 'rotate(30)')
+      expect(canvas.bakeDrag(new Map([[els[0], '']]), undoPreview)).toBe(false)
+      expect(els[0].getAttribute('transform')).toBe('rotate(30)')
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

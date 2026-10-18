@@ -16,7 +16,7 @@
   "packages/svgcanvas/core/dom-utils.ts": 14,
   "packages/svgcanvas/core/draw.ts": 16,
   "packages/svgcanvas/core/elem-get-set.ts": 32,
-  "packages/svgcanvas/core/event-select.ts": 3,
+  "packages/svgcanvas/core/event-select.ts": 5,
   "packages/svgcanvas/core/event-shape-draw.ts": 7,
   "packages/svgcanvas/core/event-zoom.ts": 1,
   "packages/svgcanvas/core/event.ts": 9,

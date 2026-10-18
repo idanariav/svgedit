@@ -370,8 +370,14 @@ export const init = (canvas: SvgCanvas): {
 
         // Create a single batch command for all moved elements
         const batchCmd = new BatchCommand('position')
+        // A drag of plain shapes that only carry a translation is stated on the model (one step); anything else bakes below
+        const before = new Map<Element, string>()
+        for (const elem of selectedElements) if (elem) before.set(elem, svgCanvas.gesture.dragStartTransforms?.get(elem) ?? '')
+        const bakedByModel = operationMode !== 'resize' && before.size > 0 && svgCanvas.bakeDrag(before, (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') })
+        if (bakedByModel) svgCanvas.call('changed', selectedElements.filter(Boolean))
 
         selectedElements.forEach((elem) => {
+          if (bakedByModel) return
           if (!elem) return
 
           const tlist = getTransformList(elem)
