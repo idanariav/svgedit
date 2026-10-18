@@ -105,8 +105,50 @@ export interface ModelCommandsApi {
  * numbers: no browser matrix, so it runs the same in Node.
  */
 export interface Affine { a: number, d: number, e: number, f: number }
+/** A full 2D matrix [a b c d e f] (rotation and skew allowed): what a transform attribute amounts to. */
+export type Matrix6 = [number, number, number, number, number, number]
+
+const mul = (m: Matrix6, n: Matrix6): Matrix6 => [
+  m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+  m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+  m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]
+]
+
+/** The matrix a transform attribute makes (`translate`, `scale`, `rotate`, `skewX`, `skewY`, `matrix`), or null if it does not parse. */
+export const parseMatrix = (transform: string | null): Matrix6 | null => {
+  let rest = (transform ?? '').trim()
+  let out: Matrix6 = [1, 0, 0, 1, 0, 0]
+  while (rest) {
+    const term = /^(translate|scale|rotate|skewX|skewY|matrix)\(([^)]*)\)[\s,]*/.exec(rest)
+    if (!term) return null
+    const v = term[2].split(/[\s,]+/).filter(Boolean).map(Number)
+    if (!v.length || !v.every(Number.isFinite)) return null
+    const rad = (deg: number) => deg * Math.PI / 180
+    let m: Matrix6
+    switch (term[1]) {
+      case 'translate': m = [1, 0, 0, 1, v[0], v[1] ?? 0]; break
+      case 'scale': m = [v[0], 0, 0, v[1] ?? v[0], 0, 0]; break
+      case 'rotate': {
+        const c = Math.cos(rad(v[0]))
+        const sn = Math.sin(rad(v[0]))
+        const [cx, cy] = [v[1] ?? 0, v[2] ?? 0]
+        m = [c, sn, -sn, c, cx - c * cx + sn * cy, cy - sn * cx - c * cy]
+        break
+      }
+      case 'skewX': m = [1, 0, Math.tan(rad(v[0])), 1, 0, 0]; break
+      case 'skewY': m = [1, Math.tan(rad(v[0])), 0, 1, 0, 0]; break
+      default:
+        if (v.length !== 6) return null
+        m = v as Matrix6
+    }
+    out = mul(out, m)
+    rest = rest.slice(term[0].length)
+  }
+  return out
+}
+
 /** What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and that rotation. */
-export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number } }
+export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6 }
 
 const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
 /** `outer` applied after `inner`. */
@@ -518,6 +560,13 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     const plan = new Map<Element, DragEntry>()
     for (const el of elems) {
       if (!el.id) return null
+      // A clipped or masked element is never baked (its silhouette is static in <defs>): the move stays a matrix transform
+      if (allowRotated && (el.hasAttribute('clip-path') || el.hasAttribute('mask')) && !Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) {
+        const own6 = parseMatrix(el.getAttribute('transform'))
+        if (!own6) return null
+        plan.set(el, { ...IDENTITY, matrix: own6 })
+        continue
+      }
       const turned = allowRotated ? ROTATE.exec((el.getAttribute('transform') ?? '').trim()) : null
       const entry: DragEntry | null = turned
         ? { ...IDENTITY, rot: { angle: Number(turned[1]), cx: Number(turned[2]), cy: Number(turned[3]) } }
@@ -544,6 +593,11 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     svgCanvas.snapshotHistory.preview((root) => {
       let out = root
       for (const [el, own] of plan) {
+        if (own.matrix) {
+          const m = mul([1, 0, 0, 1, dx, dy], own.matrix).map((v) => Number(v.toFixed(6)))
+          out = setAttrsById(out, el.id, { transform: `matrix(${m.join(' ')})` })
+          continue
+        }
         const node = findById(root, el.id)
         const set = node && affineEdit(node, compose({ a: 1, d: 1, e: dx, f: dy }, own))
         if (!set) continue

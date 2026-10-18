@@ -440,6 +440,26 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a drag of a clipped shape shown through the model', () => {
+    it('keeps the move as a matrix transform and leaves the geometry alone', async () => {
+      const { parseMatrix } = await import('../../packages/svgcanvas/core/model-commands.ts')
+      expect(parseMatrix('translate(5 6) scale(2)')).toEqual([2, 0, 0, 2, 5, 6])
+      expect(parseMatrix('rotate(90)').map((v) => Math.round(v))).toEqual([0, 1, -1, 0, 0, 0])
+      expect(parseMatrix('wobble(1)')).toBeNull()
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('clip-path', 'url(#clip1)'); r.setAttribute('transform', 'rotate(90)')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([r], true)
+      expect(plan).not.toBeNull()
+      canvas.previewDrag(plan, 3, 4)
+      const m = r.getAttribute('transform').match(/-?[\d.e-]+/g).map(Number)
+      expect(m.map((v) => Math.round(v))).toEqual([0, 1, -1, 0, 3, 4])
+      expect(r.getAttribute('x')).toBe('10')
+      canvas.snapshotHistory.cancelPreview()
+      expect(r.getAttribute('transform')).toBe('rotate(90)')
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {
