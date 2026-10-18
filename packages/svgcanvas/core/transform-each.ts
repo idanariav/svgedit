@@ -19,6 +19,7 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 import { getBBox } from './bbox-utils.ts'
+import { affineEdit } from './model-commands.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 
 /** Reference points, row by row: top left … bottom right. */
@@ -58,6 +59,8 @@ export const multiply = (m: Affine, n: Affine): Affine => [
 ]
 
 /** What `recalculateDimensions` can absorb exactly (a circle would stay round, text and images do not stretch). */
+/** What takes a scale into its own attributes through the model (`affineEdit`) */
+const MODEL_BAKE = new Set(['rect', 'ellipse', 'line'])
 const BAKEABLE = new Set(['rect', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
 
 /**
@@ -148,7 +151,7 @@ const toTransform = (svgRoot: SVGSVGElement, m: Affine): SVGTransform => {
  * @returns the elements that were transformed
  */
 export const transformEach = (
-  svgCanvas: Pick<SvgCanvas, 'getSelectedElements' | 'getSvgRoot' | 'transact' | 'cloneSelectedElements' | 'recalculateDimensions' | 'selectorManager' | 'call'>,
+  svgCanvas: Pick<SvgCanvas, 'getSelectedElements' | 'getSvgRoot' | 'transact' | 'cloneSelectedElements' | 'recalculateDimensions' | 'selectorManager' | 'call' | 'getNextId' | 'setElementsAttributes'>,
   params: EachParams,
   rng: () => number = Math.random
 ): Element[] => {
@@ -159,6 +162,7 @@ export const transformEach = (
   svgCanvas.transact('Transform each', () => {
     if (params.copy) svgCanvas.cloneSelectedElements(0, 0)
     done = svgCanvas.getSelectedElements().filter(Boolean)
+    const stated: Array<{ el: Element, attrs: Record<string, string | null> }> = []
     for (const el of done) {
       const tlist = getTransformList(el)
       const box = getBBox(el)
@@ -178,6 +182,20 @@ export const transformEach = (
       const py = top + at.y * (Math.max(...ys) - top)
       const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
       const parts = decompose(result)
+      if (parts && MODEL_BAKE.has(el.localName)) {
+        // A rect / ellipse / line takes the scale into its geometry and keeps the rotation as `rotate()`: stated on the model
+        const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+        const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
+        const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
+        const baked = affineEdit(el, { a: parts.sx, d: parts.sy, e: c1x - parts.sx * c0.x, f: c1y - parts.sy * c0.y })
+        if (baked) {
+          el.id ||= svgCanvas.getNextId()
+          const r6 = (n: number) => Number(n.toFixed(6)) // as the browser writes a transform attribute
+          baked.transform = parts.angle ? `rotate(${r6(parts.angle)} ${r6(c1x)} ${r6(c1y)})` : null
+          stated.push({ el, attrs: baked })
+          continue
+        }
+      }
       tlist.clear()
       if (parts) {
         // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
@@ -197,6 +215,8 @@ export const transformEach = (
       }
       svgCanvas.selectorManager.requestSelector(el).resize()
     }
+    if (stated.length) svgCanvas.setElementsAttributes('Transform each', stated)
+    for (const { el } of stated) svgCanvas.selectorManager.requestSelector(el).resize()
   })
   svgCanvas.call('changed', done)
   return done
