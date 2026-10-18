@@ -258,6 +258,22 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('moving a shape that only carries a translation', () => {
+    it('folds it into the coordinates and drops the transform', () => {
+      els[1].setAttribute('transform', 'translate(10 20)')
+      canvas.undoMgr.snapshots.baseline()
+      canvas.selectOnly([els[1]])
+      const x = Number(els[1].getAttribute('x'))
+      const y = Number(els[1].getAttribute('y'))
+      canvas.moveSelectedElements(1, 2)
+      expect(Number(els[1].getAttribute('x'))).toBe(x + 11)
+      expect(Number(els[1].getAttribute('y'))).toBe(y + 22)
+      expect(els[1].hasAttribute('transform')).toBe(false)
+      canvas.undoMgr.undo()
+      expect(els[1].getAttribute('transform')).toBe('translate(10 20)')
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

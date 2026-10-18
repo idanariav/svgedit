@@ -23,6 +23,24 @@ const {
 
 type Box = BBoxObject
 
+/** The [x, y] a transform attribute shifts by when that is all it does (none, `translate(…)`, `matrix(1 0 0 1 e f)`); else null. */
+const pureTranslation = (transform: string | null): [number, number] | null => {
+  const text = (transform ?? '').trim()
+  if (!text) return [0, 0]
+  const nums = (args: string) => args.split(/[\s,]+/).filter(Boolean).map(Number)
+  const t = /^translate\(([^)]*)\)$/.exec(text)
+  if (t) {
+    const [x, y = 0] = nums(t[1])
+    return [x, y].every(Number.isFinite) ? [x, y] : null
+  }
+  const m = /^matrix\(([^)]*)\)$/.exec(text)
+  if (m) {
+    const v = nums(m[1])
+    return v.length === 6 && v.every(Number.isFinite) && v[0] === 1 && v[1] === 0 && v[2] === 0 && v[3] === 1 ? [v[4], v[5]] : null
+  }
+  return null
+}
+
 /** The coordinates a plain shape is positioned by, and the axis each one moves along. */
 const MOVE_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   rect: [['x', 'x'], ['y', 'y']],
@@ -75,23 +93,27 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     const batchCmd = new BatchCommand('position')
     // Plain shapes without a transform move by editing their own coordinates, which the model states; the rest bake a
     // transform in through the DOM below.
-    const shifts: Array<{ id: string, set: Record<string, string> }> = []
+    const shifts: Array<{ id: string, set: Record<string, string | null> }> = []
     const bySelf = new Set<Element>()
     if (undoable || svgCanvas.inTransaction()) {
       selectedElements.forEach((selected, i) => {
-        if (!selected?.id || selected.hasAttribute('transform') || selected.hasAttribute('clip-path') || selected.hasAttribute('mask')) return
+        if (!selected?.id || selected.hasAttribute('clip-path') || selected.hasAttribute('mask')) return
         // a feature that keeps data of its own on the element (arrow trim, effects…) reacts to the move through the DOM path
         if (Array.from(selected.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) return
         const axes = MOVE_ATTRS[selected.tagName]
-        if (!axes) return
+        // only a pure shift in the transform (the usual leftover of a drag) folds into the coordinates
+        // (callers that pass undoable=false are mid-way through something that placed a transform on purpose: clone, paste)
+        const shift = undoable || !selected.hasAttribute('transform') ? pureTranslation(selected.getAttribute('transform')) : null
+        if (!axes || !shift) return
         const mx = Array.isArray(dx) ? dx[i] : dx
         const my = Array.isArray(dy) ? (dy as number[])[i] : dy as number
-        const set: Record<string, string> = {}
+        const set: Record<string, string | null> = {}
         for (const [name, axis] of axes) {
           const was = parseFloat(selected.getAttribute(name) ?? '0')
           if (Number.isNaN(was)) return
-          set[name] = String(was + (axis === 'x' ? mx : my))
+          set[name] = String(was + (axis === 'x' ? mx + shift[0] : my + shift[1]))
         }
+        if (selected.hasAttribute('transform')) set.transform = null
         shifts.push({ id: selected.id, set })
         bySelf.add(selected)
       })
