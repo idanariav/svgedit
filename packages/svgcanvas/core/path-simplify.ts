@@ -20,6 +20,7 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 import { warn } from '../common/logger.ts'
+import { restoreAttr } from './dom-utils.ts'
 import { parseAnchors, anchorsToD } from './anchor-path.ts'
 import { simplifyWith, fitFreehand } from './path-fit.ts'
 import { findPenEnd, extendWith, endDirection } from './pen-continue.ts'
@@ -174,10 +175,7 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
     elem.setAttribute('d', baseline as string)
     svgCanvas.undoMgr.beginUndoableChange('d', [elem])
     elem.setAttribute('d', finalD)
-    const cmd = svgCanvas.undoMgr.finishUndoableChange()
-    if (!cmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(cmd)
-    }
+    svgCanvas.commitUndoableChange(restoreAttr)
     refreshSelector(elem)
   }
 

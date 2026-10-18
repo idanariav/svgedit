@@ -59,6 +59,12 @@ export interface ModelCommandsApi {
    * when one has no id.
    */
   commitTransforms(label: string, before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
+  /**
+   * End the undoable change `undoMgr.beginUndoableChange` started and record it: the attributes it changed are put back and
+   * stated on the model instead (one step), so the model is what changes them. A change the model cannot state (an element
+   * without an id, a pseudo attribute such as `#text`) is recorded as the command history does. Nothing changed: nothing recorded.
+   */
+  commitUndoableChange(restore: (el: Element, name: string, was: string | null) => void): void
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -402,7 +408,27 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return setElementsAttributes(label, entries)
   }
 
+  const commitUndoableChange = (restore: (el: Element, name: string, was: string | null) => void): void => {
+    const batch = svgCanvas.undoMgr.finishUndoableChange()
+    if (batch.isEmpty()) return
+    type Change = { elem: Element, oldValues: Record<string, string | null> }
+    const changes = (batch as unknown as { stack: Change[] }).stack.filter(Boolean)
+    const statable = changes.every(({ elem, oldValues }) => elem.id && Object.keys(oldValues).every((name) => !name.startsWith('#')))
+    if (!statable) {
+      svgCanvas.undoMgr.addCommandToHistory(batch)
+      return
+    }
+    const entries = changes.map(({ elem, oldValues }) => ({
+      elem,
+      was: oldValues,
+      attrs: Object.fromEntries(Object.keys(oldValues).map((name) => [name, elem.getAttribute(name)]))
+    }))
+    for (const { elem, was } of entries) for (const [name, value] of Object.entries(was)) restore(elem, name, value)
+    setElementsAttributes(batch.getText?.() ?? 'Change', entries.map(({ elem, attrs }) => ({ el: elem, attrs })))
+  }
+
   return {
+    commitUndoableChange,
     commitTransforms,
     setElementsAttributes,
     bakeDrag,

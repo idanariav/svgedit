@@ -13,7 +13,7 @@ import {
   transformListToTransform, getTransformList
 } from './math.ts'
 import {
-  assignAttributes
+  assignAttributes, restoreAttr
 } from './dom-utils.ts'
 import { getBBox, requireBBox } from './bbox-utils.ts'
 import { collectPathNodeTargets, snapPathNodeToTargets } from './path-node-guides.ts'
@@ -1158,10 +1158,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         if (path.elem.getAttribute('fill-rule') !== 'evenodd') {
           svgCanvas.undoMgr.beginUndoableChange('fill-rule', [path.elem])
           path.elem.setAttribute('fill-rule', 'evenodd')
-          const cmd = svgCanvas.undoMgr.finishUndoableChange()
-          if (!cmd.isEmpty()) {
-            svgCanvas.addCommandToHistory(cmd)
-          }
+          svgCanvas.commitUndoableChange(restoreAttr)
         }
       } else {
         svgCanvas.pathActions.clear(true)

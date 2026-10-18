@@ -142,6 +142,7 @@ describe('PathActions', () => {
       recalcRotatedPath: vi.fn(),
       remapElement: vi.fn(),
       addCommandToHistory: vi.fn(),
+      commitUndoableChange: vi.fn(() => svgCanvas.addCommandToHistory({})), // no model here: recorded as a command
       reorientGrads: vi.fn(),
       setLinkControlPoints: vi.fn(),
       contentW: 640,

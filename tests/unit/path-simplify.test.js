@@ -29,10 +29,13 @@ describe('Smooth Path session', () => {
       finishUndoableChange: vi.fn(() => ({ isEmpty: () => false }))
     }
     const selector = { resize: vi.fn() }
+    const addCommandToHistory = vi.fn()
     return {
       getSelectedElements: vi.fn(() => [pathElement]),
       undoMgr,
-      addCommandToHistory: vi.fn(),
+      addCommandToHistory,
+      commitUndoableChange: vi.fn(() => addCommandToHistory({})), // no model here: the change is recorded as a command
+
       selectorManager: { requestSelector: vi.fn(() => selector) },
       call: vi.fn()
     }

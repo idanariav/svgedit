@@ -225,7 +225,7 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
 
     const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
     if (!batchCmd.isEmpty()) {
-    // svgCanvas.addCommandToHistory(batchCmd);
+      // (not `commitUndoableChange`: changing a text attribute lays the text out again, and that is more than this attribute)
       svgCanvas.undoMgr.addCommandToHistory(batchCmd)
     }
   }
