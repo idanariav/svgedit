@@ -27,7 +27,7 @@ export interface GestureState {
   hasDragStartTransform: boolean
   dragStartTransforms: Map<Element, string> | null
   /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
-  dragPlan: Map<Element, import('./model-commands.ts').Affine> | null
+  dragPlan: Map<Element, import('./model-commands.ts').DragEntry> | null
   /** the geometry box of the element a resize shown through the model began from */
   /** a rotation shown through the model (core/model-commands.ts `rotationPlan`) */
   rotationPlan: { id: string, cx: number, cy: number } | null

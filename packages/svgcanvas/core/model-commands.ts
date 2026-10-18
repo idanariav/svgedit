@@ -72,9 +72,9 @@ export interface ModelCommandsApi {
    * Whether a drag of these elements can be shown through the model (each has an id and only a translation or scale for a transform,
    * and can take it in its own coordinates); the map is what each one's transform amounts to before the drag, or null.
    */
-  dragPlan(elems: Element[]): Map<Element, Affine> | null
+  dragPlan(elems: Element[], allowRotated?: boolean): Map<Element, DragEntry> | null
   /** Show the elements moved by (dx, dy) from where `plan` has them: the renderer writes the DOM, nothing is recorded yet. */
-  previewDrag(plan: Map<Element, Affine>, dx: number, dy: number): void
+  previewDrag(plan: Map<Element, DragEntry>, dx: number, dy: number): void
   /** Show the elements scaled by `scale` (about the origin the caller put in it) after the transform each has in `plan`. */
   previewScale(plan: Map<Element, Affine>, scale: Affine): void
   /** Show every element in `plan` mapped by `map` after the transform it has in `plan` (a selection scaled or moved as one). */
@@ -100,6 +100,8 @@ export interface ModelCommandsApi {
  * numbers: no browser matrix, so it runs the same in Node.
  */
 export interface Affine { a: number, d: number, e: number, f: number }
+/** What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and that rotation. */
+export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number } }
 
 const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
 /** `outer` applied after `inner`. */
@@ -505,13 +507,19 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
-  const dragPlan = (elems: Element[]): Map<Element, Affine> | null => {
+  const ROTATE = /^rotate\(\s*(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)\s*\)$/
+  const dragPlan = (elems: Element[], allowRotated = false): Map<Element, DragEntry> | null => {
     if (svgCanvas.getGridSnapping?.() || !elems.length) return null
-    const plan = new Map<Element, Affine>()
+    const plan = new Map<Element, DragEntry>()
     for (const el of elems) {
-      const own = el.id ? parseAffine(el.getAttribute('transform')) : null
-      if (!own || !affineEdit(el, own)) return null
-      plan.set(el, own)
+      if (!el.id) return null
+      const turned = allowRotated ? ROTATE.exec((el.getAttribute('transform') ?? '').trim()) : null
+      const entry: DragEntry | null = turned
+        ? { ...IDENTITY, rot: { angle: Number(turned[1]), cx: Number(turned[2]), cy: Number(turned[3]) } }
+        : parseAffine(el.getAttribute('transform'))
+      // a turned element is judged by its geometry alone (the rotation travels with the move)
+      if (!entry || !affineEdit(el, turned ? { ...IDENTITY, e: 0, f: 0 } : entry)) return null
+      plan.set(el, entry)
     }
     return plan
   }
@@ -527,8 +535,20 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
       return out
     })
   }
-  const previewDrag = (plan: Map<Element, Affine>, dx: number, dy: number): void =>
-    previewWith(plan, (own) => compose({ a: 1, d: 1, e: dx, f: dy }, own))
+  const previewDrag = (plan: Map<Element, DragEntry>, dx: number, dy: number): void => {
+    svgCanvas.snapshotHistory.preview((root) => {
+      let out = root
+      for (const [el, own] of plan) {
+        const node = findById(root, el.id)
+        const set = node && affineEdit(node, compose({ a: 1, d: 1, e: dx, f: dy }, own))
+        if (!set) continue
+        // a turned element: the geometry moves by the drag and the rotation turns about the moved centre
+        if (own.rot) set.transform = `rotate(${own.rot.angle} ${Number((own.rot.cx + dx).toFixed(6))} ${Number((own.rot.cy + dy).toFixed(6))})`
+        out = setAttrsById(out, el.id, set)
+      }
+      return out
+    })
+  }
   const previewScale = (plan: Map<Element, Affine>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
   const previewAfter = (plan: Map<Element, Affine>, map: Affine): void => previewWith(plan, (own) => compose(map, own))
 

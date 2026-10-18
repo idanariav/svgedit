@@ -406,6 +406,25 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a drag of a turned shape shown through the model', () => {
+    it('moves the geometry and the centre of its rotate() together', () => {
+      const r = els[0]
+      r.setAttribute('x', '10'); r.setAttribute('y', '20'); r.setAttribute('width', '40'); r.setAttribute('height', '30')
+      r.setAttribute('transform', 'rotate(30 30 35)')
+      canvas.undoMgr.snapshots.baseline()
+      expect(canvas.dragPlan([r])).toBeNull() // only a drag turns a rotation into part of the plan
+      const plan = canvas.dragPlan([r], true)
+      expect(plan).not.toBeNull()
+      canvas.previewDrag(plan, 5, 7)
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['15', '27', '40', '30'])
+      expect(r.getAttribute('transform')).toBe('rotate(30 35 42)')
+      expect(canvas.snapshotHistory.endPreview('position')).toBe(true)
+      canvas.undoMgr.undo()
+      expect(r.getAttribute('transform')).toBe('rotate(30 30 35)')
+      expect(r.getAttribute('x')).toBe('10')
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {

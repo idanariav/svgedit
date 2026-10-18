@@ -151,7 +151,7 @@ export const init = (canvas: SvgCanvas): {
     if (!svgCanvas.gesture.hasDragStartTransform && selectedElements.length > 0) {
       // Store original transforms BEFORE adding the drag transform (for undo)
       svgCanvas.gesture.dragStartTransforms = new Map()
-      svgCanvas.gesture.dragPlan = svgCanvas.dragPlan(selectedElements.filter(Boolean))
+      svgCanvas.gesture.dragPlan = svgCanvas.dragPlan(selectedElements.filter(Boolean), true)
       for (const selectedElement of selectedElements) {
         if (!selectedElement) { continue }
         // Capture the transform attribute before we modify it
