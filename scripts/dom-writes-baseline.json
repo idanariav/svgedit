@@ -52,7 +52,7 @@
   "packages/svgcanvas/core/split-grid.ts": 12,
   "packages/svgcanvas/core/svg-defs.ts": 21,
   "packages/svgcanvas/core/svg-exec.ts": 37,
-  "packages/svgcanvas/core/taper-stroke.ts": 36,
+  "packages/svgcanvas/core/taper-stroke.ts": 25,
   "packages/svgcanvas/core/text-actions.ts": 7,
   "packages/svgcanvas/core/text-attrs.ts": 2,
   "packages/svgcanvas/core/text-path.ts": 17,

@@ -333,13 +333,25 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
       [TAPER_STYLE_ATTR]: elem.getAttribute(TAPER_STYLE_ATTR),
       [WIDTH_PROFILE_ATTR]: elem.getAttribute(WIDTH_PROFILE_ATTR)
     }
-    elem.removeAttribute(WIDTH_PROFILE_ATTR) // the sliders replace a width profile
-    elem.setAttribute('d', toAbsolutePathData(outline, svgCanvas))
-    elem.setAttribute('fill', paint as string)
-    elem.setAttribute('stroke', 'none')
-    elem.setAttribute(TAPER_ATTR, `${start},${end}`)
-    elem.setAttribute(TAPER_SOURCE_ATTR, srcD)
-    elem.setAttribute(TAPER_STYLE_ATTR, `${width}|${paint}`)
+    const tapered = {
+      [WIDTH_PROFILE_ATTR]: null, // the sliders replace a width profile
+      d: toAbsolutePathData(outline, svgCanvas),
+      fill: paint as string,
+      stroke: 'none',
+      [TAPER_ATTR]: `${start},${end}`,
+      [TAPER_SOURCE_ATTR]: srcD,
+      [TAPER_STYLE_ATTR]: `${width}|${paint}`
+    }
+    // A path that was one all along is edited on the model; the line / polyline swapped for a path above goes in the batch
+    if (batchCmd.isEmpty() && svgCanvas.setElementAttributes('Taper stroke', elem, tapered)) {
+      svgCanvas.selectOnly([elem], true)
+      svgCanvas.call('changed', [elem])
+      return elem
+    }
+    for (const [name, value] of Object.entries(tapered)) {
+      if (value === null) elem.removeAttribute(name)
+      else elem.setAttribute(name, value)
+    }
     batchCmd.addSubCommand(new ChangeElementCommand(elem, oldValues))
 
     svgCanvas.addCommandToHistory(batchCmd)
@@ -372,14 +384,25 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
       [TAPER_STYLE_ATTR]: style,
       [WIDTH_PROFILE_ATTR]: elem.getAttribute(WIDTH_PROFILE_ATTR)
     }
-    elem.removeAttribute(WIDTH_PROFILE_ATTR)
-    elem.setAttribute('d', srcD)
-    elem.setAttribute('fill', 'none')
-    elem.setAttribute('stroke', paint)
-    elem.setAttribute('stroke-width', String(width))
-    elem.removeAttribute(TAPER_ATTR)
-    elem.removeAttribute(TAPER_SOURCE_ATTR)
-    elem.removeAttribute(TAPER_STYLE_ATTR)
+    const restored = {
+      [WIDTH_PROFILE_ATTR]: null,
+      d: srcD,
+      fill: 'none',
+      stroke: paint,
+      'stroke-width': String(width),
+      [TAPER_ATTR]: null,
+      [TAPER_SOURCE_ATTR]: null,
+      [TAPER_STYLE_ATTR]: null
+    }
+    if (svgCanvas.setElementAttributes('Remove taper', elem, restored)) {
+      svgCanvas.selectOnly([elem], true)
+      svgCanvas.call('changed', [elem])
+      return elem
+    }
+    for (const [name, value] of Object.entries(restored)) {
+      if (value === null) elem.removeAttribute(name)
+      else elem.setAttribute(name, value)
+    }
     batchCmd.addSubCommand(new ChangeElementCommand(elem, oldValues))
 
     svgCanvas.addCommandToHistory(batchCmd)
