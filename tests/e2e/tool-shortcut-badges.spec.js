@@ -1,8 +1,8 @@
 import { test, expect } from './fixtures.js'
 import { visitAndApproveStorage } from './helpers.js'
 
-// The key that activates a tool is drawn at the bottom right of its icon in the left panel; a tool without a
-// key has no badge, and a rebinding in the Hotkey Manager shows at once.
+// The key that activates a tool is drawn at the bottom right of its icon in the left panel and on the top panel's buttons; a
+// tool without a key has no badge, and a rebinding in the Hotkey Manager shows at once.
 test.describe('Tool shortcut badges', () => {
   test.beforeEach(async ({ page }) => {
     await visitAndApproveStorage(page)
@@ -53,5 +53,29 @@ test.describe('Tool shortcut badges', () => {
     expect((await badge(page, 'tools_shapes')).attr).toBe('R')
     await page.evaluate(() => window.svgEditor.hotkeys.addKey('tools_shapes', 'alt+1'))
     await expect.poll(() => badge(page, 'tools_shapes').then((b) => b.attr)).toBe('⌥1')
+  })
+
+  test('the top panel\'s buttons show their keys too, painted like the tools\'', async ({ page }) => {
+    expect(await badge(page, 'tool_frame')).toEqual({ attr: 'U', painted: 'U' })
+    expect(await badge(page, 'tool_wireframe')).toEqual({ attr: 'F', painted: 'F' })
+    expect((await badge(page, 'tool_undo')).attr).toBe('⌘Z')
+    // no key, no badge
+    expect((await badge(page, 'tool_smart_snap')).attr).toBeNull()
+    const pos = await page.evaluate(() => {
+      const el = document.getElementById('tool_wireframe')
+      const s = getComputedStyle(el, '::after')
+      return { position: s.position, host: getComputedStyle(el).position }
+    })
+    expect(pos).toEqual({ position: 'absolute', host: 'relative' })
+  })
+
+  test('a rebinding of a top-panel button shows at once', async ({ page }) => {
+    await page.evaluate(() => window.svgEditor.hotkeys.addKey('tool_smart_snap', 'alt+g'))
+    await expect.poll(() => badge(page, 'tool_smart_snap').then((b) => b.attr)).toBe('⌥G')
+    await page.evaluate(() => window.svgEditor.hotkeys.removeKey('tool_wireframe', 'f'))
+    await expect.poll(() => badge(page, 'tool_wireframe').then((b) => b.attr)).toBeNull()
+    await page.evaluate(() => window.svgEditor.hotkeys.resetAll())
+    await expect.poll(() => badge(page, 'tool_wireframe').then((b) => b.attr)).toBe('F')
+    await expect.poll(() => badge(page, 'tool_smart_snap').then((b) => b.attr)).toBeNull()
   })
 })

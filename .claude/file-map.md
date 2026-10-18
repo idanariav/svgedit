@@ -223,7 +223,7 @@
 | `toolCursors.ts` | The canvas cursor of each tool (mode) |
 | `toolDragReorder.ts` | Drag-to-reorder for the left panel's tools |
 | `toolOrder.ts` | Persistence for the left panel's user-customized tool order |
-| `toolShortcutBadges.ts` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same… |
+| `toolShortcutBadges.ts` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel and on the top panel's buttons (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the… |
 | `tooltips.ts` | Hover tooltips for the editor chrome: a short-delay replacement for the browser's native `title` tooltip, which waits about a second (longer on some platforms) and sometimes never shows |
 | `uiMode.ts` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell) |
 | `userDataAdapter.ts` | Module-level registry for an optional host storage adapter used to persist user customizations (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage` |

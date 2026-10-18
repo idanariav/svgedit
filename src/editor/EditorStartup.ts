@@ -112,6 +112,7 @@ class EditorStartup {
   applyClipboardText: (text: string | undefined) => boolean
   setPanning: (active: boolean) => void
   toolShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
+  topShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
   enableToolCancel: boolean
   /** 'toolbars' while a toolbar field has focus, 'canvas' after */ uiContext: string
   defaultImageURL: string
@@ -1009,6 +1010,9 @@ class EditorStartup {
           // the key of each tool, drawn on its icon (all tools exist now; later ones are picked up by the observer)
           const toolColumn = this.$id('tools_left')
           if (toolColumn) this.toolShortcutBadges ??= initToolShortcutBadges(toolColumn, this.hotkeys)
+          // the same for the top panel's buttons (frame, wireframe, node tools, clone, flip…)
+          const topPanel = this.$id('tools_top')
+          if (topPanel) this.topShortcutBadges ??= initToolShortcutBadges(topPanel, this.hotkeys)
           this.updateCanvas(true)
 
           this.messageQueue.forEach(

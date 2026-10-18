@@ -1,6 +1,6 @@
 /**
  * Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left
- * panel (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same
+ * panel and on the top panel's buttons (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the icon artwork stays the same
  * whatever the binding is). A tool without a key gets nothing. The text follows the hotkey manager's *effective*
  * keys, so a rebinding in the Hotkey Manager shows at once.
  *
@@ -25,7 +25,7 @@ export const badgeFor = (hotkeys: import('./Hotkeys.ts').default, el: Element): 
 
 /**
  * Keep the badges of `panel`'s tools in step with the hotkeys.
- * @param panel the left tool column
+ * @param panel a tool panel: the left tool column, or the top panel
  */
 export const initToolShortcutBadges = (panel: Element, hotkeys: import('./Hotkeys.ts').default): { refresh: () => void, destroy: () => void } => {
   const refresh = () => {

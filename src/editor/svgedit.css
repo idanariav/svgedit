@@ -1441,12 +1441,15 @@ hr {
   gap: 4px;
 }
 
-/* The key that activates a tool, at the bottom right of its icon. `data-shortcut` is set by toolShortcutBadges.js
-   from the effective hotkeys; no key, no badge. Painted on the host so the icon artwork stays the same. */
-#tools_left [data-shortcut] {
+/* The key that activates a tool, at the bottom right of its icon (the left column and the top panel's buttons).
+   `data-shortcut` is set by toolShortcutBadges.ts from the effective hotkeys; no key, no badge. Painted on the host so the
+   icon artwork stays the same. */
+#tools_left [data-shortcut],
+#tools_top [data-shortcut] {
   position: relative;
 }
-#tools_left [data-shortcut]::after {
+#tools_left [data-shortcut]::after,
+#tools_top [data-shortcut]::after {
   content: attr(data-shortcut);
   position: absolute;
   right: 3px;
@@ -1458,7 +1461,8 @@ hr {
   background: var(--chrome-bg);
   pointer-events: none;
 }
-#tools_left [data-shortcut][pressed]::after {
+#tools_left [data-shortcut][pressed]::after,
+#tools_top [data-shortcut][pressed]::after {
   color: var(--accent);
   background: transparent;
 }
