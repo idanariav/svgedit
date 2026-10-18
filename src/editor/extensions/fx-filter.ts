@@ -89,10 +89,6 @@ export type FullFxSpec = FxSpec & { feather: { radius: number } | null, glow: { 
  * foreign `filter`). Callers should store one instance on `svgEditor`.
  */
 export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default) => {
-  const {
-    InsertElementCommand, RemoveElementCommand, ChangeElementCommand
-  } = svgCanvas.history
-
   // elemId → previous (foreign) filter url, restored when all effects removed.
   const prevFilterMap: Record<string, string> = {}
 
@@ -330,7 +326,7 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
     }
     const filterAttr: Record<string, string> = { id: filterId, 'data-fx': '1' }
     if (outer || inner || feather) filterAttr['color-interpolation-filters'] = 'sRGB'
-    const filter = svgCanvas.addSVGElementsFromJson({
+    const filter = svgCanvas.buildElementFromJson({
       element: 'filter',
       attr: filterAttr,
       children
@@ -340,63 +336,48 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
   }
 
   /**
-   * Apply a combined effect spec to an element, recording every change into the
-   * supplied batch command (no commit, no selection assumptions). Rebuilds the
-   * whole per-element filter wholesale (Remove old + Insert new) so undo is a
-   * pair of element commands rather than per-primitive bookkeeping.
+   * Apply a combined effect spec to an element, through the model (no selection assumptions): the filter is rebuilt wholesale
+   * (remove the old, insert the new, point the element at it) as one step, which joins the caller's transaction if it has one.
+   * The batch argument is the old calling convention and is ignored.
    */
-  const writeEffects = (elem: Element, spec: FxSpec, batchCmd: import('@svgedit/svgcanvas/core/history.js').BatchCommand) => {
+  const writeEffects = (elem: Element, spec: FxSpec, _batchCmd?: import('@svgedit/svgcanvas/core/history.js').BatchCommand) => {
     if (!elem) return
-    const elemId = elem.id
     const existing = getRefFilter(elem)
     const ours = isOurFilter(elem, existing)
     const hasAny = hasEffects(spec)
     const oldFilterAttr = elem.getAttribute('filter')
 
+    // The model gets the filter (and the reference to it); the renderer writes the DOM. Nested in the caller's step if it has one.
+    elem.id ||= svgCanvas.getNextId()
+    const elemId2 = elem.id
+
     // --- Removal: no effects left ---
     if (!hasAny) {
-      if (ours) {
-        batchCmd.addSubCommand(new RemoveElementCommand(existing, existing.nextSibling, existing.parentNode))
-        existing.remove()
-      }
-      if (oldFilterAttr) {
-        const saved = prevFilterMap[elemId]
-        if (saved) {
-          elem.setAttribute('filter', saved)
-          delete prevFilterMap[elemId]
-        } else {
-          elem.removeAttribute('filter')
+      svgCanvas.transact('Effects', () => {
+        if (ours) svgCanvas.removeElements('Effects', [existing])
+        if (oldFilterAttr) {
+          const saved = prevFilterMap[elemId2]
+          delete prevFilterMap[elemId2]
+          svgCanvas.setElementAttributes('Effects', elem, { filter: saved || null })
         }
-        // Built after the change: ChangeElementCommand reads the NEW value from
-        // the DOM at construction, so building it first made redo re-apply the old one.
-        batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr }))
-      }
+      })
       return
     }
 
     // --- Build / replace ---
-    const filterId = ours ? existing.id : `${elemId}_fx`
+    const filterId = ours ? existing.id : `${elemId2}_fx`
     // Preserve any pre-existing foreign filter to restore on full removal.
-    if (!ours && oldFilterAttr) prevFilterMap[elemId] = oldFilterAttr
-    // Replace our previous filter wholesale.
-    if (ours) {
-      batchCmd.addSubCommand(new RemoveElementCommand(existing, existing.nextSibling, existing.parentNode))
-      existing.remove()
-    }
+    if (!ours && oldFilterAttr) prevFilterMap[elemId2] = oldFilterAttr
     const filter = buildFilter(elem, spec, filterId)
-    // buildFilter() bottoms out in addSVGElementsFromJson(), which can return
-    // null (e.g. no live document yet). Appending that into <defs> wouldn't
-    // throw -- Element.append() silently coerces it into a literal
-    // "undefined" text node instead -- so bail explicitly rather than corrupt
-    // <defs> with an incomplete effect.
+    // buildFilter() can return null (e.g. no live document yet): bail rather than corrupt <defs> with an incomplete effect.
     if (!filter) return
-    svgCanvas.findDefs().append(filter)
-    batchCmd.addSubCommand(new InsertElementCommand(filter))
-    const newFilterAttr = `url(#${filterId})`
-    if (oldFilterAttr !== newFilterAttr) {
-      elem.setAttribute('filter', newFilterAttr)
-      batchCmd.addSubCommand(new ChangeElementCommand(elem, { filter: oldFilterAttr ?? '' }))
-    }
+    svgCanvas.transact('Effects', () => {
+      // Replace our previous filter wholesale.
+      if (ours) svgCanvas.removeElements('Effects', [existing])
+      svgCanvas.insertLooseElements([{ parent: svgCanvas.findDefs(), el: filter }], 'Effects')
+      const newFilterAttr = `url(#${filterId})`
+      if (oldFilterAttr !== newFilterAttr) svgCanvas.setElementAttributes('Effects', elem, { filter: newFilterAttr })
+    })
   }
 
   return { readEffects, writeEffects, refreshRegion }

@@ -223,7 +223,7 @@ describe('ext-glow', function () {
     assert.deepEqual(svgEditor.glowApi.read(a).feather, { radius: 9 })
     const batch = new svgCanvas.history.BatchCommand('stamp')
     svgEditor.glowApi.apply(b, glow, batch)
-    assert.ok(!batch.isEmpty())
+    assert.ok(b.getAttribute('filter')) // stated on the model: the step is its own, the batch is only the old calling convention
     assert.equal(createFxComposer(svgCanvas).readEffects(b).glow.outer.blur, 7)
     assert.deepEqual(createFxComposer(svgCanvas).readEffects(b).feather, null)
     svgEditor.glowApi.apply(b, { remove: true }, new svgCanvas.history.BatchCommand('rm'))

@@ -281,11 +281,8 @@ describe('fx-filter glow', () => {
 
   it('undo restores the previous filter after a rebuild and after removal', () => {
     const rect = addRect('r')
-    const apply = (spec) => {
-      const batch = new svgCanvas.history.BatchCommand('fx')
-      fx.writeEffects(rect, spec, batch)
-      svgCanvas.addCommandToHistory(batch)
-    }
+    svgCanvas.undoMgr.snapshots.baseline() // the rect was made outside any command
+    const apply = (spec) => fx.writeEffects(rect, spec) // a step of its own, stated on the model
     apply({ outline: null, shadow: SHADOW, glow: { outer: null, inner: null } })
     apply({ outline: null, shadow: SHADOW, glow: { outer: OUTER, inner: null } }) // replaces the filter
     assert.ok(fx.readEffects(rect).glow.outer)
