@@ -10,7 +10,8 @@
 import type SvgCanvas from '../svgcanvas.ts'
 import HistoryRecordingService from './historyrecording.js'
 import { toXml } from './encoding-utils.ts'
-import { removeIds } from './model/edit.ts'
+import { removeIds, withChildren, moveNextTo, moveToEnd } from './model/edit.ts'
+import { text } from './model/node.ts'
 import { warn } from '../common/logger.ts'
 
 type HrService = InstanceType<typeof HistoryRecordingService>
@@ -165,17 +166,17 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
   const renameCurrentLayer = (newName: string): boolean => {
     const drawing = svgCanvas.getCurrentDrawing()
     const layer = drawing.getCurrentLayer()
-    if (layer) {
-      const result = drawing.setCurrentLayerName(
-        newName,
-        historyRecordingService(svgCanvas)
-      )
-      if (result) {
-        svgCanvas.call('changed', [layer])
-        return true
-      }
-    }
-    return false
+    const title = layer?.querySelector(':scope > title')
+    const at = title && svgCanvas.snapshotHistory.pathOf(title)
+    if (!layer || !at) return false
+    const name = toXml(newName)
+    if (drawing.hasLayer(name)) return false
+    // The model gets the new title text; the drawing then finds its layers again under the new name
+    svgCanvas.snapshotHistory.edit('Rename Layer', (root) => withChildren(root, at, () => [text(name)]))
+    drawing.identifyLayers()
+    drawing.setCurrentLayer(name)
+    svgCanvas.call('changed', [layer])
+    return true
   }
 
   /**
@@ -185,20 +186,19 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    * 0 and (number of layers - 1)
    */
   const setCurrentLayerPosition = (newPos: number): boolean => {
-    const { MoveElementCommand } = svgCanvas.history
     const drawing = svgCanvas.getCurrentDrawing()
-    const result = drawing.setCurrentLayerPosition(newPos)
-    if (result) {
-      svgCanvas.addCommandToHistory(
-        new MoveElementCommand(
-          result.currentGroup,
-          result.oldNextSibling,
-          svgCanvas.getSvgContent()
-        )
-      )
-      return true
-    }
-    return false
+    const count = drawing.getNumLayers()
+    const old = drawing.indexCurrentLayer()
+    const current = drawing.getCurrentLayer()
+    if (!current || newPos < 0 || newPos >= count || old < 0 || old === newPos) return false
+    const group = (i: number) => drawing.getLayerByName(drawing.getLayerName(i)) as Element
+    const ref = newPos > old ? (newPos < count - 1 ? group(newPos + 1) : null) : group(newPos)
+    for (const g of [current, ref]) if (g && !g.id) g.id = svgCanvas.getNextId('layer') // the model addresses elements by id
+    const name = drawing.getCurrentLayerName()
+    svgCanvas.snapshotHistory.edit('Move Layer', (root) => ref ? moveNextTo(root, current.id, ref.id, 'before') : moveToEnd(root, [current.id]))
+    drawing.identifyLayers()
+    drawing.setCurrentLayer(name)
+    return true
   }
 
   /**

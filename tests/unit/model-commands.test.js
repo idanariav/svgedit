@@ -186,6 +186,22 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('layer rename and order', () => {
+    it('are single undoable steps through the model', () => {
+      canvas.createLayer('Top')
+      const names = () => [...canvas.getSvgContent().querySelectorAll(':scope > g.layer > title')].map((t) => t.textContent)
+      expect(canvas.renameCurrentLayer('Renamed')).toBe(true)
+      expect(names().at(-1)).toBe('Renamed')
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Rename Layer')
+      expect(canvas.setCurrentLayerPosition(0)).toBe(true)
+      expect(names()[0]).toBe('Renamed')
+      canvas.undoMgr.undo()
+      expect(names().at(-1)).toBe('Renamed')
+      canvas.undoMgr.undo()
+      expect(names().at(-1)).not.toBe('Renamed')
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
