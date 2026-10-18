@@ -77,6 +77,8 @@ export interface ModelCommandsApi {
   previewDrag(plan: Map<Element, Affine>, dx: number, dy: number): void
   /** Show the elements scaled by `scale` (about the origin the caller put in it) after the transform each has in `plan`. */
   previewScale(plan: Map<Element, Affine>, scale: Affine): void
+  /** Show every element in `plan` mapped by `map` after the transform it has in `plan` (a selection scaled or moved as one). */
+  previewAfter(plan: Map<Element, Affine>, map: Affine): void
   /**
    * Where a rotation of this element can be shown through the model: its id and the point it turns about (the middle of its box,
    * or the point its `rotate()` already turns about); null when it carries another transform.
@@ -524,6 +526,7 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
   const previewDrag = (plan: Map<Element, Affine>, dx: number, dy: number): void =>
     previewWith(plan, (own) => compose({ a: 1, d: 1, e: dx, f: dy }, own))
   const previewScale = (plan: Map<Element, Affine>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
+  const previewAfter = (plan: Map<Element, Affine>, map: Affine): void => previewWith(plan, (own) => compose(map, own))
 
   const rotationPlan = (el: Element): { id: string, cx: number, cy: number } | null => {
     if (!el.id) return null
@@ -547,6 +550,7 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     dragPlan,
     previewDrag,
     previewScale,
+    previewAfter,
     removeElements,
     commitUndoableChange,
     commitTransforms,

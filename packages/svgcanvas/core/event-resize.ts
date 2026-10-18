@@ -59,7 +59,18 @@ const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
   const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
 
   const starts = svgCanvas.gesture.groupResizeStart as Map<Element, SVGMatrix>
+  // Shapes that can take the scale in their own coordinates are shown by the renderer (the model states each size)
+  if (!svgCanvas.gesture.hasResizeStartTransform) {
+    svgCanvas.gesture.dragPlan = svgCanvas.dragPlan([...starts.keys()])
+    svgCanvas.gesture.hasResizeStartTransform = true
+  }
+  const plan = svgCanvas.gesture.dragPlan
+  if (plan) {
+    svgCanvas.previewAfter(plan, { a: s, d: s, e: ax - s * ax, f: ay - s * ay })
+    for (const elem of starts.keys()) svgCanvas.selectorManager.requestSelector(elem).resize()
+  }
   starts.forEach((startMatrix, elem) => {
+    if (plan) return
     const newM = matrixMultiply(gm, startMatrix)
     const tlist = getTransformList(elem) as SVGTransformList
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }

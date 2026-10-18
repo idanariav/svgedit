@@ -353,6 +353,9 @@ describe('model-first commands', () => {
       expect(r.hasAttribute('transform')).toBe(false)
       canvas.previewScale(plan, { a: 2, d: 2, e: -10, f: -20 }) // about (10, 20)
       expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['10', '20', '80', '60'])
+      canvas.previewAfter(plan, { a: 0.5, d: 0.5, e: 0, f: 0 }) // a selection scaled as one, about the origin
+      expect(['x', 'y', 'width', 'height'].map((n) => r.getAttribute(n))).toEqual(['5', '10', '20', '15'])
+      canvas.previewScale(plan, { a: 2, d: 2, e: -10, f: -20 })
       const size = canvas.undoMgr.getUndoStackSize()
       expect(canvas.bakeDrag(new Map([[r, '']]), () => {})).toBe(true)
       expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
