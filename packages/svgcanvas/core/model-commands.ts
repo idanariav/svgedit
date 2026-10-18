@@ -65,6 +65,8 @@ export interface ModelCommandsApi {
    * without an id, a pseudo attribute such as `#text`) is recorded as the command history does. Nothing changed: nothing recorded.
    */
   commitUndoableChange(restore: (el: Element, name: string, was: string | null) => void): void
+  /** Remove these elements (and what is inside them) through the model, as one step. False, touching nothing, if one has no id. */
+  removeElements(label: string, els: Element[]): boolean
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -427,7 +429,15 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     setElementsAttributes(batch.getText?.() ?? 'Change', entries.map(({ elem, attrs }) => ({ el: elem, attrs })))
   }
 
+  const removeElements = (label: string, els: Element[]): boolean => {
+    if (!els.length || els.some((el) => !el.id)) return false
+    const ids = els.map((el) => el.id)
+    svgCanvas.snapshotHistory.edit(label, (root) => removeIds(root, ids))
+    return true
+  }
+
   return {
+    removeElements,
     commitUndoableChange,
     commitTransforms,
     setElementsAttributes,

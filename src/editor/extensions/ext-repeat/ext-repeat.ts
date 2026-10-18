@@ -148,29 +148,24 @@ export default defineFeature({
         params.rail = rail.id
       }
 
-      const { BatchCommand, InsertElementCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
-      const batchCmd = new BatchCommand('Repeat')
+      // Everything below is one step, stated on the model (the copies are built detached, the renderer shows them)
+      const tx = svgCanvas.beginTransaction('Repeat')
 
       // Update: drop the previous copies first.
       if (uid) {
-        for (const copy of findByAttr(COPY_ATTR, uid)) {
-          batchCmd.addSubCommand(new RemoveElementCommand(copy, copy.nextSibling, copy.parentNode))
-          copy.remove()
-        }
+        const old = findByAttr(COPY_ATTR, uid)
+        for (const copy of old) copy.id ||= svgCanvas.getNextId()
+        svgCanvas.removeElements('Repeat', old)
       } else {
         uid = `rpt_${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
       }
 
       // Stamp the sources with the unit id + params.
-      for (const src of sources) {
-        const oldValues = {
-          [SOURCE_ATTR]: src.getAttribute(SOURCE_ATTR),
-          [PARAMS_ATTR]: src.getAttribute(PARAMS_ATTR)
-        }
-        src.setAttribute(SOURCE_ATTR, uid)
-        src.setAttribute(PARAMS_ATTR, serializeParams(params))
-        batchCmd.addSubCommand(new ChangeElementCommand(src, oldValues))
-      }
+      for (const src of sources) src.id ||= svgCanvas.getNextId()
+      svgCanvas.setElementsAttributes('Repeat', sources.map((el) => ({
+        el,
+        attrs: { [SOURCE_ATTR]: uid as string, [PARAMS_ATTR]: serializeParams(params) }
+      })))
 
       // Per-copy transforms.
       const transforms = []
@@ -198,9 +193,9 @@ export default defineFeature({
       } else if (params.mode === 'path') {
         // Distribute copies along the rail by arc length; the source unit
         // stays where it is. `follow` rotates each copy to the tangent.
-        if (!rail) return
+        if (!rail) { tx.cancel(); return }
         const total = rail.getTotalLength()
-        if (!total) return
+        if (!total) { tx.cancel(); return }
         const bb = svgCanvas.getStrokedBBox(sources) as import('@svgedit/svgcanvas').BBox
         const cx = bb.x + bb.width / 2
         const cy = bb.y + bb.height / 2
@@ -243,6 +238,7 @@ export default defineFeature({
       // Clone each source once per transform (world-space transform prepended
       // to the clone's own transform list; never recalculated/baked — baking
       // would decompose the rotates).
+      const clones: Array<{ parent: Element, el: Element }> = []
       for (const tf of transforms) {
         for (const src of sources) {
           const clone = src.cloneNode(true) as Element
@@ -252,12 +248,11 @@ export default defineFeature({
           clone.setAttribute(COPY_ATTR, uid)
           const own = clone.getAttribute('transform')
           clone.setAttribute('transform', own ? `${tf} ${own}` : tf)
-          ;(src.parentNode as Element).append(clone)
-          batchCmd.addSubCommand(new InsertElementCommand(clone))
+          clones.push({ parent: src.parentNode as Element, el: clone })
         }
       }
-
-      svgCanvas.addCommandToHistory(batchCmd)
+      svgCanvas.insertLooseElements(clones, 'Repeat')
+      tx.commit()
       svgCanvas.call('changed', sources)
     }
 

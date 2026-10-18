@@ -147,7 +147,6 @@ export default defineFeature({
   name,
   async init (svgEditor) {
     const { svgCanvas } = svgEditor
-    const { BatchCommand, ChangeElementCommand } = svgCanvas.history
     const { $id, $req } = svgCanvas
     addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
@@ -224,29 +223,27 @@ export default defineFeature({
      *
      * `value === null` means "remove the attribute".
      */
-    const setAttrIfChanged = (elem: Element, attr: string, value: string | number | null, oldAttrs: Record<string, string>) => {
+    const setAttrIfChanged = (elem: Element, attr: string, value: string | number | null, changes: Record<string, string | null>) => {
       const current = elem.getAttribute(attr)
       const next = value === null ? null : String(value)
       if (current === next) return
-      oldAttrs[attr] = current ?? ''
-      if (next === null) elem.removeAttribute(attr)
-      else elem.setAttribute(attr, next)
+      changes[attr] = next
     }
 
     /**
      * Apply current input values to every paintable element in the selection.
-     * Each call commits one BatchCommand to the undo history.
+     * Each call is one undo step, stated on the model.
      */
     const applyShift = () => {
       const { h, s, l, t, applyFill, applyStroke } = getValues()
       const elems = paintableSelection()
       if (!elems.length) return
 
-      const batch = new BatchCommand('Color shift')
+      const entries: Array<{ el: Element, attrs: Record<string, string | null> }> = []
 
       for (const elem of elems) {
         const snap = ensureSnapshot(elem)
-        const oldAttrs: Record<string, string> = {}
+        const oldAttrs: Record<string, string | null> = {}
 
         // Fill channel
         if (applyFill) {
@@ -288,11 +285,13 @@ export default defineFeature({
         deltas.set(elem, { h, s, l, t })
 
         if (Object.keys(oldAttrs).length) {
-          batch.addSubCommand(new ChangeElementCommand(elem, oldAttrs))
+          elem.id ||= svgCanvas.getNextId() // the model addresses elements by id
+          entries.push({ el: elem, attrs: oldAttrs })
         }
       }
 
-      if (!batch.isEmpty()) svgCanvas.addCommandToHistory(batch)
+      // The colours are stated on the model: one step, the renderer writes them
+      if (entries.length) svgCanvas.setElementsAttributes('Color shift', entries)
     }
 
     const resetInputs = () => {
