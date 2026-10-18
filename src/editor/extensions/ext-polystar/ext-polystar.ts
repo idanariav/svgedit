@@ -133,19 +133,22 @@ export default defineFeature({
  * @param val new value
      */
     const applyStarAttr = (attr: string, val: string | number): void => {
-      setAttr(attr, val)
-      let i: number = selElems.length
-      while (i--) {
-        const elem = selElems[i]
-        if (elem?.getAttribute('shape') === 'star') {
-          const oldPoints = elem.getAttribute('points')
-          const newPoints = buildStarPoints(elem)
-          if (newPoints !== null) {
-            elem.setAttribute('points', newPoints)
-            addToHistory(new ChangeElementCommand(elem, { points: oldPoints }))
+      // the attribute and the geometry it changes are one step
+      svgCanvas.transact('Star', () => {
+        setAttr(attr, val)
+        let i: number = selElems.length
+        while (i--) {
+          const elem = selElems[i]
+          if (elem?.getAttribute('shape') === 'star') {
+            const oldPoints = elem.getAttribute('points')
+            const newPoints = buildStarPoints(elem)
+            if (newPoints !== null && !svgCanvas.setElementAttributes('Star', elem, { points: newPoints })) {
+              elem.setAttribute('points', newPoints)
+              addToHistory(new ChangeElementCommand(elem, { points: oldPoints }))
+            }
           }
         }
-      }
+      })
     }
 
     // Both shapes are drawn by dragging from the centre; the pointer is in document units.
@@ -430,7 +433,7 @@ export default defineFeature({
         $req('radialShift').addEventListener('change', (event) => {
           applyStarAttr('radialshift', (event.target as HTMLInputElement).value)
         })
-        $req('polySides').addEventListener('change', (event) => {
+        $req('polySides').addEventListener('change', (event) => svgCanvas.transact('Polygon', () => {
           setAttr('sides', (event.target as HTMLInputElement).value)
           const sides = Number((event.target as HTMLInputElement).value)
           let i: number = selElems.length
@@ -462,12 +465,14 @@ export default defineFeature({
                   const y = circumradius * Math.sin(angle) + cy
                   points += x + ',' + y + ' '
                 }
-                elem.setAttribute('points', points)
-                addToHistory(new ChangeElementCommand(elem, { sides: oldSides, points: oldPoints }))
+                if (!svgCanvas.setElementAttributes('Polygon', elem, { points })) {
+                  elem.setAttribute('points', points)
+                  addToHistory(new ChangeElementCommand(elem, { sides: oldSides, points: oldPoints }))
+                }
               }
             }
           }
-        })
+        }))
       },
     }
   }
