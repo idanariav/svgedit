@@ -31,6 +31,8 @@ export interface GestureState {
   /** the geometry box of the element a resize shown through the model began from */
   /** a rotation shown through the model (core/model-commands.ts `rotationPlan`) */
   rotationPlan: { id: string, cx: number, cy: number } | null
+  /** a rotation of the whole selection shown through the model (`rotationGroupPlan`): each element's transform before it */
+  groupRotationPlan: Map<Element, import('./model-commands.ts').Affine> | null
   /** the rotation plan was decided for this gesture (it may be null) */
   rotationShown: boolean
   resizeStartBox: { x: number, y: number, width: number, height: number } | null
@@ -58,6 +60,7 @@ export const createGestureState = (): GestureState => ({
   dragStartTransforms: null,
   dragPlan: null,
   rotationPlan: null,
+  groupRotationPlan: null,
   rotationShown: false,
   resizeStartBox: null,
   hasResizeStartTransform: false,

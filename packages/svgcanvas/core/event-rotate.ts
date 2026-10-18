@@ -26,7 +26,18 @@ const rotateGroup = (svgCanvas: SvgCanvas, angle: number): void => {
   const rm = rot.matrix
 
   const starts = svgCanvas.gesture.groupRotateStart as Map<Element, SVGMatrix>
+  // Elements with a plain transform are turned in front of the renderer: the model shows each angle
+  if (!svgCanvas.gesture.rotationShown) {
+    svgCanvas.gesture.groupRotationPlan = svgCanvas.rotationGroupPlan([...starts.keys()])
+    svgCanvas.gesture.rotationShown = true
+  }
+  const plan = svgCanvas.gesture.groupRotationPlan
+  if (plan) svgCanvas.previewGroupRotation(plan, angle, cx, cy)
   starts.forEach((startMatrix, elem) => {
+    if (plan) {
+      svgCanvas.selectorManager.requestSelector(elem).resize()
+      return
+    }
     const newM = matrixMultiply(rm, startMatrix)
     const tlist = getTransformList(elem) as SVGTransformList
     while (tlist.numberOfItems > 0) { tlist.removeItem(0) }
@@ -57,6 +68,7 @@ export const init = (canvas: SvgCanvas): {
     const { selectedElements } = ctx
     svgCanvas.setStarted(true)
     svgCanvas.gesture.rotationPlan = null
+    svgCanvas.gesture.groupRotationPlan = null
     svgCanvas.gesture.rotationShown = false
     // we are starting an undoable change (a drag-rotation)
     svgCanvas.undoMgr.beginUndoableChange('transform', selectedElements)
@@ -125,12 +137,21 @@ export const init = (canvas: SvgCanvas): {
     svgCanvas.setCurrentMode('select')
     const isGroupRotate = !!svgCanvas.gesture.groupRotateStart
     const batchCmd = svgCanvas.undoMgr.finishUndoableChange()
-    if (svgCanvas.gesture.rotationPlan && svgCanvas.snapshotHistory.previewing) {
+    if ((svgCanvas.gesture.rotationPlan || svgCanvas.gesture.groupRotationPlan) && svgCanvas.snapshotHistory.previewing) {
       // The renderer has been showing the rotation: that is the step
       svgCanvas.snapshotHistory.endPreview('Rotate')
       svgCanvas.gesture.rotationPlan = null
       svgCanvas.gesture.rotationShown = false
-      svgCanvas.recalculateAllSelectedDimensions()
+      if (isGroupRotate) {
+        svgCanvas.gesture.groupRotationPlan = null
+        svgCanvas.gesture.groupRotateStart = null
+        svgCanvas.gesture.groupRotateCenter = null
+        svgCanvas.gesture.groupRotateBBox = null
+        selectedElements.filter(Boolean).forEach((elem) => { svgCanvas.selectorManager.requestSelector(elem).resize() })
+        svgCanvas.updateGroupSelector()
+      } else {
+        svgCanvas.recalculateAllSelectedDimensions()
+      }
       svgCanvas.call('changed', selectedElements)
       return { element: null, keep: true as const }
     }

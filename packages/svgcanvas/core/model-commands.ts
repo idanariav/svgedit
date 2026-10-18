@@ -86,6 +86,10 @@ export interface ModelCommandsApi {
   rotationPlan(el: Element): { id: string, cx: number, cy: number } | null
   /** Show the element turned to `angle` (degrees) about the plan's point; the renderer writes the transform. */
   previewRotation(plan: { id: string, cx: number, cy: number }, angle: number): void
+  /** Starting transforms of these elements when a rotation of the whole selection can be shown through the model (each has an id and a plain transform); else null. */
+  rotationGroupPlan(elems: Element[]): Map<Element, Affine> | null
+  /** Show the selection turned by `angle` degrees about (cx, cy): each element's transform becomes that rotation after its own. */
+  previewGroupRotation(plan: Map<Element, Affine>, angle: number, cx: number, cy: number): void
   setElementsAttributes(label: string, entries: Array<{ el: Element, attrs: Record<string, string | null> }>): boolean
   setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
@@ -544,7 +548,38 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     }))
   }
 
+  const rotationGroupPlan = (elems: Element[]): Map<Element, Affine> | null => {
+    if (!elems.length) return null
+    const plan = new Map<Element, Affine>()
+    for (const el of elems) {
+      const own = el.id ? parseAffine(el.getAttribute('transform')) : null
+      if (!own) return null
+      plan.set(el, own)
+    }
+    return plan
+  }
+
+  const previewGroupRotation = (plan: Map<Element, Affine>, angle: number, cx: number, cy: number): void => {
+    const rad = angle * Math.PI / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    // rotation about (cx, cy): x' = cos x - sin y + (cx - cos cx + sin cy), y' = sin x + cos y + (cy - sin cx - cos cy)
+    const re = cx - cos * cx + sin * cy
+    const rf = cy - sin * cx - cos * cy
+    const n = (v: number) => Number(v.toFixed(6))
+    svgCanvas.snapshotHistory.preview((root) => {
+      let out = root
+      for (const [el, { a, d, e, f }] of plan) {
+        const m = [cos * a, sin * a, -sin * d, cos * d, cos * e - sin * f + re, sin * e + cos * f + rf].map(n)
+        out = setAttrsById(out, el.id, { transform: `matrix(${m.join(' ')})` })
+      }
+      return out
+    })
+  }
+
   return {
+    rotationGroupPlan,
+    previewGroupRotation,
     rotationPlan,
     previewRotation,
     dragPlan,

@@ -385,6 +385,27 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a rotation of the whole selection shown through the model', () => {
+    it('turns each element about the common centre, after its own transform', () => {
+      canvas.undoMgr.snapshots.baseline()
+      els[1].setAttribute('transform', 'translate(10 0)')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.rotationGroupPlan([els[0], els[1]])
+      expect(plan).not.toBeNull()
+      canvas.previewGroupRotation(plan, 90, 0, 0)
+      expect(els[0].getAttribute('transform')).toBe('matrix(0 1 -1 0 0 0)')
+      expect(els[1].getAttribute('transform')).toBe('matrix(0 1 -1 0 0 10)')
+      const size = canvas.undoMgr.getUndoStackSize()
+      expect(canvas.snapshotHistory.endPreview('Rotate')).toBe(true)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(size + 1)
+      canvas.undoMgr.undo()
+      expect(els[0].hasAttribute('transform')).toBe(false)
+      expect(els[1].getAttribute('transform')).toBe('translate(10 0)')
+      els[0].setAttribute('transform', 'rotate(10)')
+      expect(canvas.rotationGroupPlan([els[0]])).toBeNull()
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {
