@@ -17,7 +17,6 @@ import type { HistoryCommand } from '../svgcanvas.ts'
 
 const {
   BatchCommand,
-  InsertElementCommand,
   ChangeElementCommand
 } = hstry
 
@@ -147,7 +146,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     const selectedElements = svgCanvas.getSelectedElements()
     let i: number
     let elem: Element
-    const batchCmd = new BatchCommand('Clone Elements')
     // find all the elements selected (stop at first null)
     const len = selectedElements.length
 
@@ -193,14 +191,12 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     // clipboard path.
     const originalDefs = svgCanvas.getReferencedDefElements(copiedElements)
     let defIdMap: Record<string, string> = {}
+    let defEntries: Array<{ parent: Element, el: Element }> = []
     if (originalDefs.length) {
       const clonedDefs = originalDefs.map((def) => def.cloneNode(true) as Element)
       defIdMap = svgCanvas.remapElementIdsAndRefs(clonedDefs, () => svgCanvas.getNextId())
       const defs = svgCanvas.findDefs()
-      clonedDefs.forEach((def) => {
-        defs.append(def)
-        batchCmd.addSubCommand(new InsertElementCommand(def))
-      })
+      defEntries = clonedDefs.map((def) => ({ parent: defs, el: def }))
     }
     // Rewrite an element's (and its descendants') url(#…)/href references from
     // the originals' def ids to the freshly cloned ones above.
@@ -220,6 +216,8 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       Array.from(el.children).forEach(remapToClonedDefs)
     }
 
+    const clones: Array<{ parent: Element, el: Element }> = []
+    const detach = new Map<string, ReturnType<typeof getGroupDetachTarget>['matrix']>()
     i = copiedElements.length
     while (i--) {
     // Clone each element and replace it within copiedElements, appending the
@@ -236,19 +234,20 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       elem = copiedElements[i] = drawing.copyElem(original)
       if (Object.keys(defIdMap).length) remapToClonedDefs(elem)
       const { targetParent, matrix } = getGroupDetachTarget(original.parentNode as Element)
-      if (targetParent !== original.parentNode) {
-        applyGroupDetachTransform(elem, matrix)
-        targetParent.append(elem)
-      } else {
-        original.parentNode?.append(elem)
-      }
-      batchCmd.addSubCommand(new InsertElementCommand(elem))
+      clones.push({ parent: targetParent, el: elem })
+      if (targetParent !== original.parentNode) detach.set(elem.id, matrix)
     }
 
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addToSelection(copiedElements.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
-      moveSelectedElements(x, y, false)
-      svgCanvas.addCommandToHistory(batchCmd)
+    if (clones.length) {
+      svgCanvas.transact('Clone Elements', () => {
+        // The clones are built detached; the model gets them (and the defs they point at), the renderer shows them
+        svgCanvas.insertLooseElements([...defEntries, ...clones])
+        const live = copiedElements.map((el) => svgCanvas.getElement(el.id) as Element)
+        // baking in the groups' transform needs the element in the drawing
+        for (const el of live) { const m = detach.get(el.id); if (m) applyGroupDetachTransform(el, m) }
+        svgCanvas.addToSelection(live.reverse(), true) // Need to reverse for correct selection-adding; show grips so the clone is ready to resize
+        moveSelectedElements(x, y, false)
+      })
     }
   }
 

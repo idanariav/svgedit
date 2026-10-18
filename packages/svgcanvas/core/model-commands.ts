@@ -37,6 +37,11 @@ export interface ModelCommandsApi {
    * current group or layer, through the model, as one step. The element it returns is the one the renderer put in the DOM.
    */
   insertElementFromJson(data: SVGElementJSON): Element | null
+  /**
+   * Add these detached elements as the last child of the parent each names, through the model, as one step (inside a
+   * transaction it joins that). Returns the elements the renderer put in the DOM, in the order given.
+   */
+  insertLooseElements(entries: Array<{ parent: Element, el: Element }>): Element[]
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -181,7 +186,23 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return svgCanvas.getElement(String(attr.id)) ?? null
   }
 
+  const insertLooseElements = (entries: Array<{ parent: Element, el: Element }>): Element[] => {
+    const adds = entries.flatMap(({ parent, el }) => {
+      const at = svgCanvas.snapshotHistory.pathOf(parent)
+      return at ? [{ at, id: el.id, model: readDom(el) as ModelElement }] : []
+    })
+    if (!adds.length) return []
+    svgCanvas.snapshotHistory.edit('Insert Elements', (root) => {
+      let out = root
+      // Paths are indexes, and appending to a parent never moves another parent's children: later paths stay valid.
+      for (const { at, model } of adds) out = withChildren(out, at, (kids) => [...kids, model])
+      return out
+    })
+    return adds.map(({ id }) => svgCanvas.getElement(id)).filter((el): el is Element => Boolean(el))
+  }
+
   return {
+    insertLooseElements,
     insertElementFromJson,
     changeSelectedAttributeByModel,
     moveToTopSelectedElement,

@@ -166,6 +166,21 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('insertLooseElements', () => {
+    it('puts detached elements in their parents through the model, as one step', () => {
+      const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      a.setAttribute('id', 'loose1')
+      const b = a.cloneNode(true)
+      b.setAttribute('id', 'loose2')
+      const out = canvas.insertLooseElements([{ parent: layer, el: a }, { parent: layer, el: b }])
+      expect(out.map((e) => e.id)).toEqual(['loose1', 'loose2'])
+      expect(out[0].parentNode).toBe(layer)
+      expect(canvas.undoMgr.getUndoStackSize()).toBe(1)
+      canvas.undoMgr.undo()
+      expect(layer.querySelector('[id="loose2"]')).toBeNull()
+    })
+  })
+
   describe('insertElementFromJson', () => {
     it('creates the element in the current layer through the model, in one step, with the current paint', () => {
       const el = canvas.insertElementFromJson({ element: 'circle', curStyles: true, attr: { id: 'n1', cx: 5, cy: 6, r: 7 } })
