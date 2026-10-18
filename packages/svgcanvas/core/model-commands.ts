@@ -114,7 +114,9 @@ const POINT_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   foreignObject: [['x', 'x'], ['y', 'y']],
   circle: [['cx', 'x'], ['cy', 'y']],
   ellipse: [['cx', 'x'], ['cy', 'y']],
-  line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']]
+  line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']],
+  polyline: [],
+  polygon: []
 }
 const NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i
 
@@ -183,6 +185,14 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
       set.y1 = String(p1[1])
       set.x2 = String(p2[0])
       set.y2 = String(p2[1])
+      break
+    }
+    case 'polyline': case 'polygon': {
+      const nums = (el.getAttribute('points') ?? '').trim().split(/[\s,]+/).filter(Boolean).map(Number)
+      if (nums.length < 2 || nums.length % 2 || !nums.every(Number.isFinite)) return null
+      const out: string[] = []
+      for (let i = 0; i < nums.length; i += 2) out.push(`${map.a * nums[i] + map.e},${map.d * nums[i + 1] + map.f}`)
+      set.points = out.join(' ')
       break
     }
     default: return null

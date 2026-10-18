@@ -60,7 +60,7 @@ export const multiply = (m: Affine, n: Affine): Affine => [
 
 /** What `recalculateDimensions` can absorb exactly (a circle would stay round, text and images do not stretch). */
 /** What takes a scale into its own attributes through the model (`affineEdit`) */
-const MODEL_BAKE = new Set(['rect', 'ellipse', 'line'])
+const MODEL_BAKE = new Set(['rect', 'ellipse', 'line', 'circle', 'polyline', 'polygon'])
 const BAKEABLE = new Set(['rect', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
 
 /**
@@ -183,7 +183,7 @@ export const transformEach = (
       const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
       const parts = decompose(result)
       if (parts && MODEL_BAKE.has(el.localName)) {
-        // A rect / ellipse / line takes the scale into its geometry and keeps the rotation as `rotate()`: stated on the model
+        // A rect / ellipse / line / circle / polyline / polygon takes the scale into its geometry and keeps the rotation as `rotate()`: stated on the model
         const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
         const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
         const c1y = result[1] * c0.x + result[3] * c0.y + result[5]

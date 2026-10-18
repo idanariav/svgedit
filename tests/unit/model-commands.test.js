@@ -369,6 +369,20 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('affineEdit', () => {
+    it('maps the points of a polyline and the centre and radius of a circle', async () => {
+      const { affineEdit } = await import('../../packages/svgcanvas/core/model-commands.ts')
+      const ns = 'http://www.w3.org/2000/svg'
+      const poly = document.createElementNS(ns, 'polyline')
+      poly.setAttribute('points', '0,0 10,5')
+      expect(affineEdit(poly, { a: 2, d: 3, e: 1, f: 1 })).toEqual({ points: '1,1 21,16' })
+      const circle = document.createElementNS(ns, 'circle')
+      circle.setAttribute('cx', '5'); circle.setAttribute('cy', '5'); circle.setAttribute('r', '2')
+      expect(affineEdit(circle, { a: 2, d: 2, e: 0, f: 0 })).toEqual({ cx: '10', cy: '10', r: '4' })
+      expect(affineEdit(circle, { a: 2, d: 3, e: 0, f: 0 })).toBeNull()
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
