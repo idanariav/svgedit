@@ -113,7 +113,8 @@ export const init = (canvas: SvgCanvas): {
             fill: 'none',
             opacity: Number(curShape.opacity) / 2,
             'stroke-linecap': 'round',
-            style: 'pointer-events:none'
+            style: 'pointer-events:none',
+            'data-se-ephemeral': '' // a preview until release (event.ts `commitDrawn`)
           }
         })
         svgCanvas.setFreehand('minx', realX)

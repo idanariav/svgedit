@@ -378,7 +378,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
             id: svgCanvas.getId(),
             d,
             fill: 'none',
-            'data-freehand': '1'
+            'data-freehand': '1',
+            'data-se-ephemeral': '' // taken into the drawing on release (event.ts `commitDrawn`)
           }
         })
       // No need to call "changed", as this is already done under mouseUp

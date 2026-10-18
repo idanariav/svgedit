@@ -88,7 +88,8 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
           id: svgCanvas.getId(),
           d: anchorsToD([fitted]),
           fill: 'none',
-          'data-freehand': '1'
+          'data-freehand': '1',
+          'data-se-ephemeral': '' // taken into the drawing on release (event.ts `commitDrawn`)
         }
       })
     } catch (err) {

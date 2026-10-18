@@ -41,6 +41,18 @@ test.describe('Pencil and Smooth Path fit', () => {
     return { d, segments: (d.match(/[CL]/g) || []).length, nums: d.match(/-?\d+(\.\d+)?/g).map(Number) }
   })
 
+  test('a pencil stroke is one undo step through the model: no polyline preview is left, undo removes it, redo brings it back', async ({ page }) => {
+    await draw(page, strokeOf([{ x: 100, y: 300 }, { x: 220, y: 100 }, { x: 340, y: 300 }]))
+    await expect(path(page)).toHaveCount(1)
+    expect(await page.locator('#svgcontent polyline').count()).toBe(0)
+    const size = await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())
+    await page.evaluate(() => window.svgEditor.commands.run('tool_undo'))
+    await expect(page.locator('#svgcontent g.layer > path')).toHaveCount(0)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())).toBe(size - 1)
+    await page.evaluate(() => window.svgEditor.commands.run('tool_redo'))
+    await expect(page.locator('#svgcontent g.layer > path')).toHaveCount(1)
+  })
+
   test('a pencil stroke with a sharp turn commits as a few segments and keeps the turn sharp', async ({ page }) => {
     const stroke = strokeOf([{ x: 100, y: 300 }, { x: 220, y: 100 }, { x: 340, y: 300 }])
     await draw(page, stroke)
