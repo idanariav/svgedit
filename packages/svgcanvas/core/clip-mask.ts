@@ -15,6 +15,7 @@
  * @license MIT
  */
 
+import { removeIds } from './model/edit.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BatchCommand } from './history.js'
 import { warn } from '../common/logger.ts'
@@ -105,7 +106,7 @@ const getFeather = (elem: Element | null | undefined): number => {
 }
 
 /** What the clip / mask operations read from their canvas. */
-type Host = Pick<SvgCanvas, 'getElement' | 'getSvgContent' | 'getNextId' | 'addSVGElementsFromJson' | 'findDefs' | 'history' | 'clearSelection' | 'addCommandToHistory' | 'selectOnly' | 'getSelectedElements'>
+type Host = Pick<SvgCanvas, 'getElement' | 'getSvgContent' | 'getNextId' | 'addSVGElementsFromJson' | 'findDefs' | 'history' | 'clearSelection' | 'addCommandToHistory' | 'transact' | 'insertLooseElements' | 'buildElementFromJson' | 'setElementAttributes' | 'snapshotHistory' | 'selectOnly' | 'getSelectedElements'>
 
 /** The clip / mask / feather operations of one canvas (`svgCanvas.clipMask`). */
 export interface ClipMask {
@@ -153,7 +154,7 @@ export const createClipMask = (svgCanvas: Host): ClipMask => {
     const id = svgCanvas.getNextId()
 
     // Create the container and relocate it into <defs>
-    const container = svgCanvas.addSVGElementsFromJson(
+    const container = svgCanvas.buildElementFromJson(
       type === 'clip'
         // clipPathUnits defaults to userSpaceOnUse; set it explicitly for clarity.
         ? { element: 'clipPath', attr: { id, clipPathUnits: 'userSpaceOnUse' } }
@@ -183,9 +184,18 @@ export const createClipMask = (svgCanvas: Host): ClipMask => {
     }
     compensateTransform(clone, topElem, bottomElem)
     container.append(clone)
-    svgCanvas.findDefs().append(container)
 
-    // Apply the reference on the top element (the overlay being trimmed)
+    // The definition goes into <defs> and the reference onto the top element (the overlay being trimmed), through the model
+    if (container.id && topElem.id) {
+      svgCanvas.clearSelection()
+      svgCanvas.transact(type === 'clip' ? 'Set clip' : 'Set mask', () => {
+        svgCanvas.insertLooseElements([{ parent: svgCanvas.findDefs(), el: container }])
+        svgCanvas.setElementAttributes('Set reference', topElem, { [refAttr]: `url(#${id})` })
+      })
+      svgCanvas.selectOnly([topElem], true)
+      return
+    }
+    svgCanvas.findDefs().append(container)
     const oldRefValue = topElem.getAttribute(refAttr)
     topElem.setAttribute(refAttr, `url(#${id})`)
 
@@ -225,6 +235,17 @@ export const createClipMask = (svgCanvas: Host): ClipMask => {
     const id = (refValue as string).replace(/^url\(["']?#/, '').replace(/["']?\)$/, '')
     const container = svgCanvas.getElement(id)
 
+    if (elem.id) {
+      // The reference goes, and the definition with it unless something else uses it: one step, through the model
+      const stillUsed = container && svgCanvas.getSvgContent()
+        .querySelector(`[clip-path="url(#${id})"]:not([id="${elem.id}"]), [mask="url(#${id})"]:not([id="${elem.id}"])`)
+      svgCanvas.transact('Release clip/mask', () => {
+        svgCanvas.setElementAttributes('Release', elem, { [refAttr]: null })
+        if (container?.id && !stillUsed) svgCanvas.snapshotHistory.edit('Release', (root) => removeIds(root, [container.id]))
+      })
+      svgCanvas.selectOnly([elem], true)
+      return
+    }
     const { BatchCommand, RemoveElementCommand, ChangeElementCommand } = svgCanvas.history
     const batchCmd = new BatchCommand('Release clip/mask')
 
