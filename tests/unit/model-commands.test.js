@@ -460,6 +460,26 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('a resize of a turned polyline and path shown through the model', () => {
+    it('keeps the look of the turned shape: scaled in its own frame, turned about its new middle', () => {
+      const ns = 'http://www.w3.org/2000/svg'
+      const layerEl = els[0].parentNode
+      const poly = document.createElementNS(ns, 'polyline')
+      poly.setAttribute('id', 'pl'); poly.setAttribute('points', '0,0 40,0 40,20'); poly.setAttribute('transform', 'rotate(90 20 10)')
+      layerEl.append(poly)
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([poly], true)
+      expect(plan).not.toBeNull()
+      canvas.previewTurnedScale(plan, { a: 2, d: 1, e: 0, f: 0 }) // twice as wide about the left edge (x = 0)
+      const pts = poly.getAttribute('points').split(/[\s,]+/).map(Number)
+      // the scaled points, moved so that their middle sits where the turned one's did
+      expect(pts[2] - pts[0]).toBe(80)
+      expect(poly.getAttribute('transform')).toMatch(/^rotate\(90 /)
+      canvas.snapshotHistory.cancelPreview()
+      expect(poly.getAttribute('points')).toBe('0,0 40,0 40,20')
+    })
+  })
+
   describe('commitTransforms', () => {
     const undoPreview = (el, was) => { if (was) el.setAttribute('transform', was); else el.removeAttribute('transform') }
     it('states the transform a gesture left on the model, as one step from before it', () => {

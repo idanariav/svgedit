@@ -609,27 +609,55 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     })
   }
   const previewScale = (plan: Map<Element, DragEntry>, scale: Affine): void => previewWith(plan, (own) => compose(own, scale))
+  /** The middle of the bounds of the coordinates an edit wrote (a point of the new geometry to keep the turn about). */
+  const geometryMiddle = (node: ModelElement, set: Record<string, string | null>): [number, number] | null => {
+    const num = (name: string): number => Number(set[name] ?? node.attrs.find((a) => a.name === name)?.value ?? 0)
+    const bounds = (pts: Array<[number, number]>): [number, number] | null => {
+      if (!pts.length) return null
+      const xs = pts.map((p) => p[0])
+      const ys = pts.map((p) => p[1])
+      return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2]
+    }
+    switch (node.name) {
+      case 'rect': case 'image': case 'foreignObject': return [num('x') + num('width') / 2, num('y') + num('height') / 2]
+      case 'ellipse': case 'circle': return [num('cx'), num('cy')]
+      case 'line': return bounds([[num('x1'), num('y1')], [num('x2'), num('y2')]])
+      case 'polyline': case 'polygon': {
+        const n = (set.points ?? '').trim().split(/[\s,]+/).filter(Boolean).map(Number)
+        return bounds(n.flatMap((v, i) => (i % 2 ? [] : [[v, n[i + 1]] as [number, number]])))
+      }
+      case 'path': {
+        const pts: Array<[number, number]> = []
+        for (const seg of (new SvgPath(set.d ?? '').abs().unarc().unshort() as unknown as { segments: Array<[string, ...number[]]> }).segments) {
+          const v = seg.slice(1) as number[]
+          if (seg[0] === 'H') pts.push([v[0], 0])
+          else if (seg[0] === 'V') pts.push([0, v[0]])
+          else for (let i = 0; i + 1 < v.length; i += 2) pts.push([v[i], v[i + 1]])
+        }
+        return bounds(pts)
+      }
+      default: return null
+    }
+  }
+
   const previewTurnedScale = (plan: Map<Element, DragEntry>, scale: Affine): void => {
     svgCanvas.snapshotHistory.preview((root) => {
       let out = root
       for (const [el, entry] of plan) {
         const rot = entry.rot
         const node = findById(root, el.id)
-        const set = rot && node && affineEdit(node, scale)
-        if (!rot || !set) continue
-        const num = (name: string, node2: ModelElement): number => Number(set[name] ?? node2.attrs.find((a) => a.name === name)?.value ?? 0)
-        const round = (v: number) => Number(v.toFixed(6))
-        const rectLike = ['rect', 'image', 'foreignObject'].includes(node.name)
-        const [kx, ky] = rectLike ? ['x', 'y'] : ['cx', 'cy']
-        const mx = rectLike ? num('x', node) + num('width', node) / 2 : num('cx', node)
-        const my = rectLike ? num('y', node) + num('height', node) / 2 : num('cy', node)
+        const scaled = rot && node && affineEdit(node, scale)
+        const was = scaled && node && geometryMiddle(node, scaled)
+        if (!rot || !node || !scaled || !was) continue
+        // The scaled geometry's middle lands where the turn takes it; the shape is then moved there and turned about it
         const rad = rot.angle * Math.PI / 180
-        const ox = mx - rot.cx
-        const oy = my - rot.cy
+        const ox = was[0] - rot.cx
+        const oy = was[1] - rot.cy
         const c1x = rot.cx + Math.cos(rad) * ox - Math.sin(rad) * oy
         const c1y = rot.cy + Math.sin(rad) * ox + Math.cos(rad) * oy
-        set[kx] = String(round(num(kx, node) + c1x - mx))
-        set[ky] = String(round(num(ky, node) + c1y - my))
+        const set = affineEdit(node, compose({ a: 1, d: 1, e: c1x - was[0], f: c1y - was[1] }, scale))
+        if (!set) continue
+        const round = (v: number) => Number(v.toFixed(6))
         set.transform = `rotate(${rot.angle} ${round(c1x)} ${round(c1y)})`
         out = setAttrsById(out, el.id, set)
       }

@@ -219,8 +219,10 @@ export const init = (canvas: SvgCanvas): {
     if (!svgCanvas.gesture.hasResizeStartTransform) {
       const pos = getRotationAngle(selected) ? 1 : 0
       // A plain shape is resized in front of the renderer: the model shows each size, the element gets no dummy transforms
-      const turnable = ['rect', 'ellipse', 'circle', 'image', 'foreignObject'].includes(selected.tagName)
+      const turnable = ['rect', 'ellipse', 'circle', 'image', 'foreignObject', 'line', 'polyline', 'polygon', 'path'].includes(selected.tagName)
       svgCanvas.gesture.dragPlan = !hasMatrix && (!pos || turnable) ? svgCanvas.dragPlan([selected], Boolean(pos)) : null
+      // (a clipped shape's entry is a matrix to move, not a geometry to scale: it resizes the old way)
+      if (svgCanvas.gesture.dragPlan?.get(selected)?.matrix) svgCanvas.gesture.dragPlan = null
       svgCanvas.gesture.resizeStartBox = svgCanvas.gesture.dragPlan ? requireBBox(selected) : null
       if (svgCanvas.gesture.dragPlan) {
         // nothing to insert
