@@ -48,6 +48,13 @@ describe('checkDrawing', () => {
     expect(codes(wrap('<g id="a" transform="translate(1 0)"/>'))).toEqual([])
   })
 
+  it('empty-path (a path with no d)', () => {
+    expect(codes(wrap('<path/>'))).toEqual(['empty-path'])
+    expect(codes(wrap('<path id="p" fill="none"/>'))).toEqual(['empty-path'])
+    expect(codes(wrap('<path id="p" d="M0 0 L1 1"/>'))).toEqual([])
+    expect(codes(wrap('<g data-se-ephemeral=""><path/></g>'))).toEqual([])
+  })
+
   it('bad-number in geometry', () => {
     expect(codes(wrap('<rect id="a" x="NaN" y="1" width="undefined" height="2"/>'))).toEqual(['bad-number', 'bad-number'])
     expect(codes(wrap('<path id="p" d="M 0 0 L Infinity 5"/>'))).toEqual(['bad-number'])

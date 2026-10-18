@@ -123,4 +123,28 @@ test.describe('Model boxes against rendered ink', () => {
     })
     console.log('getStrokedBBox vs rendered ink:', JSON.stringify(report))
   })
+
+  test('a turned curve or rect is measured by its extent, and measuring adds nothing to the drawing', async ({ page }) => {
+    const shapes = [
+      ['curve, 30', '<path id="s1" d="M20 20 C60 -20 100 60 140 20 L140 80" fill="#000" stroke="none" transform="rotate(30 80 40)"/>'],
+      ['arch, 45', '<path id="s2" d="M20 60 Q80 -40 140 60" fill="#000" stroke="none" transform="rotate(45 80 40)"/>'],
+      ['arch, 90', '<path id="s3" d="M20 60 Q80 -40 140 60" fill="#000" stroke="none" transform="rotate(90 80 40)"/>'],
+      ['rect, 90', '<rect id="s4" x="10" y="10" width="40" height="20" fill="#000" stroke="none" transform="rotate(90 30 20)"/>']
+    ]
+    await page.evaluate((markup) => window.svgEditor.svgCanvas.setSvgString(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><g class="layer"><title>L</title>${markup}</g></svg>`), shapes.map(([, m]) => m).join(''))
+    const before = await page.evaluate(() => document.querySelectorAll('#svgcontent *').length)
+    const got = await page.evaluate((ids) => {
+      const canvas = window.svgEditor.svgCanvas
+      // measured twice: each call used to add an empty <path> to the drawing for a right-angle turn
+      canvas.getStrokedBBox([document.getElementById(ids[0])])
+      return ids.map((id) => { const b = canvas.getStrokedBBox([document.getElementById(id)]); return [b.x, b.y, b.x + b.width, b.y + b.height] })
+    }, shapes.map((_, i) => `s${i + 1}`))
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent *').length)).toBe(before)
+    const painted = await ink(page, shapes.map(([, markup], i) => ({ markup: markup.replace(/ id="s\d"/, ''), region: [got[i][0] - 12, got[i][1] - 12, got[i][2] - got[i][0] + 24, got[i][3] - got[i][1] + 24] })))
+    shapes.forEach(([name], i) => {
+      const worst = Math.max(...got[i].map((v, k) => Math.abs(v - painted[i][k])))
+      expect(worst, name).toBeLessThan(Math.max(0.2, 4 * painted[i][4]))
+    })
+  })
 })

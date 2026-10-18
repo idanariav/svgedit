@@ -19,14 +19,23 @@ import { fileURLToPath } from 'node:url'
 import LZString from 'lz-string'
 
 /**
- * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. Empty
- * on purpose: the earlier ones (NaN tspans, `undefined` text in <defs>, stacked translate())
- * ran over the vault on 2026-10-10 and were deleted; `git log -- scripts/repair-drawings.mjs`
- * has them as templates.
+ * The attribute-less `<path>` that `getBBoxWithTransform` added to the drawing on every measure of a rect turned by a right
+ * angle (fixed 2026-10-18): `<path></path>`, `<path/>` or `<path />`, with the line it sat on. A path with any attribute is left
+ * alone.
+ * @param {string} source
+ * @returns {string}
+ */
+export const dropEmptyPaths = (source) => source.replace(/[ \t]*<path\s*(?:\/>|>\s*<\/path>)[ \t]*\r?\n?/g, '')
+
+/**
+ * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. Delete an
+ * entry once it has run over every drawing you care about; the earlier ones (NaN tspans,
+ * `undefined` text in <defs>, stacked translate()) ran over the vault on 2026-10-10 and were
+ * deleted, and `git log -- scripts/repair-drawings.mjs` has them as templates.
  * @typedef {{name: string, run: (source: string) => string}} Repair
  * @type {Repair[]}
  */
-export const REPAIRS = []
+export const REPAIRS = [{ name: 'empty path elements', run: dropEmptyPaths }]
 
 /**
  * @param {string} source

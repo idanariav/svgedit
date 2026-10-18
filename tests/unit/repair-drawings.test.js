@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import LZString from 'lz-string'
-import { REPAIRS, repairSvg, repairMarkdown } from '../../scripts/repair-drawings.mjs'
+import { REPAIRS, dropEmptyPaths, repairSvg, repairMarkdown } from '../../scripts/repair-drawings.mjs'
 
 const doc = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" id="svgcontent"><g class="layer"><title>L</title>${inner}</g></svg>`
 
-// The real REPAIRS list is empty (every repair so far has been run and deleted); the machinery is
-// tested with a stand-in that has the shape of the old NaN-tspan repair.
+// The machinery is tested with a stand-in that has the shape of an old repair (NaN tspans); the real
+// REPAIRS list is tested below.
 const dropNaNTspanCoords = (source) =>
   source.replace(/<tspan\b[^>]*>/g, (tag) => tag.replace(/\s(?:x|y)="NaN"/g, ''))
 const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
-  it('ships no repairs (they are deleted once run)', () => {
-    expect(REPAIRS).toEqual([])
+  it('ships only the repairs that have not been run over every drawing yet', () => {
+    expect(REPAIRS.map((r) => r.name)).toEqual(['empty path elements'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -61,5 +61,24 @@ describe('repair-drawings: plugin notes', () => {
     expect(repairMarkdown(clean, repairs)).toEqual({ source: clean, applied: [] })
     const other = '```js\nconst a = "NaN"\n```\n```compressed-svg\n!!!not base64!!!\n```\n'
     expect(repairMarkdown(other, repairs)).toEqual({ source: other, applied: [] })
+  })
+})
+
+describe('repair-drawings: empty path elements', () => {
+  it('removes an attribute-less <path> in each spelling, with the line it sat on', () => {
+    const rect = '<rect id="a" x="1"/>'
+    for (const empty of ['<path></path>', '<path/>', '<path />', '<path>\n</path>']) {
+      expect(dropEmptyPaths(`<g>\n  ${rect}\n  ${empty}\n  ${empty}\n</g>`)).toBe(`<g>\n  ${rect}\n</g>`)
+    }
+    expect(dropEmptyPaths(`<g>${rect}<path></path></g>`)).toBe(`<g>${rect}</g>`)
+  })
+
+  it('leaves a path with any attribute, text inside a path and a pathLength alone', () => {
+    const keep = '<g><path d="M0 0"/><path id="p"></path><path fill="none"/><path>x</path></g>'
+    expect(dropEmptyPaths(keep)).toBe(keep)
+  })
+
+  it('is what repairSvg applies, and reports', () => {
+    expect(repairSvg(doc('<path></path><rect id="a"/>'))).toEqual({ source: doc('<rect id="a"/>'), applied: ['empty path elements'] })
   })
 })

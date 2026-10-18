@@ -73,7 +73,10 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 
-Suggested order: R3 toolchain → R2 → R1 step (a) (which also gives the
+**R1 stops at "the model owns state and undo, the DOM is the view and the measurer"** (2026-10-18); what is deliberately not
+being done is listed in [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md#not-worth-doing-decided-2026-10-18).
+
+Suggested order (history): R3 toolchain → R2 → R1 step (a) (which also gives the
 [LLM CLI](roadmap/llm-cli.md) its headless engine) → decide on the rest of R1 with that in hand. Step (a) was done first, out of
 this order, because it needed neither: what it learned about R2 and R3 is in the re-architecture file. R4 and R6 run alongside.
 

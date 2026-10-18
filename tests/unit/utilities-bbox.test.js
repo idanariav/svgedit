@@ -268,7 +268,8 @@ describe('utilities bbox', function () {
     assert.close(bbox.y, 15, EPSILON)
     assert.close(bbox.width, 20, EPSILON)
     assert.close(bbox.height, 10, EPSILON)
-    assert.equal(mockaddSVGElementsFromJsonCallCount, 1)
+    // measuring used to add an empty <path> to the drawing here (addSVGElementsFromJson was called once per measure)
+    assert.equal(mockaddSVGElementsFromJsonCallCount, 0)
     elem.remove()
 
     const rect = { x: 10, y: 10, width: 10, height: 20 }

@@ -463,63 +463,12 @@ export const getBBoxWithTransform = (
 
   const transformAttr = elem.getAttribute?.('transform') ?? ''
   const hasMatrixAttr = transformAttr.includes('matrix(')
-  // only a lone `rotate(angle cx cy)`: the numbers are read off the string, which a `translate(…) rotate(…)` would mislead
-  if (/^\s*rotate\([^)]*\)\s*$/.test(transformAttr) && !hasMatrixAttr) {
-    const nums = transformAttr.match(/-?\d*\.?\d+/g)?.map(Number) || []
-    const [angle = 0, cx = 0, cy = 0] = nums
-    const rad = angle * Math.PI / 180
-    const cos = Math.cos(rad)
-    const sin = Math.sin(rad)
-    const tag = elem.tagName?.toLowerCase()
-    let points: Array<{ x: number, y: number }> = []
-    if (tag === 'path') {
-      const d = elem.getAttribute('d') || ''
-      const coords = (d.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
-      for (let i = 0; i < coords.length; i += 2) {
-        points.push({ x: coords[i], y: coords[i + 1] ?? 0 })
-      }
-    } else if (tag === 'rect') {
-      const x = Number(elem.getAttribute('x') ?? 0)
-      const y = Number(elem.getAttribute('y') ?? 0)
-      const w = Number(elem.getAttribute('width') ?? 0)
-      const h = Number(elem.getAttribute('height') ?? 0)
-      points = [
-        { x, y },
-        { x: x + w, y },
-        { x, y: y + h },
-        { x: x + w, y: y + h }
-      ]
-    }
-    if (points.length) {
-      const rotatedPts = points.map(pt => {
-        const dx = pt.x - cx
-        const dy = pt.y - cy
-        return {
-          x: cx + (dx * cos - dy * sin),
-          y: cy + (dx * sin + dy * cos)
-        }
-      })
-      const xs = rotatedPts.map(p => p.x)
-      const ys = rotatedPts.map(p => p.y)
-      let rotatedBBox = {
-        x: Math.min(...xs),
-        y: Math.min(...ys),
-        width: Math.max(...xs) - Math.min(...xs),
-        height: Math.max(...ys) - Math.min(...ys)
-      }
-      const matrixMatch = transformAttr.match(/matrix\(([^)]+)\)/)
-      if (matrixMatch) {
-        const vals = matrixMatch[1].split(/[,\s]+/).filter(Boolean).map(Number)
-        const e = vals[4] ?? 0
-        const f = vals[5] ?? 0
-        rotatedBBox = { ...rotatedBBox, x: rotatedBBox.x + e, y: rotatedBBox.y + f }
-      }
-      const isRightAngle = Math.abs(angle % 90) < 0.001
-      if (tag !== 'path' && isRightAngle && typeof addSVGElementsFromJson === 'function') {
-        addSVGElementsFromJson({ element: 'path', attr: {} })
-      }
-      return rotatedBBox
-    }
+  // A lone `rotate(angle cx cy)` on a path or a rect (what the editor writes when the user turns one): the model turns the
+  // geometry itself, so a curve is measured by its extent, not by its control points, and nothing is added to the drawing
+  if (/^\s*rotate\([^)]*\)\s*$/.test(transformAttr) && !hasMatrixAttr && (elem.nodeName === 'path' || elem.nodeName === 'rect')) {
+    const m = parseMatrix(transformAttr)
+    const turned = m && geometricBounds(shallowModel(elem), m)
+    if (turned) return turned
   }
 
   const tlist = getTransformList(elem)

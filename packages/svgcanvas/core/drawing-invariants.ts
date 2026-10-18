@@ -165,6 +165,12 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
       add('stacked-translate', `<${tag}> transform="${transform.length > 60 ? transform.slice(0, 60) + '…' : transform}" stacks translate() items`, el)
     }
 
+    // empty-path: a <path> with no `d`; measuring a turned rect once added one to the drawing on every call (an overlay that is
+    // never saved is not part of the drawing)
+    if (tag === 'path' && !el.hasAttribute('d') && !el.closest('[data-se-ephemeral]')) {
+      add('empty-path', '<path> has no d attribute', el)
+    }
+
     // module-owned checks (se-stack, …): only elements with `se:` state are worth the call
     if (elementChecks.size && Array.from(el.attributes).some((a) => a.name.startsWith('se:'))) {
       for (const [code, check] of elementChecks) {
