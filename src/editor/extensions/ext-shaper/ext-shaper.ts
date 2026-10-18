@@ -22,6 +22,7 @@
 
 import { recognize } from '@svgedit/svgcanvas/core/shape-recognize.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import { toolSpace } from '../../toolSpace.ts'
 
 const name = 'shaper'
 
@@ -161,7 +162,9 @@ export default defineFeature({
     addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
 
     /** In-progress stroke: document points, the preview polyline and the last client point kept. */
-    let stroke: { points: { x: number, y: number }[], line: SVGPolylineElement, lastScreen: { x: number, y: number } } | null = null
+    /** The preview is an overlay (document units); `points` stay in the entered group's space, where the shape is made. */
+    const space = toolSpace(svgCanvas)
+    let stroke: { points: { x: number, y: number }[], shown: string[], line: SVGPolylineElement, lastScreen: { x: number, y: number } } | null = null
 
     const createShape = (desc: { element: string; attr: Record<string, string | number | undefined>; open?: boolean; }) => {
       const attr: Record<string, string | number | undefined> = { id: svgCanvas.getNextId(), ...desc.attr }
@@ -208,8 +211,9 @@ export default defineFeature({
         line.setAttribute('stroke-linejoin', 'round')
         line.setAttribute('vector-effect', 'non-scaling-stroke')
         ctx.addOverlay(line)
-        stroke = { points: [{ x: ev.rawX, y: ev.rawY }], line, lastScreen: { x: ev.screenX, y: ev.screenY } }
-        line.setAttribute('points', `${ev.rawX},${ev.rawY}`)
+        const at = space.docPoint(ev)
+        stroke = { points: [{ x: ev.rawX, y: ev.rawY }], shown: [`${at.x},${at.y}`], line, lastScreen: { x: ev.screenX, y: ev.screenY } }
+        line.setAttribute('points', stroke.shown[0])
       },
 
       pointerMove (ctx, ev) {
@@ -218,7 +222,9 @@ export default defineFeature({
         if (Math.hypot(ev.screenX - stroke.lastScreen.x, ev.screenY - stroke.lastScreen.y) < 1) return
         stroke.lastScreen = { x: ev.screenX, y: ev.screenY }
         stroke.points.push({ x: ev.rawX, y: ev.rawY })
-        stroke.line.setAttribute('points', stroke.points.map((p: { x: number, y: number }) => `${p.x},${p.y}`).join(' '))
+        const at = space.docPoint(ev)
+        stroke.shown.push(`${at.x},${at.y}`)
+        stroke.line.setAttribute('points', stroke.shown.join(' '))
       },
 
       pointerUp (ctx, ev) {

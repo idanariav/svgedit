@@ -23,6 +23,7 @@ import { parseAnchors, anchorsToD, type SubPath } from '@svgedit/svgcanvas/core/
 import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import { toolSpace } from '../../toolSpace.ts'
 
 const name = 'smooth-tool'
 
@@ -58,6 +59,7 @@ export default defineFeature({
     let targets: Array<{ el: Element, d0: string, subpaths: SubPath[], marks: boolean[][], inverse: DOMMatrix, scale: number, touched: boolean }> = []
     let last: { x: number; y: number; } | null = null
     let ring: SVGCircleElement | null = null
+    const space = toolSpace(svgCanvas)
 
     /** The paths a press brushes: the smoothable ones among the selection, else the one under the pointer. */
     const pickTargets = (ev: import('@svgedit/svgcanvas').ToolEvent) => {
@@ -107,8 +109,9 @@ export default defineFeature({
       }
       // The overlay is emptied when a gesture ends: put the ring back.
       if (!ring.isConnected) ctx.addOverlay(ring)
-      ring.setAttribute('cx', String(ev.rawX))
-      ring.setAttribute('cy', String(ev.rawY))
+      const at = space.docPoint(ev)
+      ring.setAttribute('cx', String(at.x))
+      ring.setAttribute('cy', String(at.y))
       ring.setAttribute('r', String(radius() / ctx.zoom))
     }
 

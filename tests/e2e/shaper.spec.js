@@ -84,6 +84,19 @@ test.describe('Shaper tool', () => {
     expect(await line.getAttribute('fill')).toBe('none')
   })
 
+  test('inside an entered, moved group the preview trail follows the pointer on the page', async ({ page }) => {
+    await setSvgSource(page, `<svg width="800" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title><g id="grp" transform="translate(120 70) rotate(15)"><rect x="0" y="0" width="10" height="10"/></g></g>
+    </svg>`)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setContext('grp'))
+    await page.evaluate(() => window.svgEditor.commands.run('tool_shaper'))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 300, y: 200 }, { kind: 'move', x: 340, y: 220 }]))
+    const last = await page.locator('#toolOverlay polyline').evaluate((l) => l.getAttribute('points').split(' ').pop().split(',').map(Number))
+    expect(last[0]).toBeCloseTo(340, 0)
+    expect(last[1]).toBeCloseTo(220, 0)
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'up', x: 340, y: 220 }]))
+  })
+
   test('a stroke that is no shape leaves nothing and costs no undo step', async ({ page }) => {
     const before = await undoSize(page)
     const curl = Array.from({ length: 60 }, (_, i) => ({ x: 200 + 50 * Math.cos(i * 0.08), y: 200 + 50 * Math.sin(i * 0.08) }))

@@ -117,6 +117,18 @@ test.describe('Smooth tool', () => {
     await expect(page.locator('#toolOverlay circle')).toHaveCount(0)
   })
 
+  test('inside an entered, moved group the ring is still under the pointer', async ({ page }) => {
+    await setSvgSource(page, `<svg width="800" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title><g id="grp" transform="translate(120 70) rotate(15)">${zigzag('a', 100)}</g></g>
+    </svg>`)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setContext('grp'))
+    await tool(page)
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 250, y: 200 }]))
+    const at = await page.locator('#toolOverlay circle').evaluate((c) => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))])
+    expect(at[0]).toBeCloseTo(250, 0)
+    expect(at[1]).toBeCloseTo(200, 0)
+  })
+
   test('Escape mid-brush puts the path back', async ({ page }) => {
     const before = await xs(page, 'a')
     await select(page, 'a')

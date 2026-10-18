@@ -189,6 +189,7 @@ describe('ext-shaper', () => {
       getColor: () => '#336699',
       addSVGElementsFromJson: addFromJson,
       registerTool: (def) => { tools[def.id] = def },
+      getSvgContent: () => svgContent,
       getCurrentGroup: () => null,
       getCurrentDrawing: () => ({ getCurrentLayer: () => svgContent }),
       getVisibleElements: (parent) => [...parent.children].reverse(),
