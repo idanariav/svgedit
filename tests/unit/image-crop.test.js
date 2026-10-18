@@ -121,6 +121,7 @@ describe('image-crop: apply/cancel', () => {
       getZoom () { return this.zoom },
       getSvgContent () { return svgContent },
       call () {},
+      setElementAttributes () { return false }, // no model here: the DOM path records the step
       addCommandToHistory (cmd) {
         historyStack.push(cmd)
       }

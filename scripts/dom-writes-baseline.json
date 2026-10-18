@@ -24,7 +24,7 @@
   "packages/svgcanvas/core/group-detach.ts": 2,
   "packages/svgcanvas/core/group-ops.ts": 15,
   "packages/svgcanvas/core/guides.ts": 2,
-  "packages/svgcanvas/core/image-crop.ts": 24,
+  "packages/svgcanvas/core/image-crop.ts": 21,
   "packages/svgcanvas/core/json.ts": 5,
   "packages/svgcanvas/core/layer-ops.ts": 1,
   "packages/svgcanvas/core/layer.ts": 16,

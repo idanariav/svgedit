@@ -41,6 +41,11 @@ export interface ModelCommandsApi {
    * Add these detached elements as the last child of the parent each names, through the model, as one step (inside a
    * transaction it joins that). Returns the elements the renderer put in the DOM, in the order given.
    */
+  /**
+   * Set (a string) or remove (`null`) attributes on one element through the model, as one step; the element keeps its node.
+   * Returns false, having done nothing, for an element without an id (the model addresses by id).
+   */
+  setElementAttributes(label: string, el: Element, attrs: Record<string, string | null>): boolean
   insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
 }
 
@@ -206,7 +211,14 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return adds.map(({ id }) => (id ? svgCanvas.getElement(id) : null)).filter((el): el is Element => Boolean(el))
   }
 
+  const setElementAttributes = (label: string, el: Element, attrs: Record<string, string | null>): boolean => {
+    if (!el.id) return false
+    svgCanvas.snapshotHistory.edit(label, (root) => setAttrsById(root, el.id, attrs))
+    return true
+  }
+
   return {
+    setElementAttributes,
     insertLooseElements,
     insertElementFromJson,
     changeSelectedAttributeByModel,

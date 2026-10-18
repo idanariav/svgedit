@@ -747,9 +747,11 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
     (hasCurrentRx && hasCurrentRy && currentRx === radius && currentRy === radius)
     if (already) { return }
 
-    selected.setAttribute('rx', String(radius))
-    selected.setAttribute('ry', String(radius))
-    svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
+    if (!svgCanvas.setElementAttributes('Radius', selected, { rx: String(radius), ry: String(radius) })) {
+      selected.setAttribute('rx', String(radius))
+      selected.setAttribute('ry', String(radius))
+      svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
+    }
     svgCanvas.call('changed', [selected])
   }
 
@@ -991,11 +993,13 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       const oldArc = selected.getAttribute('data-arc')
       const oldD = selected.getAttribute('d')
       const newD = computeArcPathD(cx, cy, rx, ry, arc)
-      selected.setAttribute('data-arc', String(arc))
-      selected.setAttribute('d', newD)
-      svgCanvas.addCommandToHistory(
-        new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
-      )
+      if (!svgCanvas.setElementAttributes('Arc', selected, { 'data-arc': String(arc), d: newD })) {
+        selected.setAttribute('data-arc', String(arc))
+        selected.setAttribute('d', newD)
+        svgCanvas.addCommandToHistory(
+          new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
+        )
+      }
       svgCanvas.call('changed', [selected])
     }
   }
@@ -1034,12 +1038,15 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
 
     const arc = Number(selected.getAttribute('data-arc')) || 360
     const newD = computeArcPathD(geom.cx, geom.cy, geom.rx, geom.ry, arc)
-    changedAttrs.forEach(a => selected.setAttribute(a, String(attr === 'r' ? val : geom[attr])))
-    selected.setAttribute('d', newD)
-    const { ChangeElementCommand } = svgCanvas.history
-    svgCanvas.addCommandToHistory(
-      new ChangeElementCommand(selected, { ...oldVals, d: oldD }, attr)
-    )
+    const values = Object.fromEntries(changedAttrs.map(a => [a, String(attr === 'r' ? val : geom[attr])]))
+    if (!svgCanvas.setElementAttributes(attr, selected, { ...values, d: newD })) {
+      changedAttrs.forEach(a => selected.setAttribute(a, values[a]))
+      selected.setAttribute('d', newD)
+      const { ChangeElementCommand } = svgCanvas.history
+      svgCanvas.addCommandToHistory(
+        new ChangeElementCommand(selected, { ...oldVals, d: oldD }, attr)
+      )
+    }
     svgCanvas.call('changed', [selected])
   }
 

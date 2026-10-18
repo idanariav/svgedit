@@ -57,6 +57,7 @@ describe('elem-get-set', () => {
       addCommandToHistory (cmd) {
         historyStack.push(cmd)
       },
+      setElementAttributes () { return false }, // no model here: the DOM path records the step
       setCurText () {},
       textActions: {
         setCursor () {}

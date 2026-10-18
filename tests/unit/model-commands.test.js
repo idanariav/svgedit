@@ -274,6 +274,21 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('setElementAttributes', () => {
+    it('sets and removes attributes through the model, as one step', () => {
+      els[0].setAttribute('rx', '3')
+      canvas.undoMgr.snapshots.baseline()
+      expect(canvas.setElementAttributes('Radius', els[0], { rx: '9', ry: '9', fill: null })).toBe(true)
+      expect(els[0].getAttribute('rx')).toBe('9')
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Radius')
+      canvas.undoMgr.undo()
+      expect(els[0].getAttribute('rx')).toBe('3')
+      expect(els[0].hasAttribute('ry')).toBe(false)
+      const bare = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      expect(canvas.setElementAttributes('x', bare, { a: '1' })).toBe(false)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

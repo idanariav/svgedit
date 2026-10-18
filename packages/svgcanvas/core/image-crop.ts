@@ -99,7 +99,7 @@ export interface ImageCrop {
 }
 
 /** What the crop session reads from its canvas. */
-type Host = Pick<SvgCanvas, 'history' | 'destroyAbort' | 'selectorManager' | 'getMode' | 'setMode' | 'getZoom' | 'getSvgContent' | 'call' | 'addCommandToHistory'>
+type Host = Pick<SvgCanvas, 'history' | 'destroyAbort' | 'selectorManager' | 'getMode' | 'setMode' | 'getZoom' | 'getSvgContent' | 'call' | 'addCommandToHistory' | 'setElementAttributes'>
 
 export const createImageCrop = (svgCanvas: Host): ImageCrop => {
   interface Session {
@@ -299,23 +299,24 @@ export const createImageCrop = (svgCanvas: Host): ImageCrop => {
       throw new Error('This image can\'t be cropped — its source is cross-origin (CORS). Re-import it as an embedded file.')
     }
 
-    const { ChangeElementCommand, BatchCommand } = svgCanvas.history
-    const oldValues = {
-      x: origBounds.x,
-      y: origBounds.y,
-      width: origBounds.width,
-      height: origBounds.height,
-      '#href': href
-    }
-    setHref(imageElem, newHref)
-    imageElem.setAttribute('x', String(cropRect.x))
-    imageElem.setAttribute('y', String(cropRect.y))
-    imageElem.setAttribute('width', String(cropRect.width))
-    imageElem.setAttribute('height', String(cropRect.height))
+    const values = { x: String(cropRect.x), y: String(cropRect.y), width: String(cropRect.width), height: String(cropRect.height) }
+    // The model gets the new source and box (one step); an image without an id is edited in the DOM
+    if (!svgCanvas.setElementAttributes('Crop Image', imageElem, { href: newHref, ...values })) {
+      const { ChangeElementCommand, BatchCommand } = svgCanvas.history
+      const oldValues = {
+        x: origBounds.x,
+        y: origBounds.y,
+        width: origBounds.width,
+        height: origBounds.height,
+        '#href': href
+      }
+      setHref(imageElem, newHref)
+      for (const [name, value] of Object.entries(values)) imageElem.setAttribute(name, value)
 
-    const batchCmd = new BatchCommand('Crop Image')
-    batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues as unknown as Record<string, string | null>))
-    svgCanvas.addCommandToHistory(batchCmd)
+      const batchCmd = new BatchCommand('Crop Image')
+      batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues as unknown as Record<string, string | null>))
+      svgCanvas.addCommandToHistory(batchCmd)
+    }
     svgCanvas.call('changed', [imageElem])
 
     removeOverlay()
