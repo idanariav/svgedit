@@ -458,6 +458,22 @@ describe('model-first commands', () => {
       canvas.snapshotHistory.cancelPreview()
       expect(r.getAttribute('transform')).toBe('rotate(90)')
     })
+
+    it('does the same for a shape with a skew or several turns in its transform, but not for text', () => {
+      const r = els[1]
+      r.setAttribute('transform', 'skewX(20) translate(5 5)')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([r], true)
+      expect(plan?.get(r)?.matrix).toBeTruthy()
+      canvas.previewDrag(plan, 10, 0)
+      expect(r.getAttribute('x')).toBe('0')
+      expect(r.getAttribute('transform')).toMatch(/^matrix\(/)
+      canvas.snapshotHistory.cancelPreview()
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+      text.setAttribute('id', 'tx'); text.setAttribute('transform', 'skewX(20)')
+      r.parentNode.append(text)
+      expect(canvas.dragPlan([text], true)).toBeNull()
+    })
   })
 
   describe('a resize of a turned polyline and path shown through the model', () => {

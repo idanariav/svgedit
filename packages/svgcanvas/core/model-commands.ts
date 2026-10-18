@@ -572,7 +572,14 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         ? { ...IDENTITY, rot: { angle: Number(turned[1]), cx: Number(turned[2]), cy: Number(turned[3]) } }
         : parseAffine(el.getAttribute('transform'))
       // a turned element is judged by its geometry alone (the rotation travels with the move)
-      if (!entry || !affineEdit(el, turned ? { ...IDENTITY, e: 0, f: 0 } : entry)) return null
+      if (!entry || !affineEdit(el, turned ? { ...IDENTITY, e: 0, f: 0 } : entry)) {
+        // another transform (a skew, a rotation among other terms): the move is put in front of it as a matrix, geometry untouched
+        const general = allowRotated && el.hasAttribute('transform') && affineEdit(el, IDENTITY) ? parseMatrix(el.getAttribute('transform')) : null
+        const featureData = Array.from(el.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))
+        if (!general || featureData) return null
+        plan.set(el, { ...IDENTITY, matrix: general })
+        continue
+      }
       plan.set(el, entry)
     }
     return plan
