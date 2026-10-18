@@ -245,6 +245,19 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('moving plain shapes', () => {
+    it('shifts their own coordinates through the model, in one step, and undo gives them back', () => {
+      canvas.selectOnly([els[0]])
+      const x = Number(els[0].getAttribute('x'))
+      canvas.moveSelectedElements(5, 7)
+      expect(Number(els[0].getAttribute('x'))).toBe(x + 5)
+      expect(els[0].hasAttribute('transform')).toBe(false)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('position')
+      canvas.undoMgr.undo()
+      expect(Number(els[0].getAttribute('x'))).toBe(x)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

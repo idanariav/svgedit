@@ -9,6 +9,7 @@
 import * as hstry from './history.js'
 import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
+import { setAttrsById } from './model/edit.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import { createGroupOps } from './group-ops.ts'
 import type SvgCanvas from '../svgcanvas.ts'
@@ -21,6 +22,17 @@ const {
 } = hstry
 
 type Box = BBoxObject
+
+/** The coordinates a plain shape is positioned by, and the axis each one moves along. */
+const MOVE_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
+  rect: [['x', 'x'], ['y', 'y']],
+  image: [['x', 'x'], ['y', 'y']],
+  use: [['x', 'x'], ['y', 'y']],
+  foreignObject: [['x', 'x'], ['y', 'y']],
+  circle: [['cx', 'x'], ['cy', 'y']],
+  ellipse: [['cx', 'x'], ['cy', 'y']],
+  line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']]
+}
 
 /** The members `selected-elem.ts` gives its canvas. */
 export interface SelectedElemApi {
@@ -61,8 +73,39 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     }
 
     const batchCmd = new BatchCommand('position')
+    // Plain shapes without a transform move by editing their own coordinates, which the model states; the rest bake a
+    // transform in through the DOM below.
+    const shifts: Array<{ id: string, set: Record<string, string> }> = []
+    const bySelf = new Set<Element>()
+    if (undoable || svgCanvas.inTransaction()) {
+      selectedElements.forEach((selected, i) => {
+        if (!selected?.id || selected.hasAttribute('transform') || selected.hasAttribute('clip-path') || selected.hasAttribute('mask')) return
+        // a feature that keeps data of its own on the element (arrow trim, effects…) reacts to the move through the DOM path
+        if (Array.from(selected.attributes).some((a) => a.name.startsWith('se:') || a.name.startsWith('data-se'))) return
+        const axes = MOVE_ATTRS[selected.tagName]
+        if (!axes) return
+        const mx = Array.isArray(dx) ? dx[i] : dx
+        const my = Array.isArray(dy) ? (dy as number[])[i] : dy as number
+        const set: Record<string, string> = {}
+        for (const [name, axis] of axes) {
+          const was = parseFloat(selected.getAttribute(name) ?? '0')
+          if (Number.isNaN(was)) return
+          set[name] = String(was + (axis === 'x' ? mx : my))
+        }
+        shifts.push({ id: selected.id, set })
+        bySelf.add(selected)
+      })
+    }
+    if (shifts.length) {
+      svgCanvas.snapshotHistory.edit('position', (root) => {
+        let out = root
+        for (const { id, set } of shifts) out = setAttrsById(out, id, set)
+        return out
+      })
+      for (const el of bySelf) svgCanvas.selectorManager.requestSelector(el).resize()
+    }
     selectedElements.forEach((selected, i) => {
-      if (selected) {
+      if (selected && !bySelf.has(selected)) {
       // Store the existing transform before modifying
         const existingTransform = selected.getAttribute('transform') || ''
 
@@ -130,6 +173,10 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       if (undoable) {
         svgCanvas.addCommandToHistory(batchCmd)
       }
+      svgCanvas.call('changed', selectedElements)
+      return batchCmd
+    }
+    if (shifts.length) {
       svgCanvas.call('changed', selectedElements)
       return batchCmd
     }
