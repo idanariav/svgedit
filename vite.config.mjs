@@ -116,6 +116,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // the first import of the whole canvas is slow under coverage instrumentation (a test that imports it lazily timed out at 5 s)
+    testTimeout: 30000,
     alias: {
       'paper/dist/paper-core.js': resolve(__dirname, 'tests/unit/mocks/paper-core-stub.js')
     },
