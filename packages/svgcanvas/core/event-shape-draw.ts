@@ -520,7 +520,8 @@ export const init = (canvas: SvgCanvas): {
               cy: (svgCanvas.getFreehand('miny') + svgCanvas.getFreehand('maxy')) / 2,
               rx: (svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')) / 2,
               ry: (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')) / 2,
-              id: svgCanvas.getId()
+              id: svgCanvas.getId(),
+              'data-se-ephemeral': '' // handed to the model on release (event.ts `commitDrawn`)
             }
           })
           svgCanvas.call('changed', [element])
@@ -538,7 +539,8 @@ export const init = (canvas: SvgCanvas): {
               y: svgCanvas.getFreehand('miny'),
               width: (svgCanvas.getFreehand('maxx') - svgCanvas.getFreehand('minx')),
               height: (svgCanvas.getFreehand('maxy') - svgCanvas.getFreehand('miny')),
-              id: svgCanvas.getId()
+              id: svgCanvas.getId(),
+              'data-se-ephemeral': ''
             }
           })
           svgCanvas.call('changed', [element])
