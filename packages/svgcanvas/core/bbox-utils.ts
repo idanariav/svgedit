@@ -17,6 +17,8 @@ import {
 import { getRotationAngleFromTransformList } from './dom-utils.ts'
 import { getExtraAttributesForConvertToPath, getPathDFromElement } from './path-utils.ts'
 import { isAreaText, getAreaBox } from './text-rows.ts'
+import { geometricBounds, strokedBounds } from './model/bounds.ts'
+import type { ModelElement } from './model/node.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBox } from '../svgcanvas.ts'
 
@@ -229,6 +231,25 @@ export const getPathBBox = (path: SVGPathElement): BBoxObject => {
 }
 
 /**
+ * The attributes of `el` as a model element (no children): all the geometry model (`model/bounds.ts`) reads of a shape. The
+ * native `getBBox` is 30 to 50 times faster than the model on a path, so the model answers only where the DOM cannot measure
+ * (jsdom, a detached element) or what it adds to the DOM's answer (stroke tips).
+ */
+const shallowModel = (el: Element): ModelElement => ({
+  kind: 'element',
+  name: el.nodeName,
+  attrs: Array.from(el.attributes, (a) => ({ name: a.name, value: a.value })),
+  children: []
+})
+
+/** `el` and its ancestors up to the content root, as model elements, root first. */
+const modelChain = (el: Element): ModelElement[] => {
+  const chain: ModelElement[] = []
+  for (let n: Element | null = el; n && n.nodeName !== 'svg'; n = n.parentElement) chain.unshift(shallowModel(n))
+  return chain
+}
+
+/**
  * Get the given element's bounding box object, convert it to be more usable
  * when necessary. Pure — requires an elem (every call site already passes
  * one); the "default to current selection" convenience lives on the
@@ -285,35 +306,20 @@ export const getBBox = (elem: Element): BBoxObject | null => {
         }
       }
   }
+  // No layout engine to ask (a headless document): the model works the box out from the attributes
+  if (!ret && typeof selected.getBBox !== 'function' && elname !== 'g' && elname !== 'text') {
+    const fromModel = geometricBounds(shallowModel(selected))
+    if (fromModel) ret = fromModel
+  }
   if (ret) {
     // JSDOM lacks SVG geometry; fall back to simple attribute-based bbox when native values are empty.
     if (ret.width === 0 && ret.height === 0) {
       const tag = elname.toLowerCase()
-      const num = (name: string, fallback = 0): number =>
-        Number.parseFloat(String(selected.getAttribute(name) ?? fallback))
       const fromAttrs = (() => {
+        // the model reads the geometry exactly (relative commands, curves, arcs) where the attributes were once scanned for numbers
+        const fromModel = tag === 'g' ? undefined : geometricBounds(shallowModel(selected))
+        if (fromModel) return fromModel
         switch (tag) {
-          case 'path': {
-            const d = selected.getAttribute('d') || ''
-            const nums = (d.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !Number.isNaN(n))
-            if (nums.length >= 2) {
-              const xs = nums.filter((_, i) => i % 2 === 0)
-              const ys = nums.filter((_, i) => i % 2 === 1)
-              return {
-                x: Math.min(...xs),
-                y: Math.min(...ys),
-                width: Math.max(...xs) - Math.min(...xs),
-                height: Math.max(...ys) - Math.min(...ys)
-              }
-            }
-            break
-          }
-          case 'rect':
-            return { x: num('x'), y: num('y'), width: num('width'), height: num('height') }
-          case 'line': {
-            const x1 = num('x1'); const x2 = num('x2'); const y1 = num('y1'); const y2 = num('y2')
-            return { x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) }
-          }
           case 'g': {
             const boxes = Array.from(selected.children || [])
               .map(child => getBBox(child))
@@ -579,6 +585,30 @@ const getStrokeOffsetForBBox = (elem: Element): number => {
   return !isNaN(sw) && stroke !== 'none' ? sw / 2 : 0
 }
 
+interface Growth { left: number, top: number, right: number, bottom: number }
+
+/**
+ * How far the stroke of `elem` paints beyond its box on each side. Half the width all round; for a shape with no transform of
+ * its own, also the miter tips and square-cap corners the model finds (`strokedBounds`), which stick out further at a sharp
+ * corner. The DOM box and the model's box are not mixed: only the model's *growth* is taken, so it applies to whichever box the
+ * caller measured.
+ */
+const getStrokeGrowth = (elem: Element): Growth => {
+  const offset = getStrokeOffsetForBBox(elem)
+  const even = { left: offset, top: offset, right: offset, bottom: offset }
+  if (!offset || elem.hasAttribute('transform')) return even
+  const chain = modelChain(elem)
+  const geometric = chain.length ? geometricBounds(chain[chain.length - 1]) : undefined
+  const painted = geometric && strokedBounds(chain)
+  if (!geometric || !painted) return even
+  return {
+    left: Math.max(offset, geometric.x - painted.x),
+    top: Math.max(offset, geometric.y - painted.y),
+    right: Math.max(offset, painted.x + painted.width - geometric.x - geometric.width),
+    bottom: Math.max(offset, painted.y + painted.height - geometric.y - geometric.height)
+  }
+}
+
 /**
  * Get the bounding box for one or more stroked and/or transformed elements.
  * @param elems - Array with DOM elements to check
@@ -620,11 +650,11 @@ export const getStrokedBBox = (
 
   // If only one elem, don't call the potentially slow getBBoxWithTransform method again.
   if (elems.length === 1) {
-    const offset = getStrokeOffsetForBBox(elems[0])
-    minX -= offset
-    minY -= offset
-    maxX += offset
-    maxY += offset
+    const grow = getStrokeGrowth(elems[0])
+    minX -= grow.left
+    minY -= grow.top
+    maxX += grow.right
+    maxY += grow.bottom
   } else {
     elems.forEach(elem => {
       const curBb = getBBoxWithTransform(
@@ -633,13 +663,13 @@ export const getStrokedBBox = (
         pathActions
       )
       if (curBb) {
-        const offset = getStrokeOffsetForBBox(elem)
-        minX = Math.min(minX, curBb.x - offset)
-        minY = Math.min(minY, curBb.y - offset)
+        const grow = getStrokeGrowth(elem)
+        minX = Math.min(minX, curBb.x - grow.left)
+        minY = Math.min(minY, curBb.y - grow.top)
         // TODO: The old code had this test for max, but not min. I suspect this test should be for both min and max
         if (elem.nodeType === 1) {
-          maxX = Math.max(maxX, curBb.x + curBb.width + offset)
-          maxY = Math.max(maxY, curBb.y + curBb.height + offset)
+          maxX = Math.max(maxX, curBb.x + curBb.width + grow.right)
+          maxY = Math.max(maxY, curBb.y + curBb.height + grow.bottom)
         }
       }
     })

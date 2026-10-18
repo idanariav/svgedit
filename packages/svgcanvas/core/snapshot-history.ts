@@ -17,6 +17,9 @@
 import { readDom, reconcile } from './model-render.ts'
 import type { NodePool } from './model-render.ts'
 import { EPHEMERAL_ATTR } from './history.js'
+import { TextMetricsCache, resolveTextStyle, textsIn } from './model/text-metrics.ts'
+import type { TextBounds } from './model/text-metrics.ts'
+import { measureTexts } from './text-measure.ts'
 import type { ModelElement, ModelNode } from './model/node.ts'
 
 /** Content-root attributes that follow the view (scroll, zoom), not the drawing. */
@@ -77,6 +80,8 @@ export class SnapshotHistory {
   private states: ModelElement[] = []
   private readonly pool: NodePool = new Map()
   private readonly target: SnapshotTarget
+  /** the boxes of the drawing's texts, measured in the DOM after each step lands (see `model/text-metrics.ts`) */
+  readonly textMetrics = new TextMetricsCache()
   private observer: MutationObserver | null = null
   /** the content root the observer is attached to (loading a document replaces the root) */
   private watched: Element | null = null
@@ -107,7 +112,19 @@ export class SnapshotHistory {
         this.baseline()
       }, { capture: true, signal })
     }
+    // a font that finishes loading changes every text's box
+    globalThis.document?.fonts?.addEventListener?.('loadingdone', () => this.textMetrics.clear(), { signal })
     signal.addEventListener('abort', () => this.observer?.disconnect())
+  }
+
+  /**
+   * Measure the texts of the state being shown that have no box in the cache. Measuring only reads (`measureTexts` leaves an
+   * empty text alone), so the observer's pending records are not touched: a feature that regenerated its data after a step
+   * landed has left records there for the next `refresh()` to fold in.
+   */
+  private measure (): void {
+    const shown = this.states[this.at]
+    if (shown) measureTexts(this.target.content(), shown, this.textMetrics)
   }
 
   /** The drawing as it is now, sharing what it has in common with `like`. */
@@ -124,6 +141,7 @@ export class SnapshotHistory {
     this.listen()
     this.dirty = false
     this.at = 0
+    this.measure()
   }
 
   /** Watches for changes made outside any command (a layer given its id, rounding, a lazily made <defs>, a step regenerated after its command landed). */
@@ -164,6 +182,13 @@ export class SnapshotHistory {
     this.dirty = false
   }
 
+  /** The box of the text with this id in the state being shown: what was measured, else the estimate; undefined if there is no such text. */
+  textBounds (id: string): TextBounds | undefined {
+    const shown = this.states[this.at]
+    const found = shown && textsIn(shown).find((t) => t.el.attrs.some((a) => a.name === 'id' && a.value === id))
+    return found ? this.textMetrics.bounds(found.el, resolveTextStyle(found.chain)) : undefined
+  }
+
   /**
    * A user action is about to start (a press, a command, a transaction): whatever changed the drawing since the last
    * command, outside the history, belongs to the state this action will start from. Without this an undo would take such
@@ -185,6 +210,7 @@ export class SnapshotHistory {
     // what the command itself changed is not drift
     this.take()
     this.dirty = false
+    this.measure()
   }
 
   /**
@@ -227,6 +253,7 @@ export class SnapshotHistory {
     const leaving = this.states[this.at]
     this.at = count
     this.show(leaving, want)
+    this.measure()
   }
 
   /**

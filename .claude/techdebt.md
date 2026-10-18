@@ -10,6 +10,16 @@ When adding an entry: say what it is, why it wasn't done now, and roughly
 how big/risky it is. When an item is finally addressed, delete its entry
 (git history keeps the record).
 
+## Model bounds: arcs are approximated, markers and text are not covered
+
+`core/model/bounds.ts` expands an arc into cubics with `svgpath`'s `unarc()`, so an arc's box can be off the browser's `getBBox`
+by up to ~0.08 user units for radii around 60 (`tests/e2e/model-bounds.spec.js` measures it; cubics and quadratics agree to 1e-4).
+The exact fix is the arc's own extrema (angles where the derivative is zero); not done because the headless `getBBox` fallback is the
+only consumer of the geometry, and the number scan it replaced ignored relative commands and curves altogether. `strokedBounds` leaves out markers and arrowheads (VectorCraft's `head_reach`) and a `<text>` has no box there
+(see `model/text-metrics.ts`); a group's box is its children's, which the model does not compute yet. `getStrokedBBox` takes the
+stroke tips from the model only for a shape without a `transform` attribute of its own (a transformed shape keeps the half-width
+margin, as before), and the first call on a very large path parses it (12 ms for 2,000 cubics; memoized by `d` after). Small.
+
 ## getStrokedBBox's false / null
 
 `getStrokedBBox` returns `false` for an empty list and `null` when every element is detached, but the canvas

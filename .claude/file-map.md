@@ -126,6 +126,7 @@
 | `taper-stroke.ts` | Tapered strokes — turn a stroked open path into a filled outline whose width follows a start/middle/end profile (paper.js-assisted) |
 | `text-actions.ts` | Text edit session: the caret, the selection and the hidden textarea behind them (`verticalMove` / `lineEdge` for area text) |
 | `text-attrs.ts` | Text attribute operations (bold/italic/decoration, anchor and spacing, perspective, font family/size/colour, text content), split out of elem-get-set.js |
+| `text-measure.ts` | The renderer's half of the text-metrics cache: measure the `<text>` elements of a drawing the DOM is showing and record their boxes against the model elements that describe them (`model/text-metrics.ts`) |
 | `text-path.ts` | Text on path — attach a `<text>` element's content to a path so the text flows along it, and detach it back to plain text |
 | `text-rows.ts` | How a `<text>` element's rows are stored, read and laid out |
 | `text-wrap.ts` | Greedy line breaking for area text |
@@ -143,6 +144,7 @@
 
 | File | What it is |
 |---|---|
+| `bounds.ts` | Shape geometry for the document model: the box a shape covers (what `getBBox` answers) and the box its stroke paints, worked out from the element's attributes with no browser, in the element's own coordinate system (a… |
 | `drawing.ts` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.ts` |
 | `edit.ts` | Document model, layer 4: edits |
 | `features.ts` | Document model, layer 2b: the `se:*` features of one element as typed fields |
@@ -150,7 +152,9 @@
 | `node.ts` | Document model, layer 1: a persistent (immutable, structurally shared) XML tree |
 | `parse.ts` | Document model: SVG/XML text -> persistent tree (see `node.ts`) |
 | `serialize.ts` | Document model: persistent tree -> SVG/XML text (see `node.ts`, `parse.ts`) |
+| `style.ts` | Presentation properties on the document model: the value of a property on an element, from its `style` declarations or its attribute, and as inherited from the elements above it |
 | `summary.ts` | Document model, layer 3: a compact structural summary of a drawing, for tools that read a drawing without an editor (the headless CLI, an LLM that wants the shape of a file before it opens it) |
+| `text-metrics.ts` | Text geometry for the document model: the box a `<text>` element occupies, from a cache the renderer fills by measuring the DOM, or from an estimate when nothing was measured (R1: the model never waits for a layout… |
 
 ### `scripts/`
 
