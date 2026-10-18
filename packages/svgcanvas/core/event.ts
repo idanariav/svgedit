@@ -18,6 +18,10 @@ import { isDrawSnapMode } from './draw-snap.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.ts'
 import Layer from './layer.ts'
 import { areaTextAtPoint } from './text-rows.ts'
+import { EPHEMERAL_ATTR } from './history.js'
+import { readDom } from './model-render.ts'
+import { withChildren } from './model/edit.ts'
+import type { ModelElement } from './model/node.ts'
 import { init as eventZoomInit } from './event-zoom.ts'
 import { init as eventTextEditInit } from './event-text-edit.ts'
 import { init as eventPathEditInit } from './event-path-edit.ts'
@@ -298,6 +302,23 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     svgCanvas.call('gestureEnded', { mode, event: evt } satisfies GestureEndedDetail)
   }
 
+  /**
+   * Make a shape that was drawn as a preview (an ephemeral element) part of the drawing: the model gets the element, one step
+   * is recorded, the renderer puts it in the DOM. Returns the live element.
+   */
+  const commitDrawn = (preview: Element): Element | null => {
+    const parent = preview.parentNode as Element | null
+    const at = parent && svgCanvas.snapshotHistory.pathOf(parent)
+    if (!parent || !at) return null
+    const loose = preview.cloneNode(true) as Element
+    loose.removeAttribute(EPHEMERAL_ATTR)
+    const model = readDom(loose) as ModelElement
+    const { id } = preview
+    preview.remove()
+    svgCanvas.snapshotHistory.edit(`Create ${loose.tagName}`, (root) => withChildren(root, at, (kids) => [...kids, model]))
+    return svgCanvas.getElement(id) ?? null
+  }
+
   const mouseUpEventImpl = (evt: MouseEvent): void => {
     evt.preventDefault()
     svgCanvas.gesture.moveSelectionThresholdReached = false
@@ -327,6 +348,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
     let element = svgCanvas.getElement(svgCanvas.getId())
     let keep = false
+    /** the step was recorded when the drawn shape was committed through the model */
+    let recorded = false
 
     const realX = x
     const realY = y
@@ -445,7 +468,12 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         svgCanvas.selectOnly([t], true)
       }
     } else if (element) {
-    /**
+      // A shape drawn by dragging is a preview (ephemeral) until here: the release makes it part of the drawing, through the model
+      if (element.hasAttribute(EPHEMERAL_ATTR)) {
+        const committed = commitDrawn(element)
+        if (committed) { element = committed; recorded = true }
+      }
+      /**
 * @name module:svgcanvas.SvgCanvas#addedNew
 * @type {boolean}
 */
@@ -545,7 +573,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
         // we create the insert command that is stored on the stack
         // undo means to call cmd.unapply(), redo means to call cmd.apply()
-        svgCanvas.addCommandToHistory(new InsertElementCommand(created))
+        if (!recorded) svgCanvas.addCommandToHistory(new InsertElementCommand(created))
         svgCanvas.call('changed', [created])
       }, aniDur * 1000)
     }

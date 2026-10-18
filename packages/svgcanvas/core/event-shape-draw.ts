@@ -155,6 +155,7 @@ export const init = (canvas: SvgCanvas): {
             y,
             width: 0,
             height: 0,
+            'data-se-ephemeral': '',
             id: svgCanvas.getNextId('rect'),
             'data-frame': '1',
             fill: 'transparent',
@@ -183,6 +184,7 @@ export const init = (canvas: SvgCanvas): {
             y,
             width: 0,
             height: 0,
+            'data-se-ephemeral': '',
             id: svgCanvas.getNextId('rect'),
             opacity: Number(curShape.opacity) / 2
           }
@@ -199,6 +201,7 @@ export const init = (canvas: SvgCanvas): {
             y1: y,
             x2: x,
             y2: y,
+            'data-se-ephemeral': '',
             id: svgCanvas.getNextId('line'),
             stroke: curShape.stroke,
             'stroke-width': strokeW,
@@ -221,6 +224,7 @@ export const init = (canvas: SvgCanvas): {
             cx: x,
             cy: y,
             r: 0,
+            'data-se-ephemeral': '',
             id: svgCanvas.getNextId('circle'),
             opacity: Number(curShape.opacity) / 2
           }
@@ -236,6 +240,7 @@ export const init = (canvas: SvgCanvas): {
             cy: y,
             rx: 0,
             ry: 0,
+            'data-se-ephemeral': '',
             id: svgCanvas.getNextId('ellipse'),
             opacity: Number(curShape.opacity) / 2
           }
