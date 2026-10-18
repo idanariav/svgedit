@@ -158,6 +158,7 @@
 | `bundle-report.mjs` | What is in `dist/editor/Editor.js`, by package and by source folder (R6 in .claude/roadmap/rearchitecture.md) |
 | `check-canvas-calls.mjs` | Fails when editor code calls the canvas wrongly: a member that does not exist on `SvgCanvas`, or arguments / assignments on a line that touches `svgCanvas` that its signature rejects |
 | `check-dom-scope.mjs` | Guards against the "wrong owning editor" bug class: svgedit mounts one editor per pane/drawing in the same document, but its chrome uses fixed element ids (workarea, fill_color, the se-* dialogs, ...), so a bare… |
+| `check-dom-writes.mjs` | A ratchet on the live-DOM writes of the canvas engine and the extensions (R1 step e: the document model is the source of truth, the DOM is a view the renderer writes) |
 | `check-editor-strict.mjs` | Fails when a file on the editor's strict list (`src/editor/strict-files.json`) has a type error under `strict` |
 | `check-layers.mjs` | Keeps the canvas engine (packages/svgcanvas) independent of the editor UI (src/editor), the way VectorCraft's `cargo xtask layers` enforces its crate layering |
 | `check-model-roundtrip.mjs` | Oracle for the document model (R1): parse every saved drawing into the model and serialize it back |
