@@ -41,7 +41,7 @@ export interface ModelCommandsApi {
    * Add these detached elements as the last child of the parent each names, through the model, as one step (inside a
    * transaction it joins that). Returns the elements the renderer put in the DOM, in the order given.
    */
-  insertLooseElements(entries: Array<{ parent: Element, el: Element }>): Element[]
+  insertLooseElements(entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label?: string): Element[]
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -186,19 +186,24 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return svgCanvas.getElement(String(attr.id)) ?? null
   }
 
-  const insertLooseElements = (entries: Array<{ parent: Element, el: Element }>): Element[] => {
-    const adds = entries.flatMap(({ parent, el }) => {
+  const insertLooseElements = (entries: Array<{ parent: Element, el: Element, before?: Element | null }>, label = 'Insert Elements'): Element[] => {
+    const adds = entries.flatMap(({ parent, el, before }) => {
       const at = svgCanvas.snapshotHistory.pathOf(parent)
-      return at ? [{ at, id: el.id, model: readDom(el) as ModelElement }] : []
+      return at ? [{ at, id: el.id, model: readDom(el) as ModelElement, beforeId: before?.id }] : []
     })
     if (!adds.length) return []
-    svgCanvas.snapshotHistory.edit('Insert Elements', (root) => {
+    svgCanvas.snapshotHistory.edit(label, (root) => {
       let out = root
       // Paths are indexes, and appending to a parent never moves another parent's children: later paths stay valid.
-      for (const { at, model } of adds) out = withChildren(out, at, (kids) => [...kids, model])
+      for (const { at, model, beforeId } of adds) {
+        out = withChildren(out, at, (kids) => {
+          const i = beforeId ? kids.findIndex((k) => k.kind === 'element' && k.attrs.some((a) => a.name === 'id' && a.value === beforeId)) : -1
+          return i < 0 ? [...kids, model] : [...kids.slice(0, i), model, ...kids.slice(i)]
+        })
+      }
       return out
     })
-    return adds.map(({ id }) => svgCanvas.getElement(id)).filter((el): el is Element => Boolean(el))
+    return adds.map(({ id }) => (id ? svgCanvas.getElement(id) : null)).filter((el): el is Element => Boolean(el))
   }
 
   return {

@@ -166,6 +166,26 @@ describe('model-first commands', () => {
     })
   })
 
+  describe('layers', () => {
+    it('create, duplicate and delete are one undoable step each, made through the model', () => {
+      const count = () => canvas.getSvgContent().querySelectorAll(':scope > g.layer').length
+      const before = count()
+      canvas.createLayer('Extra')
+      expect(count()).toBe(before + 1)
+      expect(canvas.undoMgr.getNextUndoCommandText()).toBe('Create Layer')
+      expect(canvas.getCurrentDrawing().getCurrentLayerName()).toBe('Extra')
+      canvas.cloneLayer('Extra copy')
+      expect(count()).toBe(before + 2)
+      expect(canvas.deleteCurrentLayer()).toBe(true)
+      expect(count()).toBe(before + 1)
+      canvas.undoMgr.undo()
+      expect(count()).toBe(before + 2)
+      canvas.undoMgr.undo()
+      canvas.undoMgr.undo()
+      expect(count()).toBe(before)
+    })
+  })
+
   describe('insertLooseElements', () => {
     it('puts detached elements in their parents through the model, as one step', () => {
       const a = document.createElementNS('http://www.w3.org/2000/svg', 'rect')

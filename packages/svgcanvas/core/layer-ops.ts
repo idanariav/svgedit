@@ -10,6 +10,7 @@
 import type SvgCanvas from '../svgcanvas.ts'
 import HistoryRecordingService from './historyrecording.js'
 import { toXml } from './encoding-utils.ts'
+import { removeIds } from './model/edit.ts'
 import { warn } from '../common/logger.ts'
 
 type HrService = InstanceType<typeof HistoryRecordingService>
@@ -77,10 +78,27 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    * to it, and then clears the selection. This function then calls the 'changed' handler.
    * This is an undoable action.
    */
+  /**
+   * The drawing built a layer group in the DOM; hand it to the model instead (one step), then let the drawing find its layers
+   * again, because the renderer shows the model's copy of the group, not the element the drawing built.
+   */
+  const adoptLayer = (group: SVGGElement, label: string): SVGGElement => {
+    const parent = group.parentNode as Element
+    const before = group.nextElementSibling
+    const name = svgCanvas.getCurrentDrawing().getCurrentLayerName()
+    if (!group.id) group.id = svgCanvas.getNextId('layer') // the model addresses elements by id
+    group.remove()
+    svgCanvas.insertLooseElements([{ parent, el: group, before }], label)
+    const drawing = svgCanvas.getCurrentDrawing()
+    drawing.identifyLayers()
+    drawing.setCurrentLayer(name as string)
+    return drawing.getCurrentLayer() as SVGGElement
+  }
+
   const createLayer = (name: string, hrService?: HrService): void => {
-    const newLayer = svgCanvas
-      .getCurrentDrawing()
-      .createLayer(name, historyRecordingService(svgCanvas, hrService))
+    const drawing = svgCanvas.getCurrentDrawing()
+    const made = drawing.createLayer(name, hrService ? historyRecordingService(svgCanvas, hrService) : (null as never))
+    const newLayer = hrService ? made : adoptLayer(made, 'Create Layer')
     svgCanvas.clearSelection()
     svgCanvas.call('changed', [newLayer])
   }
@@ -92,9 +110,10 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    */
   const cloneLayer = (name: string, hrService?: HrService): void => {
   // Clone the current layer and make the cloned layer the new current layer
-    const newLayer = svgCanvas
+    const cloned = svgCanvas
       .getCurrentDrawing()
-      .cloneLayer(name, historyRecordingService(svgCanvas, hrService))
+      .cloneLayer(name, hrService ? historyRecordingService(svgCanvas, hrService) : (null as never))
+    const newLayer = cloned && !hrService ? adoptLayer(cloned, 'Duplicate Layer') : cloned
     if (!newLayer) {
       warn('cloneLayer: no layer returned', null, 'draw')
       return
@@ -110,27 +129,20 @@ export const createLayerOps = (canvas: SvgCanvas): LayerOpsApi => {
    * then calls the 'changed' handler. This is an undoable action.
    */
   const deleteCurrentLayer = (): boolean => {
-    const { BatchCommand, RemoveElementCommand } = svgCanvas.history
     const currentLayer = svgCanvas.getCurrentDrawing().getCurrentLayer()
     if (!currentLayer) {
       warn('deleteCurrentLayer: no current layer', null, 'draw')
       return false
     }
-    const { nextSibling } = currentLayer
-    const parent = currentLayer.parentNode
-    const removedLayer = svgCanvas.getCurrentDrawing().deleteCurrentLayer()
-    if (removedLayer && parent) {
-      const batchCmd = new BatchCommand('Delete Layer')
-      // store in our Undo History
-      batchCmd.addSubCommand(
-        new RemoveElementCommand(removedLayer, nextSibling, parent)
-      )
-      svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.clearSelection()
-      svgCanvas.call('changed', [parent])
-      return true
-    }
-    return false
+    const drawing = svgCanvas.getCurrentDrawing()
+    const parent = currentLayer.parentNode as Element | null
+    if (!parent || !currentLayer.id || drawing.getNumLayers() < 2) return false
+    // The model drops the layer, the renderer takes it out of the DOM; the drawing then finds its layers again
+    svgCanvas.snapshotHistory.edit('Delete Layer', (root) => removeIds(root, [currentLayer.id]))
+    drawing.identifyLayers()
+    svgCanvas.clearSelection()
+    svgCanvas.call('changed', [parent])
+    return true
   }
 
   /**
