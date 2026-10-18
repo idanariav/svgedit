@@ -60,3 +60,27 @@ describe('model edits', () => {
     expect(withChildren(base, [0], (kids) => kids)).toBe(base)
   })
 })
+
+describe('wrapIds', () => {
+  it('moves the elements into a new last child of the container, in the order given', async () => {
+    const { wrapIds, findById } = await import('../../packages/svgcanvas/core/model/edit.ts')
+    const { parseSvg, element } = await import('../../packages/svgcanvas/core/model/index.ts')
+    const root = parseSvg('<svg><g id="l"><rect id="a"/><rect id="b"/><rect id="c"/></g></svg>').root
+    const out = wrapIds(root, 'l', element('g', [{ name: 'id', value: 'grp' }], []), ['c', 'a'])
+    const layer = findById(out, 'l')
+    expect(layer.children.map((n) => n.attrs.find((x) => x.name === 'id').value)).toEqual(['b', 'grp'])
+    expect(findById(out, 'grp').children.map((n) => n.attrs.find((x) => x.name === 'id').value)).toEqual(['c', 'a'])
+    expect(wrapIds(root, 'l', element('g', [], []), ['nope'])).toBe(root)
+  })
+})
+
+describe('wrapIds with a group and a child of it', () => {
+  it('wraps the inner one once', async () => {
+    const { wrapIds, findById } = await import('../../packages/svgcanvas/core/model/edit.ts')
+    const { parseSvg, element } = await import('../../packages/svgcanvas/core/model/index.ts')
+    const root = parseSvg('<svg><g id="l"><g id="p"><rect id="k"/></g></g></svg>').root
+    const out = wrapIds(root, 'l', element('g', [{ name: 'id', value: 'grp' }], []), ['k', 'p'])
+    expect(findById(out, 'grp').children.map((n) => n.attrs.find((x) => x.name === 'id').value)).toEqual(['k', 'p'])
+    expect(findById(out, 'p').children).toHaveLength(0)
+  })
+})

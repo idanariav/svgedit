@@ -161,3 +161,26 @@ export const setAttrsById = (root: ModelElement, id: string, attrs: Readonly<Rec
     return out
   })
 }
+
+/**
+ * Wrap the elements with these ids in `group`, which becomes the last child of the element `containerId` names. The group's
+ * children are the wrapped elements in the order given (each keeps what is inside it). Returns `root` when nothing was found
+ * to wrap or the container is not there.
+ */
+export const wrapIds = (root: ModelElement, containerId: string, group: ModelElement, ids: readonly string[]): ModelElement => {
+  // One at a time, each looked up after the last was taken out: when a selection holds a group and something inside it, the
+  // inner one is not wrapped twice.
+  const nodes: ModelElement[] = []
+  let stripped = root
+  for (const id of ids) {
+    const node = findById(stripped, id)
+    if (!node) continue
+    nodes.push(node)
+    stripped = removeIds(stripped, [id])
+  }
+  if (!nodes.length) return root
+  const at = pathOfId(stripped, containerId)
+  if (!at) return root
+  const wrapped = element(group.name, group.attrs, [...group.children, ...nodes])
+  return withChildren(stripped, at, (kids) => [...kids, wrapped])
+}

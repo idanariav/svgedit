@@ -7,9 +7,11 @@
  */
 
 import { NS } from './namespaces.ts'
+import { element } from './model/node.ts'
+import { wrapIds } from './model/edit.ts'
 import * as hstry from './history.js'
 import { warn, error } from '../common/logger.ts'
-import { setHref, getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.ts'
+import { getHref, getRotationAngle, walkTreePost, getFeGaussianBlur } from './dom-utils.ts'
 import {
   requireBBox
 } from './bbox-utils.ts'
@@ -67,43 +69,22 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
       }
     }
 
-    const batchCmd = new BatchCommand(cmdStr)
-
-    // create and insert the group element
-    const g = svgCanvas.addSVGElementsFromJson({
-      element: type,
-      attr: {
-        id: svgCanvas.getNextId(type)
-      }
-    })
-    if (type === 'a') {
-      setHref(g, url as string)
-    }
-    batchCmd.addSubCommand(new InsertElementCommand(g))
-
-    // now move all children into the group
-    let i = selectedElements.length
-    while (i--) {
+    // The container the group goes into (the current layer or group) and the elements it takes, bottom-most last in the list
+    const container = svgCanvas.getCurrentGroup() || svgCanvas.getDrawing().getTargetLayerGroup()
+    const ids: string[] = []
+    for (let i = selectedElements.length - 1; i >= 0; i--) {
       let elem = selectedElements[i]
-      if (!elem) {
-        continue
-      }
-
+      if (!elem) continue
       const elemParent = elem.parentNode as Element
-      if (elemParent.tagName === 'a' && elemParent.childNodes.length === 1) {
-        elem = elemParent
-      }
-
-      const oldNextSibling = elem.nextSibling as Element | null
-      const oldParent = elem.parentNode
-      g.append(elem)
-      batchCmd.addSubCommand(
-        new MoveElementCommand(elem, oldNextSibling, oldParent as Element)
-      )
+      if (elemParent.tagName === 'a' && elemParent.childNodes.length === 1) elem = elemParent
+      ids.push(elem.id)
     }
-    if (!batchCmd.isEmpty()) {
-      svgCanvas.addCommandToHistory(batchCmd)
-    }
+    const groupId = svgCanvas.getNextId(type)
+    const attrs = [{ name: 'id', value: groupId }]
+    if (type === 'a') attrs.push({ name: 'href', value: url as string })
+    const model = element(type, attrs, [])
+    svgCanvas.snapshotHistory.edit(cmdStr, (root) => wrapIds(root, container?.id ?? '', model, ids))
+    const g = svgCanvas.getElement(groupId) as Element
 
     // update selection
     svgCanvas.selectOnly([g], true)
