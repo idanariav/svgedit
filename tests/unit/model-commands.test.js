@@ -380,6 +380,11 @@ describe('model-first commands', () => {
       circle.setAttribute('cx', '5'); circle.setAttribute('cy', '5'); circle.setAttribute('r', '2')
       expect(affineEdit(circle, { a: 2, d: 2, e: 0, f: 0 })).toEqual({ cx: '10', cy: '10', r: '4' })
       expect(affineEdit(circle, { a: 2, d: 3, e: 0, f: 0 })).toBeNull()
+      const path = document.createElementNS(ns, 'path')
+      path.setAttribute('d', 'M0 0 L10 10 C 10 20 20 20 30 10 Z')
+      expect(affineEdit(path, { a: 2, d: 2, e: 1, f: 1 }).d).toBe('M1 1L21 21C21 41 41 41 61 21z')
+      path.setAttribute('data-arc', '90') // an arc keeps its own parameters
+      expect(affineEdit(path, { a: 2, d: 2, e: 1, f: 1 })).toBeNull()
     })
   })
 

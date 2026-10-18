@@ -9,6 +9,7 @@
  * @module model-commands
  * @license MIT
  */
+import SvgPath from 'svgpath'
 import { BatchCommand } from './history.js'
 import { readDom } from './model-render.ts'
 import { withChildren, moveToEnd, moveToStart, moveNextTo, swapSiblings, removeIds, setAttrsById } from './model/edit.ts'
@@ -116,7 +117,8 @@ const POINT_ATTRS: Record<string, Array<[string, 'x' | 'y']>> = {
   ellipse: [['cx', 'x'], ['cy', 'y']],
   line: [['x1', 'x'], ['x2', 'x'], ['y1', 'y'], ['y2', 'y']],
   polyline: [],
-  polygon: []
+  polygon: [],
+  path: []
 }
 const NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i
 
@@ -193,6 +195,18 @@ export const affineEdit = (el: Element, map: Affine): Record<string, string | nu
       const out: string[] = []
       for (let i = 0; i < nums.length; i += 2) out.push(`${map.a * nums[i] + map.e},${map.d * nums[i + 1] + map.f}`)
       set.points = out.join(' ')
+      break
+    }
+    case 'path': {
+      // a path that keeps parameters of its own beside `d` (an arc's centre and radii…) is edited where it owns them
+      if (Array.from(el.attributes).some((a) => a.name.startsWith('data-') && a.name !== 'data-freehand')) return null
+      const d = el.getAttribute('d')
+      if (!d) return null
+      try {
+        set.d = new SvgPath(d).scale(map.a, map.d).translate(map.e, map.f).round(6).toString()
+      } catch {
+        return null
+      }
       break
     }
     default: return null

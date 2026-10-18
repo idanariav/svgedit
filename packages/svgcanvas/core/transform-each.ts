@@ -60,7 +60,7 @@ export const multiply = (m: Affine, n: Affine): Affine => [
 
 /** What `recalculateDimensions` can absorb exactly (a circle would stay round, text and images do not stretch). */
 /** What takes a scale into its own attributes through the model (`affineEdit`) */
-const MODEL_BAKE = new Set(['rect', 'ellipse', 'line', 'circle', 'polyline', 'polygon'])
+const MODEL_BAKE = new Set(['rect', 'ellipse', 'line', 'circle', 'polyline', 'polygon', 'path'])
 const BAKEABLE = new Set(['rect', 'ellipse', 'line', 'polyline', 'polygon', 'path'])
 
 /**
