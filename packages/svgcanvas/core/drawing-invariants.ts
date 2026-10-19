@@ -24,7 +24,37 @@
  * @license MIT
  */
 
+import SvgPath from 'svgpath'
 import { NS } from './namespaces.ts'
+
+/**
+ * A path the old Pen close made by finishing on its last point: one straight-line subpath, closed, whose points sit on at
+ * most two places (`M A L B L A Z`, `M A L B Z`), so it runs out and back over itself and shows two nodes on one segment.
+ * Shared with `scripts/repair-drawings.mjs`, which rewrites such a path as the open line `M A L B`.
+ * @returns the two points of the line, or null when `d` is not such a path
+ */
+export const retracedLine = (d: string): [[number, number], [number, number]] | null => {
+  let segments: Array<[string, ...number[]]>
+  try {
+    segments = (new SvgPath(d).abs().unshort() as unknown as { segments: Array<[string, ...number[]]> }).segments
+  } catch {
+    return null
+  }
+  if (segments.length < 3 || segments[0][0] !== 'M' || segments[segments.length - 1][0] !== 'Z') return null
+  const points: Array<[number, number]> = []
+  let at: [number, number] = [segments[0][1] as number, segments[0][2] as number]
+  points.push(at)
+  for (const seg of segments.slice(1, -1)) {
+    if (seg[0] === 'L') at = [seg[1] as number, seg[2] as number]
+    else if (seg[0] === 'H') at = [seg[1] as number, at[1]]
+    else if (seg[0] === 'V') at = [at[0], seg[1] as number]
+    else return null
+    points.push(at)
+  }
+  const same = (p: [number, number], q: [number, number]): boolean => Math.abs(p[0] - q[0]) < 1e-6 && Math.abs(p[1] - q[1]) < 1e-6
+  const distinct = points.filter((p, i) => points.findIndex((q) => same(p, q)) === i)
+  return distinct.length === 2 ? [distinct[0], distinct[1]] : null
+}
 
 export interface Finding {
   /** stable rule name, e.g. `duplicate-id` */
@@ -169,6 +199,11 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
     // never saved is not part of the drawing)
     if (tag === 'path' && !el.hasAttribute('d') && !el.closest('[data-se-ephemeral]')) {
       add('empty-path', '<path> has no d attribute', el)
+    }
+
+    // retraced-path: a closed two-point line (the Pen once closed a path finished on its last point)
+    if (tag === 'path' && retracedLine(el.getAttribute('d') ?? '')) {
+      add('retraced-path', '<path> is a closed line that runs out and back over itself', el)
     }
 
     // module-owned checks (se-stack, …): only elements with `se:` state are worth the call

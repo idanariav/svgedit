@@ -77,8 +77,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
   const logPress = (kind: 'pointer-down' | 'pointer-up', evt: MouseEvent): void => {
     if (!svgCanvas._debugEventSink) return
     try {
-      // the root matrix is refreshed by a press itself, so the first press falls back to the document's
-      const matrix = svgCanvas.getrootSctm() ?? svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()?.inverse()
+      // Read now: the cached root matrix is the previous press's, stale after any scroll or zoom since
+      const matrix = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()?.inverse() ?? svgCanvas.getrootSctm()
       const pt = matrix ? transformPoint(evt.clientX, evt.clientY, matrix) : null
       const detail = {
         mode: svgCanvas.getCurrentMode(),
@@ -91,7 +91,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         press = { down: detail, moves: 0, undoSize: detail.undoSize }
         svgCanvas.logDebugEvent(kind, detail)
       } else {
-        svgCanvas.logDebugEvent(kind, { ...detail, moves: press?.moves ?? 0, undoSizeAtDown: press?.undoSize })
+        // `noPress`: the press began outside the canvas (a panel, a scrollbar…) and only the release reached it
+        svgCanvas.logDebugEvent(kind, { ...detail, moves: press?.moves ?? 0, undoSizeAtDown: press?.undoSize, ...(press ? {} : { noPress: true }) })
         press = null
       }
     } catch { /* logging must never break input */ }

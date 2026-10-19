@@ -27,7 +27,7 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BatchCommand } from './history.js'
-import { getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
+import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
 
@@ -318,10 +318,6 @@ const replaceWithPieces = (
 ): void => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)
-  // Only elem's own transform needs correcting (see getOwnTransformScale):
-  // ancestor <g> transforms are cancelled below by `compensation`, so they
-  // keep applying — and scaling the stroke — through the DOM as usual.
-  scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem))
   const elemNext = elem.nextSibling
   const elemParent = elem.parentNode
 
@@ -331,6 +327,9 @@ const replaceWithPieces = (
   // the same place as the original.
   const ancestorMatrix = getMatrixToContent(elem)
   const compensation = isIdentity(ancestorMatrix) ? null : ancestorMatrix.inverse()
+  // The piece's geometry has elem's own transform baked in, and `compensation` cancels the ancestors' transforms for the
+  // stroke as well as the geometry: the stroke takes both scales to look as it did.
+  scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem) * (compensation ? getMatrixScale(ancestorMatrix) : 1), elem)
 
   for (const piece of pieces) {
     const attr: Record<string, string> = {

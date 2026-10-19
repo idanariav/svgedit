@@ -5,7 +5,8 @@
  */
 
 import { getUnits } from './units.ts'
-import { getRotationAngle } from './dom-utils.ts'
+import { assignAttributes, getRotationAngle } from './dom-utils.ts'
+import { strokeForBake } from './model-commands.ts'
 import { getBBox } from './bbox-utils.ts'
 import { BatchCommand, ChangeElementCommand } from './history.js'
 import {
@@ -519,6 +520,13 @@ export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
       } else {
       // Remap other elements normally
         remapWith(m)
+        // The whole transform is now in the geometry: a gesture that asked for it keeps the stroke's look (undone with the rest)
+        const keep = svgCanvas.gesture?.bakeStrokeScale
+        const stroke = keep ? strokeForBake(selected, { a: keep, d: keep, e: 0, f: 0 })['stroke-width'] : undefined
+        if (stroke) {
+          initial['stroke-width'] = selected.getAttribute('stroke-width')
+          assignAttributes(selected, { 'stroke-width': stroke })
+        }
       }
     } else {
     // Rotation or other transformations

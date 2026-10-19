@@ -635,16 +635,16 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // if we clicked on an existing point, then we are done this path, commit it
           // (i, i+1) are the x,y that were clicked on
           if (clickOnPoint) {
-          // if clicked on any other point but the first OR
-          // the first point was clicked on and there are less than 3 points
-          // then leave the path open
-          // otherwise, close the path
-            if (i <= 1 && len >= 2) {
+          // The first point closes the path; any other point finishes it open. A 2-point path closes
+          // only along a curved closing edge: a straight one (or a close on the last point, as this
+          // once did) makes a shape that runs out and back over itself (M A L B L A Z).
+            sSeg = (stretchy as PathElement).pathSegList.getItem(1)
+            const closes = i === 0 && (len >= 3 || (len === 2 && sSeg.pathSegType !== 4))
+            if (closes) {
             // Create end segment
               const absX = seglist.getItem(0).x
               const absY = seglist.getItem(0).y
 
-              sSeg = (stretchy as PathElement).pathSegList.getItem(1)
               newseg = sSeg.pathSegType === 4
                 ? drawnPath.createSVGPathSegLinetoAbs(absX, absY)
                 : drawnPath.createSVGPathSegCurvetoCubicAbs(absX, absY, sSeg.x1 / zoom, sSeg.y1 / zoom, absX, absY)
@@ -652,13 +652,13 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
               const endseg = drawnPath.createSVGPathSegClosePath()
               seglist.appendItem(newseg)
               seglist.appendItem(endseg)
-            } else if (len < 3) {
+            } else if (len < 2) {
               keep = false
               return keep
             }
             svgCanvas.logDebugEvent?.('path-draw-commit', {
               elemId: drawnPath.id,
-              closed: i <= 1 && len >= 2,
+              closed: closes,
               clickedIndex: i,
               segCount: seglist.numberOfItems,
               locked: svgCanvas.getToolLocked(),

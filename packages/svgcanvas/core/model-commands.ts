@@ -112,7 +112,7 @@ export type { Matrix6 }
  */
 export interface Affine { a: number, d: number, e: number, f: number }
 /** What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and that rotation. */
-export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6, scratch?: boolean }
+export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6, scratch?: boolean, stroke?: Record<string, string> }
 
 const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
 /** `outer` applied after `inner`. */
@@ -141,6 +141,31 @@ export const parseAffine = (transform: string | null): Affine | null => {
     rest = rest.slice(term[0].length)
   }
   return out
+}
+
+/** An inherited presentation value of a DOM element: its own attribute, else the nearest ancestor's. */
+const inherited = (el: Element, name: string): string | null => {
+  for (let at: Element | null = el; at && at.tagName !== 'svg'; at = at.parentElement) {
+    const value = at.getAttribute(name)
+    if (value !== null && value !== 'inherit') return value
+  }
+  return null
+}
+
+/**
+ * The `stroke-width` that keeps an element's stroke looking the same when a bake folds the scale of `own` (the transform
+ * the element had before the gesture) into its geometry: the transform scaled the stroke, the rewritten coordinates do
+ * not. An empty record when there is nothing to keep (no scale, no stroke, a group, whose transform stays).
+ */
+export const strokeForBake = (el: Element, own: Affine): Record<string, string> => {
+  const scale = Math.sqrt(Math.abs(own.a * own.d))
+  if (!(scale > 0) || Math.abs(scale - 1) < 1e-9 || el.tagName === 'g' || el.tagName === 'a') return {}
+  const computed = el.isConnected && typeof getComputedStyle === 'function' ? getComputedStyle(el) : null
+  const stroke = computed?.stroke || inherited(el, 'stroke')
+  if (!stroke || stroke === 'none') return {}
+  const width = parseFloat(computed?.strokeWidth || inherited(el, 'stroke-width') || '1')
+  if (!Number.isFinite(width)) return {}
+  return { 'stroke-width': String(Number((width * scale).toFixed(6))) }
 }
 
 /** The few things `affineEdit` reads of an element, from a DOM element or from a model element alike. */
@@ -271,7 +296,8 @@ export const affineEdit = (target: Element | ModelElement, map: Affine): Record<
 /** `affineEdit` for a move by (mx, my) on top of the translation or scale the element's transform already is. */
 export const translationEdit = (el: Element, mx: number, my: number): Record<string, string | null> | null => {
   const own = parseAffine(el.getAttribute('transform'))
-  return own ? affineEdit(el, compose({ a: 1, d: 1, e: mx, f: my }, own)) : null
+  const set = own ? affineEdit(el, compose({ a: 1, d: 1, e: mx, f: my }, own)) : null
+  return set && own ? { ...set, ...strokeForBake(el, own) } : set
 }
 
 /** Ascending document order (a before b in the DOM sorts first). */
@@ -453,8 +479,14 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     // a drag shown through the model ends here: the preview is the step
     if (svgCanvas.snapshotHistory.previewing) {
       // Shapes with feature data are baked on a copy now that the move is final; the model takes what the bake changed
-      const scratch = [...(svgCanvas.gesture.dragPlan ?? [])].filter(([, entry]) => entry.scratch).map(([el]) => el)
-      const baked = scratch.map((el) => [el, bakeInScratch(svgCanvas, el)] as const)
+      const scratch = [...(svgCanvas.gesture.dragPlan ?? [])].filter(([, entry]) => entry.scratch)
+      const baked = scratch.map(([el, entry]) => {
+        const changes = bakeInScratch(svgCanvas, el)
+        // the bake folds the matrix the element had before the drag (entry.matrix) into its geometry: keep the stroke's look
+        const m = entry.matrix
+        const s = m ? Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) : 1
+        return [el, changes && { ...changes, ...strokeForBake(el, { a: s, d: s, e: 0, f: 0 }) }] as const
+      })
       const show = lastPreview
       if (show && baked.length && baked.every(([, changes]) => changes)) {
         svgCanvas.snapshotHistory.preview((root) => {
@@ -473,7 +505,8 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
       const now = parseAffine(el.getAttribute('transform'))
       const set = el.id && now ? affineEdit(el, now) : null
       if (!set) return false
-      plan.push({ el, was, set })
+      // the scale the element had before the drag is baked too: its stroke keeps its look
+      plan.push({ el, was, set: { ...set, ...strokeForBake(el, parseAffine(was) ?? IDENTITY) } })
     }
     if (!plan.length) return false
     // the preview is undone first, so the step starts from the drawing as it was before the gesture
@@ -562,18 +595,20 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         plan.set(el, { ...IDENTITY, matrix: general })
         continue
       }
-      plan.set(el, entry)
+      // Read now, before a preview rewrites the element: every preview bakes the element's own scale into its geometry
+      const stroke = strokeForBake(el, entry)
+      plan.set(el, Object.keys(stroke).length ? { ...entry, stroke } : entry)
     }
     return plan
   }
 
-  const previewWith = (plan: Map<Element, Affine>, total: (own: Affine) => Affine): void => {
+  const previewWith = (plan: Map<Element, DragEntry>, total: (own: Affine) => Affine): void => {
     svgCanvas.snapshotHistory.preview((root) => {
       let out = root
       for (const [el, own] of plan) {
         const node = findById(root, el.id)
         const set = node && affineEdit(node, total(own))
-        if (set) out = setAttrsById(out, el.id, set)
+        if (set) out = setAttrsById(out, el.id, { ...set, ...own.stroke })
       }
       return out
     })
@@ -593,7 +628,7 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         if (!set) continue
         // a turned element: the geometry moves by the drag and the rotation turns about the moved centre
         if (own.rot) set.transform = `rotate(${own.rot.angle} ${Number((own.rot.cx + dx).toFixed(6))} ${Number((own.rot.cy + dy).toFixed(6))})`
-        out = setAttrsById(out, el.id, set)
+        out = setAttrsById(out, el.id, { ...set, ...own.stroke })
       }
       return out
     })

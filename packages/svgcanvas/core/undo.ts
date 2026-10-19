@@ -231,12 +231,20 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
   }
 
   svgCanvas.undoMgr = getUndoManager()
+  // A model step's elements come from the renderer (`record` below); a DOM command knows its own
+  let stepTouched: Element[] | null = null
   svgCanvas.undoMgr.onPush = (cmd: HistoryCommand) => {
-    svgCanvas.logDebugEvent?.('history-push', {
-      text: cmd.getText?.(),
-      type: cmd.type?.() ?? cmd.constructor?.name,
-      undoSize: svgCanvas.undoMgr.getUndoStackSize()
-    })
+    if (svgCanvas._debugEventSink) {
+      const elems = stepTouched ?? (typeof cmd.elements === 'function' ? cmd.elements() : [])
+      const ids = elems.filter(Boolean).map((el) => el.id || el.tagName)
+      svgCanvas.logDebugEvent?.('history-push', {
+        text: cmd.getText?.(),
+        type: cmd.type?.() ?? cmd.constructor?.name,
+        undoSize: svgCanvas.undoMgr.getUndoStackSize(),
+        elemIds: ids.length > 20 ? [...ids.slice(0, 20), `+${ids.length - 20} more`] : ids
+      })
+    }
+    stepTouched = null
   }
 
   // Undo and redo are model snapshots (R1 step d, core/snapshot-history.ts)
@@ -247,7 +255,10 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
     const history = new SnapshotHistory({
       count: () => svgCanvas.undoMgr.getUndoStackSize(),
       held: () => svgCanvas.inTransaction(),
-      record: (label) => svgCanvas.addCommandToHistory(new hstry.BatchCommand(label)),
+      record: (label, touched) => {
+        stepTouched = touched
+        svgCanvas.addCommandToHistory(new hstry.BatchCommand(label))
+      },
       signal: () => svgCanvas.destroyAbort.signal,
       content: () => svgCanvas.getSvgContent(),
       before: () => {

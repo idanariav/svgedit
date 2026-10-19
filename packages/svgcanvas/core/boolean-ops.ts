@@ -196,7 +196,7 @@ const performBooleanOp = (type: 'union' | 'intersect' | 'subtract' | 'exclude' |
   // Inherit style from the bottom element (its bottom-most leaf, if a group)
   const styleSourceElem = getStyleSourceElem(bottomElem)
   const styleAttrs = getStyleAttrs(styleSourceElem)
-  scaleStrokeWidth(styleAttrs, getBakedStyleScale(styleSourceElem, bottomElem))
+  scaleStrokeWidth(styleAttrs, getBakedStyleScale(styleSourceElem, bottomElem), styleSourceElem)
 
   // Build undo/redo batch command
   const { BatchCommand, RemoveElementCommand } = canvas.history

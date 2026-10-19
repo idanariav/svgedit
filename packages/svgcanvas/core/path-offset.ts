@@ -151,7 +151,7 @@ export const createPathOffset = (canvas: SvgCanvas): PathOffsetApi => {
     // compensating transform on the result, so stroke-width needs the same
     // correction (see getMatrixScale's doc comment in paper-utils.js).
     const styleAttrs = getStyleAttrs(elem)
-    scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem))
+    scaleStrokeWidth(styleAttrs, getOwnTransformScale(elem), elem)
     replaceWithPath(elem, d, styleAttrs)
   }
 

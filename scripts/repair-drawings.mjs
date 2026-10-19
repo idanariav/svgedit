@@ -17,16 +17,27 @@ import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import LZString from 'lz-string'
+import { retracedLine } from '../packages/svgcanvas/core/drawing-invariants.ts'
 
 /**
- * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. Empty
- * on purpose: the earlier ones (NaN tspans, `undefined` text in <defs>, stacked translate(),
- * empty <path> elements) ran over the vault and were deleted; `git log -- scripts/repair-drawings.mjs`
- * has them as templates.
+ * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. The earlier
+ * ones (NaN tspans, `undefined` text in <defs>, stacked translate(), empty <path> elements) ran
+ * over the vault and were deleted; `git log -- scripts/repair-drawings.mjs` has them as templates.
  * @typedef {{name: string, run: (source: string) => string}} Repair
  * @type {Repair[]}
  */
-export const REPAIRS = []
+export const REPAIRS = [
+  {
+    // The Pen closed a path finished by a click on its last point (`M A L B L A Z`): the line it
+    // was meant to be is `M A L B` (checkDrawing's `retraced-path`).
+    name: 'retraced-path',
+    run: (source) => source.replace(/<path\b[^>]*>/g, (tag) => tag.replace(/(\sd=")([^"]*)(")/, (whole, open, d, close) => {
+      const line = retracedLine(d)
+      const n = (v) => Number(v.toFixed(6))
+      return line ? `${open}M${n(line[0][0])},${n(line[0][1])} L${n(line[1][0])},${n(line[1][1])}${close}` : whole
+    }))
+  }
+]
 
 /**
  * @param {string} source

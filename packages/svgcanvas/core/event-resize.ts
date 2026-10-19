@@ -164,6 +164,8 @@ export const init = (canvas: SvgCanvas): {
     // stray identity matrices) whenever a grip was clicked but not dragged,
     // since mouseUp only consolidates/removes them after real movement.
     svgCanvas.gesture.hasResizeStartTransform = false
+    // A resize of one element must not scale the elements of an earlier multi-selection resize.
+    svgCanvas.gesture.groupResizeStart = null
 
     // multi-selection: record per-element start matrices and the union bbox,
     // then let mouseMove apply a single uniform group-scale matrix to each.

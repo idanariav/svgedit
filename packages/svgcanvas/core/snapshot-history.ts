@@ -60,8 +60,8 @@ export const share = (prev: ModelNode | undefined, next: ModelNode): ModelNode =
 }
 
 export interface SnapshotTarget {
-  /** push an entry for a step that landed (`edit`) */
-  record: (label: string) => void
+  /** push an entry for a step that landed (`edit`), with the elements the step changed (for the debug log) */
+  record: (label: string, touched: Element[]) => void
   /** aborted when the canvas is destroyed */
   signal: () => AbortSignal
   /** a transaction is open: it owns the drawing until it commits (its start is the baseline, not each change inside it) */
@@ -95,6 +95,8 @@ export class SnapshotHistory {
   /** a live preview is on (see `preview`): the drawing as it was when it began, and as it is shown now */
   private previewBase: ModelElement | null = null
   private previewShown: ModelElement | null = null
+  /** the elements the previews of the current gesture changed: what its step touched */
+  private previewTouched = new Set<Element>()
 
   constructor (target: SnapshotTarget) {
     this.target = target
@@ -300,7 +302,7 @@ export class SnapshotHistory {
     }
     const next = fn(this.previewBase)
     if (next === this.previewShown) return
-    this.render(this.previewShown as ModelElement, next)
+    for (const el of this.render(this.previewShown as ModelElement, next)) this.previewTouched.add(el)
     this.previewShown = next
   }
 
@@ -308,11 +310,13 @@ export class SnapshotHistory {
   endPreview (label: string): boolean {
     const base = this.previewBase
     const shown = this.previewShown
+    const touched = [...this.previewTouched]
     this.previewBase = null
     this.previewShown = null
+    this.previewTouched.clear()
     if (!base || !shown || shown === base) return false
     if (!this.target.held()) this.stage(shown)
-    this.target.record(label)
+    this.target.record(label, touched)
     return true
   }
 
@@ -322,6 +326,7 @@ export class SnapshotHistory {
     const shown = this.previewShown
     this.previewBase = null
     this.previewShown = null
+    this.previewTouched.clear()
     if (base && shown && shown !== base) this.render(shown, base)
   }
 
@@ -337,9 +342,9 @@ export class SnapshotHistory {
     const shown = this.current()
     const next = fn(shown)
     if (next === shown) return false
-    this.render(shown, next)
+    const touched = this.render(shown, next)
     if (!this.target.held()) this.stage(next) // a transaction stages its own, at commit
-    this.target.record(label)
+    this.target.record(label, touched)
     return true
   }
 }

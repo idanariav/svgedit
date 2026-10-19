@@ -81,6 +81,8 @@ export class LayerTree {
   drag: Drag | null
   keyboard: LayerKeyboard
   observer: MutationObserver | null
+  /** the object `reveal` last opened the tree to: a repeat of the same selection leaves what the user folded folded */
+  revealed: Element | null
 
   constructor (editor: EditorInstance) {
     this.editor = editor
@@ -97,6 +99,7 @@ export class LayerTree {
     this.anchor = null
     this.drag = null
     this.keyboard = new LayerKeyboard(this)
+    this.revealed = null
     this.observer = typeof MutationObserver === 'function' ? new MutationObserver(() => this.schedule()) : null
   }
 
@@ -371,7 +374,13 @@ export class LayerTree {
 
   setOpen (el: Element, open: boolean) {
     this.expanded.set(el, open)
+    this.canvas.logDebugEvent?.('layer-tree', { action: open ? 'expand' : 'collapse', target: this.debugName(el) })
     this.invalidate()
+  }
+
+  /** A layer by its name, anything else as `tag#id`, for the debug log. */
+  debugName (el: Element): string {
+    return this.canvas.isLayer(el) ? `layer:${el.querySelector(':scope > title')?.textContent ?? ''}` : `${el.tagName}#${el.id}`
   }
 
   onDblClick (evt: Event) {
@@ -438,9 +447,20 @@ export class LayerTree {
    */
   reveal (elems: Element[]): void {
     const el = (elems ?? []).filter(Boolean)[0]
+    if (!el) this.revealed = null
     if (!el || !isPanelObject(el) || this.requireTable().offsetParent === null) return
-    if (this.expandTo(el)) this.invalidate()
-    else this.markSelection()
+    // 'selected' also fires for a selection that did not change (a click on the selected object, an undo); opening the tree
+    // again then would undo a fold the user just made of the layer or group holding it.
+    const repeat = el === this.revealed
+    this.revealed = el
+    if (repeat) {
+      this.markSelection()
+      return
+    }
+    if (this.expandTo(el)) {
+      this.canvas.logDebugEvent?.('layer-tree', { action: 'reveal', target: this.debugName(el) })
+      this.invalidate()
+    } else this.markSelection()
     const tr = this.rowOf(el)
     tr?.scrollIntoView?.({ block: 'nearest' })
   }

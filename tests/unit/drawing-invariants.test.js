@@ -55,6 +55,15 @@ describe('checkDrawing', () => {
     expect(codes(wrap('<g data-se-ephemeral=""><path/></g>'))).toEqual([])
   })
 
+  it('retraced-path (a closed line that runs out and back over itself)', () => {
+    expect(codes(wrap('<path id="p" d="M 434 391 L 403 407 L 434 391 Z"/>'))).toEqual(['retraced-path'])
+    expect(codes(wrap('<path id="p" d="m449,472.9l-31.14,15.97l31.14,-15.97z"/>'))).toEqual(['retraced-path'])
+    expect(codes(wrap('<path id="p" d="M0 0 L10 5 Z"/>'))).toEqual(['retraced-path'])
+    expect(codes(wrap('<path id="p" d="M0 0 L10 0 L10 10 Z"/>'))).toEqual([])
+    expect(codes(wrap('<path id="p" d="M0 0 L10 5"/>'))).toEqual([])
+    expect(codes(wrap('<path id="p" d="M0 0 C5 5 5 5 10 0 L0 0 Z"/>'))).toEqual([])
+  })
+
   it('bad-number in geometry', () => {
     expect(codes(wrap('<rect id="a" x="NaN" y="1" width="undefined" height="2"/>'))).toEqual(['bad-number', 'bad-number'])
     expect(codes(wrap('<path id="p" d="M 0 0 L Infinity 5"/>'))).toEqual(['bad-number'])

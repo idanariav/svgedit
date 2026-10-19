@@ -15,6 +15,7 @@ import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
 import { toCurrentGroupLocalDelta } from './event-group-context.ts'
 import * as hstry from './history.js'
+import { parseMatrix } from './model/matrix.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 
 const { BatchCommand, ChangeElementCommand } = hstry
@@ -331,6 +332,8 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
     if (mode === 'resize' || mode === 'multiselect') {
+      // The orchestrator returns straight after this function, past its own gesture reset: a group resize ends here.
+      svgCanvas.gesture.groupResizeStart = null
       if (svgCanvas.getRubberBox()) {
         svgCanvas.requireRubberBox().setAttribute('display', 'none')
         svgCanvas.setCurBBoxes([])
@@ -461,7 +464,16 @@ export const init = (canvas: SvgCanvas): {
           // the wrong place on undo. Set it to this element's own captured value
           // right before calling it.
           svgCanvas.setStartTransform(oldTransform)
-          const cmd = svgCanvas.recalculateDimensions(elem)
+          // A bake that folds the element's pre-gesture transform into its geometry (a move, a group resize) keeps its stroke's
+          // look: recalculateDimensions scales the stroke by this, in the same undo command. Only when the start is known.
+          const was = svgCanvas.gesture.dragStartTransforms?.has(elem) ? parseMatrix(oldTransform) : null
+          svgCanvas.gesture.bakeStrokeScale = was ? Math.sqrt(Math.abs(was[0] * was[3] - was[1] * was[2])) : null
+          let cmd
+          try {
+            cmd = svgCanvas.recalculateDimensions(elem)
+          } finally {
+            svgCanvas.gesture.bakeStrokeScale = null
+          }
           if (cmd) {
             batchCmd.addSubCommand(cmd)
           } else {

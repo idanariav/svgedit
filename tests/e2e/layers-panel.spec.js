@@ -288,6 +288,20 @@ test.describe('Layers panel', () => {
       await expect.poll(() => objectLabels(page)).toEqual(['Ellipse', 'Pair', 'Rectangle', 'Rectangle', 'Rectangle'])
     })
 
+    test('the layer of the selection stays folded when the same selection is announced again', async ({ page }) => {
+      const layer1 = page.locator('#layerlist tr.layer', { has: page.locator('td.layername', { hasText: 'Layer 1' }) })
+      await (await rowFor(page, 'r1')).click()
+      await layer1.locator('td.layertoggle').click()
+      await expect(layer1.locator('td.layertoggle.open')).toHaveCount(0)
+      // a click on the selected object, an undo…: 'selected' again, with the same object
+      await page.evaluate(() => window.svgEditor.svgCanvas.selectOnly([document.getElementById('r1')], true))
+      await page.evaluate(() => window.svgEditor.rightPanel.layerTree.refresh())
+      await expect(layer1.locator('td.layertoggle.open')).toHaveCount(0)
+      // selecting another object of the layer on the canvas still opens the tree to it
+      await page.evaluate(() => window.svgEditor.svgCanvas.selectOnly([document.getElementById('r2')], true))
+      await expect(layer1.locator('td.layertoggle.open')).toHaveCount(1)
+    })
+
     test('a row click selects the object (inside a group too) and keeps it across refreshes', async ({ page }) => {
       await (await rowFor(page, 'r2')).click()
       expect(await selectedIds(page)).toEqual(['r2'])

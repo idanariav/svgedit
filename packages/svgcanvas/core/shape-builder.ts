@@ -176,7 +176,7 @@ export const createShapeBuilder = (canvas: SvgCanvas): ShapeBuilder => {
       // (elemToItem/svgToPaper) with no compensating transform on the
       // result, so stroke-width needs the same correction (see
       // getMatrixScale's doc comment in paper-utils.js).
-      scaleStrokeWidth(style, getOwnTransformScale(styleSrc))
+      scaleStrokeWidth(style, getOwnTransformScale(styleSrc), styleSrc)
       for (const [k, v] of Object.entries(style)) path.setAttribute(k, v)
       path.setAttribute('d', toAbsolutePathData(d, svgCanvas))
       path.id = svgCanvas.getNextId()

@@ -10,6 +10,7 @@ import paperCore from 'paper/dist/paper-core.js'
 import type SvgCanvas from '../svgcanvas.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getMatrix, getTransformList, transformListToTransform } from './math.ts'
+import { strokeForBake } from './model-commands.ts'
 
 // Element types that cannot be converted to a path for paper.js operations.
 const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', 'defs'])
@@ -66,10 +67,15 @@ export const getMatrixScale = (m: SVGMatrix): number => Math.sqrt(Math.abs((m.a 
 export const getOwnTransformScale = (elem: Element): number => getMatrixScale(getMatrix(elem))
 
 /**
- * Scale `styleAttrs['stroke-width']` in place by `scale`, if present.
- * No-op when there's no stroke-width or the scale is ~1 (the common case).
+ * Scale `styleAttrs['stroke-width']` in place by `scale`. With `source` (the element the style was read from) the width it
+ * paints with is scaled, its own attribute, an inherited one or the initial 1, and only when it paints a stroke; without, only a
+ * stroke-width present in `styleAttrs`. No-op when the scale is ~1 (the common case).
  */
-export const scaleStrokeWidth = (styleAttrs: Record<string, string>, scale: number): void => {
+export const scaleStrokeWidth = (styleAttrs: Record<string, string>, scale: number, source?: Element): void => {
+  if (source) {
+    Object.assign(styleAttrs, strokeForBake(source, { a: scale, d: scale, e: 0, f: 0 }))
+    return
+  }
   if (!styleAttrs['stroke-width'] || !(scale > 0) || scale === 1) return
   styleAttrs['stroke-width'] = String(parseFloat(styleAttrs['stroke-width']) * scale)
 }

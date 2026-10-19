@@ -83,3 +83,23 @@ describe('DebugSnapshotLogger', () => {
     expect(() => logger.start(vi.fn())).not.toThrow()
   })
 })
+
+describe('compactSnapshot', () => {
+  it('keeps the visible and stale entries and counts the hidden pool', async () => {
+    const { compactSnapshot } = await import('../../src/editor/DebugSnapshotLogger.ts')
+    const hidden = { id: 1, elemId: null, display: 'none', stale: false }
+    const shown = { id: 0, elemId: 'r1', display: 'inline', stale: false }
+    const stale = { id: 2, elemId: 'r2', display: 'inline', stale: true }
+    const grip = { id: 'pathpointgrip_0', display: 'none', stale: false }
+    const out = compactSnapshot({
+      selection: { selectedIds: ['r1'], selectors: [shown, hidden, stale, hidden] },
+      pathEditing: { mode: 'select', grips: [grip, grip] },
+      groupContext: { currentGroupId: 'g', disabledElems: [{ id: 'a' }, { id: 'b' }], stale: false }
+    })
+    expect(out).toEqual({
+      selection: { selectedIds: ['r1'], selectors: [shown, stale], hiddenSelectors: 2 },
+      pathEditing: { mode: 'select', grips: [], hiddenGrips: 2 },
+      groupContext: { currentGroupId: 'g', stale: false, disabledCount: 2 }
+    })
+  })
+})

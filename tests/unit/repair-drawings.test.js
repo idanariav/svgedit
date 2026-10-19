@@ -4,15 +4,14 @@ import { REPAIRS, repairSvg, repairMarkdown } from '../../scripts/repair-drawing
 
 const doc = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" id="svgcontent"><g class="layer"><title>L</title>${inner}</g></svg>`
 
-// The real REPAIRS list is empty (every repair so far has been run and deleted); the machinery is
-// tested with a stand-in that has the shape of the old NaN-tspan repair.
+// The machinery is tested with a stand-in that has the shape of the old NaN-tspan repair.
 const dropNaNTspanCoords = (source) =>
   source.replace(/<tspan\b[^>]*>/g, (tag) => tag.replace(/\s(?:x|y)="NaN"/g, ''))
 const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
-  it('ships no repairs (they are deleted once run)', () => {
-    expect(REPAIRS).toEqual([])
+  it('ships only the current repairs (they are deleted once run)', () => {
+    expect(REPAIRS.map((r) => r.name)).toEqual(['retraced-path'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -61,5 +60,22 @@ describe('repair-drawings: plugin notes', () => {
     expect(repairMarkdown(clean, repairs)).toEqual({ source: clean, applied: [] })
     const other = '```js\nconst a = "NaN"\n```\n```compressed-svg\n!!!not base64!!!\n```\n'
     expect(repairMarkdown(other, repairs)).toEqual({ source: other, applied: [] })
+  })
+})
+
+describe('repair-drawings: retraced-path', () => {
+  const [retraced] = REPAIRS
+
+  it('opens a closed line that runs out and back over itself, relative or absolute', () => {
+    const bad = doc('<path d="m449,472.9l-31.14,15.97l31.14,-15.97z" fill="none" id="p" stroke="#000"/><path d="M0 0 L10 5 Z" id="q"/>')
+    expect(repairSvg(bad, [retraced])).toEqual({
+      source: doc('<path d="M449,472.9 L417.86,488.87" fill="none" id="p" stroke="#000"/><path d="M0,0 L10,5" id="q"/>'),
+      applied: ['retraced-path']
+    })
+  })
+
+  it('leaves real shapes, open lines and curves alone', () => {
+    const clean = doc('<path d="M0 0 L10 0 L10 10 Z"/><path d="M0 0 L10 5"/><path d="M0 0 C5 5 5 5 10 0 L0 0 Z"/><rect d="M0 0 L1 1 Z"/>')
+    expect(repairSvg(clean, [retraced])).toEqual({ source: clean, applied: [] })
   })
 })

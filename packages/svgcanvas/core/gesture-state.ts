@@ -38,6 +38,9 @@ export interface GestureState {
   resizeStartBox: { x: number, y: number, width: number, height: number } | null
   hasResizeStartTransform: boolean
   groupResizeStart: Map<Element, SVGMatrix> | null
+  /** set around one `recalculateDimensions` call: the scale of the element's transform before the gesture, which a bake of
+   * the whole transform must keep in the stroke (`null` otherwise: a bake leaves the stroke alone) */
+  bakeStrokeScale: number | null
   areaResize: AreaResize | null
   /** Alt was down at the press: the drag clones instead of moving. */
   altCloneArmed: boolean
@@ -65,6 +68,7 @@ export const createGestureState = (): GestureState => ({
   resizeStartBox: null,
   hasResizeStartTransform: false,
   groupResizeStart: null,
+  bakeStrokeScale: null,
   areaResize: null,
   altCloneArmed: false,
   dragStartBBox: null,
