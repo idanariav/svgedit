@@ -1,5 +1,12 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.13
+- UI: the Gradient tool has Linear / Radial on its options bar; a drag on a shape with a plain paint makes a gradient along the drag (radial: centred on the press), a click the default one. Shortcut badges on the top panel's buttons.
+- Fix: widgets, grips, brush ring and stroke previews of corners, distort, width, smooth and shaper sit where a shape appears inside an entered, transformed group; pen and pencil continue a path inside an entered group and keep a path's own transform.
+- Fix: a group's stroked box includes what its children's strokes paint (exact for a turned group); a turned curve is measured by its extent and measuring a right-angle turn no longer adds an empty `<path>`.
+- Core (R1): the document model is the source of truth for undo/redo (history is snapshots) and most edits and tool gestures (move, resize, rotate, flip, group, layers, paste, clip/mask, path nodes, effects) commit through it; drags and resizes are shown by the renderer. New headless `svgedit-cli` (inspect, read, check, bounds).
+- Refactor: the editor and built-in extensions are TypeScript; features are `defineFeature({ name, init(editor) })`; `userExtensions` and four unused hooks are gone; pointer gestures, selection and zoom changes are typed canvas events.
+
 ## 7.4.1-fork.12
 - UI: the Brush tool's settings moved from a popover in the right panel's Effects tab to the tool's options bar: the five saved brushes are a button row (the one in use is highlighted, an edited one is dashed with Save / ✕), the main parameters are inline and a More toggle shows angle, roundness and taper. Tool options gain `buttons` and `button` controls.
 
