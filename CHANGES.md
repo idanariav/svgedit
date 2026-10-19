@@ -1,5 +1,12 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.14
+- Fix: a resize of one element after a resize of several no longer scales the earlier ones too (outside the undo step, with their selection boxes back on screen).
+- Fix: strokes keep their look when a move, nudge or group resize folds an element's scale into its shape (the children of an ungrouped, scaled group on their next move), and in the results of the cutter, boolean ops, shape builder and path offset (an inherited or unset stroke-width too). A resize's own scale still leaves the stroke alone.
+- Fix: clicking the last point of a two-point Pen path finishes it open instead of closing it back over itself; `checkDrawing` reports such paths (`retraced-path`) and `scripts/repair-drawings.mjs` opens them.
+- Fix: a layer folded in the Layers panel stays folded when the same selection is announced again.
+- Debug log: correct `pointer-down` document coordinates after a scroll or zoom; `history-push` names the elements a step changed; `debug-snapshot` lists only visible or stale selectors and grips (about 20x smaller); `layer-tree` events; `pointer-up` flags a release whose press began outside the canvas (`noPress`).
+
 ## 7.4.1-fork.13
 - UI: the Gradient tool has Linear / Radial on its options bar; a drag on a shape with a plain paint makes a gradient along the drag (radial: centred on the press), a click the default one. Shortcut badges on the top panel's buttons.
 - Fix: widgets, grips, brush ring and stroke previews of corners, distort, width, smooth and shaper sit where a shape appears inside an entered, transformed group; pen and pencil continue a path inside an entered group and keep a path's own transform.
