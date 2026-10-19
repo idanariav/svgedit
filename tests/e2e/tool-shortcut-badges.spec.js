@@ -58,7 +58,8 @@ test.describe('Tool shortcut badges', () => {
   test('the top panel\'s buttons show their keys too, painted like the tools\'', async ({ page }) => {
     expect(await badge(page, 'tool_frame')).toEqual({ attr: 'U', painted: 'U' })
     expect(await badge(page, 'tool_wireframe')).toEqual({ attr: 'F', painted: 'F' })
-    expect((await badge(page, 'tool_undo')).attr).toBe('⌘Z')
+    // Cmd on macOS, Ctrl elsewhere (CI runs on Linux)
+    expect((await badge(page, 'tool_undo')).attr).toMatch(/^[⌘⌃]Z$/)
     // no key, no badge
     expect((await badge(page, 'tool_smart_snap')).attr).toBeNull()
     const pos = await page.evaluate(() => {
