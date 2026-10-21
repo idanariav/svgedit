@@ -91,6 +91,22 @@ describe('fx-filter glow', () => {
     assert.deepEqual(fx.readEffects(rect).glow, { outer: OUTER, inner: null })
   })
 
+  it('an outer glow with a spread dilates the silhouette before blurring, and reads back', () => {
+    const rect = addRect('r')
+    const spread = { ...OUTER, spread: 5 }
+    write(rect, { outline: OUTLINE, shadow: null, glow: { outer: spread, inner: null } })
+    const filter = filterOf(rect)
+    const dil = filter.querySelector('feMorphology[result=fx_oglow_dil]')
+    assert.equal(dil.getAttribute('radius'), '5')
+    assert.equal(dil.getAttribute('in'), 'fx_outlined')
+    assert.equal(filter.querySelector('feGaussianBlur[result=fx_oglow_blur]').getAttribute('in'), 'fx_oglow_dil')
+    const read = fx.readEffects(rect)
+    assert.deepEqual(read.glow.outer, spread)
+    assert.deepEqual(read.outline, OUTLINE) // the glow's dilate is not mistaken for the outline's
+    write(rect, { outline: null, shadow: null, glow: { outer: OUTER, inner: null } })
+    assert.equal(filterOf(rect).querySelector('feMorphology'), null)
+  })
+
   it('an edge inner glow blurs the inverted alpha; a centre glow blurs the alpha; both clip to the shape', () => {
     const rect = addRect('r')
     write(rect, { outline: null, shadow: null, glow: { outer: null, inner: INNER_EDGE } })
@@ -240,6 +256,13 @@ describe('fx-filter glow', () => {
       rect.setAttribute('stroke-width', '0')
       write(rect, { outline: null, shadow: null, glow: { outer: OUTER, inner: null } })
       assert.ok(Math.abs(pad(rect) - 12) < 1e-9)
+    })
+
+    it('an outer glow spread widens the region by the spread', () => {
+      const rect = addRect('r')
+      rect.setAttribute('stroke-width', '0')
+      write(rect, { outline: null, shadow: null, glow: { outer: { ...OUTER, spread: 5 }, inner: null } })
+      assert.ok(Math.abs(pad(rect) - 17) < 1e-9)
     })
 
     it('an edge inner glow needs room outside to blur the inverted alpha; a centre glow needs none', () => {

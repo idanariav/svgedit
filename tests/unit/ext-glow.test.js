@@ -118,6 +118,16 @@ describe('ext-glow', function () {
     assert.equal(Number(filterOf().getAttribute('x')), xBefore + 100)
   })
 
+  it('the outer spread field sets the glow spread (switching a glow that is off on) and 0 clears it', function () {
+    const rect = addRect()
+    select(rect)
+    field('glow_outer_spread', 4)
+    assert.equal(fx.readEffects(rect).glow.outer.spread, 4)
+    assert.ok(fx.readEffects(rect).glow.outer.blur > 0)
+    field('glow_outer_spread', 0)
+    assert.equal(fx.readEffects(rect).glow.outer.spread, undefined)
+  })
+
   it('editing opacity or colour of a glow that is off switches it on at a default blur', function () {
     const rect = addRect()
     select(rect)

@@ -150,6 +150,7 @@ interface ElementIdMap {
   g_title: HTMLElementTagNameMap['se-input']
   glow_feather_radius: HTMLElementTagNameMap['se-spin-input']
   glow_inner_source: HTMLElementTagNameMap['se-select']
+  glow_outer_spread: HTMLElementTagNameMap['se-spin-input']
   glow_panel: HTMLDivElement
   glow_remove: HTMLElementTagNameMap['se-button']
   grid_col: HTMLInputElement

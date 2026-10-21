@@ -70,6 +70,10 @@ export default defineFeature({
         color: field(`glow_${kind}_color`).value,
         opacity: Math.min(1, Math.max(0, Number(field(`glow_${kind}_opacity`).value) / 100))
       }
+      if (kind === 'outer') {
+        const spread = Number(field('glow_outer_spread').value)
+        if (spread > 0) glow.spread = spread
+      }
       if (kind === 'inner') glow.source = field('glow_inner_source').value === 'centre' ? 'centre' : 'edge'
       return glow
     }
@@ -131,6 +135,7 @@ export default defineFeature({
         field(`glow_${kind}_blur`).value = String(g?.blur ?? 0)
         field(`glow_${kind}_opacity`).value = String(Math.round((g?.opacity ?? DEFAULTS[kind].opacity) * 100))
         field(`glow_${kind}_color`).value = g?.color ?? DEFAULTS[kind].color
+        if (kind === 'outer') field('glow_outer_spread').value = String(g?.spread ?? 0)
         ;(panel.querySelector(`[data-glow="${kind}"]`) as Element).toggleAttribute('data-off', !g)
       }
       field('glow_inner_source').value = glow.inner?.source ?? DEFAULTS.inner.source
@@ -177,6 +182,10 @@ export default defineFeature({
               <se-spin-input id="glow_${kind}_opacity" label="Opacity" min="0" max="100" step="5"
                 value="${Math.round(DEFAULTS[kind].opacity * 100)}"
                 title="${t('contextTools.opacity.title')}"></se-spin-input>
+              ${kind === 'outer'
+? `<se-spin-input id="glow_outer_spread" label="Spread" min="0" max="100" step="1" value="0"
+                title="${t('contextTools.spread.title')}"></se-spin-input>`
+: ''}
             </div>
             <div class="shadow_panel_footer">
               <input type="color" id="glow_${kind}_color" value="${DEFAULTS[kind].color}"
@@ -225,7 +234,9 @@ export default defineFeature({
             if (!(Number(field(`glow_${kind}_blur`).value) > 0)) field(`glow_${kind}_blur`).value = String(DEFAULT_BLUR)
           }
           field(`glow_${kind}_blur`).addEventListener('change', commit)
-          for (const part of ['opacity', 'color']) {
+          const parts = ['opacity', 'color']
+          if (kind === 'outer') parts.push('spread')
+          for (const part of parts) {
             field(`glow_${kind}_${part}`).addEventListener('change', () => {
               switchOn()
               commit()

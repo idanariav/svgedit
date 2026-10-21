@@ -67,7 +67,7 @@
  * intentional and visually negligible for thin lines/arrows — not a bug.
  */
 
-export type OuterGlow = { blur: number, color: string, opacity: number }
+export type OuterGlow = { blur: number, color: string, opacity: number, spread?: number }
 
 /** `source`: `'edge'` or `'centre'` */
 export type InnerGlow = OuterGlow & { source: string }
@@ -134,7 +134,9 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
     if (!elem) return spec
     const filter = getRefFilter(elem)
     if (!filter) return spec
-    const morph = filter.querySelector('feMorphology')
+    // The outline's dilate, not the outer glow's spread (`fx_oglow_dil`).
+    const morph = byResult(filter, 'feMorphology', 'fx_dil') ||
+      [...filter.querySelectorAll('feMorphology')].find((el) => el.getAttribute('result') !== 'fx_oglow_dil')
     // The outline's flood is `fx_flood`; never take "the first feFlood" — a
     // glow's flood may come first. (Older filters without result names fall
     // back to the first flood that is not a glow's.)
@@ -150,6 +152,8 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
         color: oFlood.getAttribute('flood-color') || '#ffff00',
         opacity: Number(oFlood.getAttribute('flood-opacity') ?? 1)
       }
+      const oDil = byResult(filter, 'feMorphology', 'fx_oglow_dil')
+      if (oDil) spec.glow.outer.spread = Number(oDil.getAttribute('radius')) || 0
     }
     const iFlood = byResult(filter, 'feFlood', 'fx_iglow_flood')
     const iBlur = byResult(filter, 'feGaussianBlur', 'fx_iglow_blur')
@@ -206,7 +210,7 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
     // alpha, which needs that much room outside the shape too. The shadow is
     // cast by the shape plus its outer glow.
     const { outer, inner } = glowOf(spec)
-    const outerPad = outer ? outer.blur * 1.5 : 0
+    const outerPad = outer ? outer.blur * 1.5 + (outer.spread || 0) : 0
     const innerPad = inner && inner.source === 'edge' ? inner.blur * 1.5 : 0
     const pad = sw / 2 + Math.max(outlinePad + outerPad, innerPad, shadowPad + outerPad)
     filter.setAttribute('filterUnits', 'userSpaceOnUse')
@@ -269,9 +273,11 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
       last = 'fx_outlined'
     }
     if (outer) {
-      // Blurred, coloured silhouette painted under what is there so far.
+      // Blurred, coloured silhouette (grown by `spread` first) painted under what is there so far.
+      const spread = outer.spread && outer.spread > 0 ? outer.spread : 0
+      if (spread) children.push({ element: 'feMorphology', attr: { in: last || alpha, operator: 'dilate', radius: String(spread), result: 'fx_oglow_dil' } })
       children.push(
-        { element: 'feGaussianBlur', attr: { in: last || alpha, stdDeviation: String(outer.blur / 2), result: 'fx_oglow_blur' } },
+        { element: 'feGaussianBlur', attr: { in: spread ? 'fx_oglow_dil' : (last || alpha), stdDeviation: String(outer.blur / 2), result: 'fx_oglow_blur' } },
         { element: 'feFlood', attr: { 'flood-color': outer.color, 'flood-opacity': String(outer.opacity), result: 'fx_oglow_flood' } },
         { element: 'feComposite', attr: { in: 'fx_oglow_flood', in2: 'fx_oglow_blur', operator: 'in', result: 'fx_oglow' } },
         {
