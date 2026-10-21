@@ -37,6 +37,8 @@ export const init = (canvas: SvgCanvas): {
     let { x, y, realX, realY } = ctx
     x *= zoom
     y *= zoom
+    // The ring marks where a Shift-press would land, so it follows the raw pointer, not the angle-snapped point.
+    svgCanvas.pathActions.hover(x, y, 'path', evt.shiftKey)
 
     if (svgCanvas.getCurConfig().gridSnapping) {
       ({ x, y } = svgCanvas.snapPointToGrid(x, y))
@@ -83,7 +85,7 @@ export const init = (canvas: SvgCanvas): {
     if (!ctm) return
     const pt = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
     const zoom = svgCanvas.getZoom()
-    svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom, svgCanvas.getCurrentMode())
+    svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom, svgCanvas.getCurrentMode(), evt.shiftKey)
   }
 
   // 'path': element is nulled here so it is not removed nor finalized by the

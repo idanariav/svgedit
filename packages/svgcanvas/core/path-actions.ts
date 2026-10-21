@@ -74,7 +74,7 @@ export interface PathActionsApi {
   opencloseSubPath: () => void
   smoothSelectedNodes: () => void
   addSubPath: (on: boolean) => void
-  hover: (mouseX: number | null, mouseY: number | null, mode?: string) => void
+  hover: (mouseX: number | null, mouseY: number | null, mode?: string, shiftKey?: boolean) => void
 }
 
 export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
@@ -478,8 +478,9 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
     /**
      * The pointer moved with no button down in `path` or `fhpath` mode (`null` coordinates just hide the ring).
      */
-    hover (mouseX: number | null, mouseY: number | null, mode: string = 'path'): void {
-      if (mouseX === null || mouseY === null) this.#hideEndHint()
+    hover (mouseX: number | null, mouseY: number | null, mode: string = 'path', shiftKey: boolean = false): void {
+      // The Pen only carries on / joins with Shift held, so the ring shows only then.
+      if (mouseX === null || mouseY === null || (mode === 'path' && !shiftKey)) this.#hideEndHint()
       else this.#showEndHint(mouseX, mouseY, mode)
     }
 
@@ -559,7 +560,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         let index
         // if pts array is empty, create path element with M at current point
         const drawnPath = svgCanvas.getDrawnPath()
-        const end = this.#subpath || evt.altKey ? null : this.#penEnd(rawX, rawY, drawnPath)
+        const end = this.#subpath || !evt.shiftKey ? null : this.#penEnd(rawX, rawY, drawnPath)
         if (!drawnPath && end) {
           this.#carryOn(end, stretchy)
           return undefined
@@ -832,7 +833,6 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
       this.#hasMoved = true
       const drawnPath = svgCanvas.getDrawnPath()
       if (svgCanvas.getCurrentMode() === 'path') {
-        this.#showEndHint(mouseX, mouseY)
         if (!drawnPath) { return }
         const seglist = drawnPath.pathSegList
         const index = seglist.numberOfItems - 1

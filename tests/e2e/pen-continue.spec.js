@@ -36,7 +36,7 @@ test.describe('Pen continues and joins open paths', () => {
   test('pressing the last point carries the path on; the same element is edited in one undo step', async ({ page }) => {
     const before = await undoSize(page)
     await pen(page)
-    await click(page, 202, 101) // near a's end (200,100)
+    await click(page, 202, 101, { shift: true }) // near a's end (200,100)
     await click(page, 250, 160)
     await click(page, 300, 200)
     await click(page, 300, 200) // press the last point again: done
@@ -57,7 +57,7 @@ test.describe('Pen continues and joins open paths', () => {
       </g></svg>`)
     // its end (100,0) appears at (100,150): rotate 90 turns (x,0) to (0,x), then it moves by (100,50)
     await pen(page)
-    await click(page, 102, 151)
+    await click(page, 102, 151, { shift: true })
     await click(page, 200, 220)
     await click(page, 200, 220)
     await expect(paths(page)).toHaveCount(1)
@@ -78,13 +78,13 @@ test.describe('Pen continues and joins open paths', () => {
     await page.evaluate(() => window.svgEditor.svgCanvas.setContext('grp'))
     await pen(page)
     // the end (100,0) of the path appears at (100,150) on the page
-    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 101, y: 151 }]))
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 101, y: 151, mods: { shift: true } }]))
     await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'inline')
     const ring = await page.locator('#pen_end_hint').evaluate((c) => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))])
     const zoom = await page.evaluate(() => window.svgEditor.svgCanvas.getZoom())
     expect(ring[0] / zoom).toBeCloseTo(100, 0)
     expect(ring[1] / zoom).toBeCloseTo(150, 0)
-    await click(page, 101, 151)
+    await click(page, 101, 151, { shift: true })
     await click(page, 200, 220)
     await click(page, 200, 220)
     await expect(page.locator('#svgcontent path')).toHaveCount(1)
@@ -96,7 +96,7 @@ test.describe('Pen continues and joins open paths', () => {
 
   test('pressing the first point carries it on from that side', async ({ page }) => {
     await pen(page)
-    await click(page, 99, 99)
+    await click(page, 99, 99, { shift: true })
     await click(page, 60, 160)
     await click(page, 60, 160)
     await expect(paths(page)).toHaveCount(3)
@@ -108,7 +108,7 @@ test.describe('Pen continues and joins open paths', () => {
 
   test('while a path is being carried on its original is hidden, and cancelling puts it back', async ({ page }) => {
     await pen(page)
-    await click(page, 200, 100)
+    await click(page, 200, 100, { shift: true })
     expect(await page.locator('#svgcontent #a').getAttribute('display')).toBe('none')
     const before = await undoSize(page)
     await page.evaluate(() => window.svgEditor.svgCanvas.setMode('select'))
@@ -120,9 +120,9 @@ test.describe('Pen continues and joins open paths', () => {
   test('carrying a path on and pressing the end of another joins them: one path, one undo step', async ({ page }) => {
     const before = await undoSize(page)
     await pen(page)
-    await click(page, 200, 100)
+    await click(page, 200, 100, { shift: true })
     await click(page, 250, 150)
-    await click(page, 301, 99) // b's first point
+    await click(page, 301, 99, { shift: true }) // b's first point
     await expect(page.locator('#svgcontent #b')).toHaveCount(0)
     expect(await points(page, 'a')).toEqual([[100, 100], [200, 100], [250, 150], [300, 100], [400, 100]])
     expect(await undoSize(page)).toBe(before + 1)
@@ -135,7 +135,7 @@ test.describe('Pen continues and joins open paths', () => {
     await pen(page)
     await click(page, 300, 300)
     await click(page, 450, 200)
-    await click(page, 400, 100) // b's last point
+    await click(page, 400, 100, { shift: true }) // b's last point
     await expect(paths(page)).toHaveCount(3)
     expect(await points(page, 'b')).toEqual([[300, 100], [400, 100], [450, 200], [300, 300]])
     expect(await page.locator('#svgcontent #b').getAttribute('stroke')).toBe('#0000ff')
@@ -144,13 +144,13 @@ test.describe('Pen continues and joins open paths', () => {
   test('a locked Pen stays armed after carrying a path on, ready for the next one', async ({ page }) => {
     await pen(page)
     await page.evaluate(() => window.svgEditor.svgCanvas.setToolLocked(true))
-    await click(page, 200, 100)
+    await click(page, 200, 100, { shift: true })
     await click(page, 250, 160)
     await click(page, 250, 160)
     expect(await page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('path')
     expect(await points(page, 'a')).toEqual([[100, 100], [200, 100], [250, 160]])
     // The next press carries b on, just as if the tool had been picked afresh.
-    await click(page, 400, 100)
+    await click(page, 400, 100, { shift: true })
     await click(page, 440, 160)
     await click(page, 440, 160)
     expect(await points(page, 'b')).toEqual([[300, 100], [400, 100], [440, 160]])
@@ -158,16 +158,16 @@ test.describe('Pen continues and joins open paths', () => {
 
   test('closed paths are not continued: a press on one starts a new path', async ({ page }) => {
     await pen(page)
-    await click(page, 200, 300)
+    await click(page, 200, 300, { shift: true })
     await click(page, 260, 340)
     await click(page, 260, 340)
     await expect(paths(page)).toHaveCount(4)
     expect(await points(page, 'ring')).toEqual([[100, 300], [200, 300], [200, 380], [100, 300]])
   })
 
-  test('Alt starts a new path even on an open end', async ({ page }) => {
+  test('without Shift a press on an open end starts a new path', async ({ page }) => {
     await pen(page)
-    await click(page, 200, 100, { alt: true })
+    await click(page, 200, 100)
     await click(page, 260, 160)
     await click(page, 260, 160)
     await expect(paths(page)).toHaveCount(4)
@@ -175,7 +175,7 @@ test.describe('Pen continues and joins open paths', () => {
   })
 
   test('the cursor says what a press on an end does: continue, or join while drawing; the Pen\'s own cursor elsewhere', async ({ page }) => {
-    const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py }]), [x, y])
+    const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py, mods: { shift: true } }]), [x, y])
     const state = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
     await pen(page)
     await move(250, 250)
@@ -201,6 +201,8 @@ test.describe('Pen continues and joins open paths', () => {
   test('a ring marks an end the next press would use', async ({ page }) => {
     await pen(page)
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 201, y: 101 }]))
+    await expect(page.locator('#pen_end_hint')).toHaveCount(0) // only with Shift held
+    await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 201, y: 101, mods: { shift: true } }]))
     await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'inline')
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'move', x: 250, y: 250 }]))
     await expect(page.locator('#pen_end_hint')).toHaveAttribute('display', 'none')
