@@ -228,7 +228,9 @@ export const createPathMethod = (canvas: SvgCanvas): PathMethodApi => {
     /* const pointGripContainer = */ getGripContainerMethod()
 
     // Note that this is intentionally not seg.prev.item
-    const path = svgCanvas.getPathObj() as PathObject
+    // The segment's own path, not the canvas-wide current one: a stale session being re-init'ed (clear()) must not index
+    // into another path's segs.
+    const path = (seg.path ?? svgCanvas.getPathObj()) as PathObject
     const prev = path.segs[index - 1].item
 
     const segItems = [prev, item]

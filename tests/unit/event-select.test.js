@@ -144,3 +144,32 @@ describe('event-select move() alt-drag-to-duplicate', () => {
     expect(svgCanvas.calls).toEqual([])
   })
 })
+
+describe('event-select up() after a rubber-band selection', () => {
+  // A marquee drag moves nothing: it must not run the drag-end bake, which pushed a spurious "position" undo step
+  // (and rewrote the geometry) for every shape the marquee picked up.
+  it('does not bake or record a move for the selected elements', () => {
+    const calls = []
+    const rubberBox = { setAttribute: () => {} }
+    const elem = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    const svgCanvas = {
+      gesture: createGestureState(),
+      getCurrentMode: () => 'multiselect',
+      getRubberBox: () => rubberBox,
+      requireRubberBox: () => rubberBox,
+      setCurBBoxes: () => {},
+      setCurrentMode: () => {},
+      setCurProperties: () => {},
+      selectorManager: { requestSelector: () => ({ showGrips: () => {} }) },
+      getRStartX: () => 0,
+      getRStartY: () => 0,
+      bakeDrag: () => { calls.push('bakeDrag'); return false },
+      call: (name) => calls.push(name)
+    }
+    const { up } = eventSelectInit(svgCanvas)
+
+    up({}, { realX: 100, realY: 80, selectedElements: [elem], operationMode: 'select', pendingMove: null, tempJustSelected: null })
+
+    expect(calls).toEqual([])
+  })
+})

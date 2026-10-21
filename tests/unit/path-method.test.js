@@ -296,3 +296,32 @@ describe('path-method Path#endChanges', () => {
     expect(() => path.endChanges('Move path point(s)')).not.toThrow()
   })
 })
+
+describe('path-method Path#init with another path current', () => {
+  // Regression guard (ghost nodes): clear() re-inits a stale session while a newer, shorter path is the canvas-wide
+  // current one. Control points were read from that current path's segs, so a longer stale path threw partway through
+  // building its grips, leaving them visible.
+  it('builds control points from its own segments', () => {
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) }
+    }
+    attachUnits(svgCanvas)
+    Object.assign(svgCanvas, pathInit(svgCanvas))
+
+    const long = createSvgElement('path')
+    long.setAttribute('d', 'M0,0 C1,1 2,2 3,3 C4,4 5,5 6,6 C7,7 8,8 9,9 C1,1 2,2 3,3')
+    const stale = new svgCanvas.PathClass(long)
+    const short = createSvgElement('path')
+    short.setAttribute('d', 'M0,0 L5,5')
+    const current = new svgCanvas.PathClass(short) // becomes the canvas-wide current path
+
+    expect(current.elem).toBe(short)
+    expect(() => stale.init()).not.toThrow()
+  })
+})

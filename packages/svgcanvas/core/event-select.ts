@@ -331,6 +331,7 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.gesture.areaResize = null
       svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
+    const wasMarquee = mode === 'multiselect'
     if (mode === 'resize' || mode === 'multiselect') {
       // The orchestrator returns straight after this function, past its own gesture reset: a group resize ends here.
       svgCanvas.gesture.groupResizeStart = null
@@ -371,7 +372,8 @@ export const init = (canvas: SvgCanvas): {
         svgCanvas.selectorManager.requestSelector(selected).showGrips(true)
       }
       // if it was being dragged/resized
-      if (realX !== svgCanvas.getRStartX() || realY !== svgCanvas.getRStartY()) {
+      // (a rubber-band drag moves nothing: baking there would push a spurious "position" undo step)
+      if (!wasMarquee && (realX !== svgCanvas.getRStartX() || realY !== svgCanvas.getRStartY())) {
         // Only recalculate dimensions after actual dragging/resizing to avoid
         // unwanted transform flattening on simple clicks
 

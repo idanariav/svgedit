@@ -1251,6 +1251,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           el.setAttribute('display', 'none')
         }
       }
+      // A session whose element was deleted can only draw ghost grips: drop it.
+      if (path && !path.elem.isConnected) path = null as unknown as PathObject
       if (path) {
       // A lost mouseup (e.g. the button released outside the canvas
       // mid-drag) never reaches path-actions' own dragging=false reset, so a
