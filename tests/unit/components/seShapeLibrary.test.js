@@ -177,6 +177,17 @@ describe('se-shape-library', () => {
       expect(el.shadowRoot.querySelector('.sl-tool').classList.contains('pressed')).toBe(false)
     })
 
+    it('focuses the filter input when the popover opens', async () => {
+      const el = mountElement('se-shape-library')
+      el.setAttribute('lib', 'shapelib/')
+      await flush()
+
+      el.shadowRoot.querySelector('.sl-tool').click()
+      await flush()
+      const input = el.shadowRoot.querySelector('.sl-pop-search-box input')
+      expect(el.shadowRoot.activeElement).toBe(input)
+    })
+
     it('toggles closed when the toolbar button is clicked again while open', async () => {
       const el = mountElement('se-shape-library')
       el.setAttribute('lib', 'shapelib/')

@@ -487,6 +487,7 @@ export class SeShapeLibrary extends HTMLElement {
     this._positionPopover(popover)
     this._attachOutsideClick()
     this._attachEscape()
+    ;(popover.querySelector('.sl-pop-search-box input') as HTMLInputElement | null)?.focus()
   }
 
   _positionPopover (popover: HTMLElement) {
