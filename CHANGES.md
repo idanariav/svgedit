@@ -1,5 +1,14 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.15
+- UI: Mobile mode (`uiMode: 'mobile'`), a phone shell for viewing and rough sketching. Drawings open view-only (one finger pans, two pinch-zoom and pan; every command except zoom, pan, export and the mode toggles refuses, paste and the context menu are off); Edit gives a bottom bar with Pan, Pencil and Text, seven colours, three stroke widths, undo / redo and Done. The `uiMode` pref (`desktop` / `tablet` / `mobile`) replaces the boolean `tabletMode`, which `setConfig` still accepts.
+- UI: a press with the Text tool on an existing text edits it instead of placing a new text on top.
+- UI: two fingers moving together pan the canvas while pinching (tablet shell too); the touch shells' zoom label follows fit, pinch and the ± buttons.
+- UI: the Pen tool continues or joins an open path only on Shift-click; a plain press on a path end starts a new path, so shapes can share a vertex.
+- UI: the outer glow has a Spread, dilating the silhouette before the blur.
+- UI: the shape popover focuses its filter field when it opens.
+- Fix: no ghost path nodes after a path is deleted, and a rubber-band drag no longer records a spurious 'position' undo step.
+
 ## 7.4.1-fork.14
 - Fix: a resize of one element after a resize of several no longer scales the earlier ones too (outside the undo step, with their selection boxes back on screen).
 - Fix: strokes keep their look when a move, nudge or group resize folds an element's scale into its shape (the children of an ungrouped, scaled group on their next move), and in the results of the cutter, boolean ops, shape builder and path offset (an inherited or unset stroke-width too). A resize's own scale still leaves the stroke alone.
