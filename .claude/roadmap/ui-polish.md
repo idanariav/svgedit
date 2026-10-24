@@ -30,7 +30,7 @@ Done: a polish sweep (2026-10-13: the bar's width tiers moved up so Done is no l
 ### Mobile shell
 
 Done: view-first shell with Edit → Pan / Pencil / Text, colours, widths, undo / redo (`tools.md` › Mobile mode). Remaining:
-- **Plugin**: a `"mobile"` choice for the plugin's `uiModeMobile` setting, passed as `uiMode` (and perhaps the default on phones, `Platform.isPhone`, keeping tablet on iPad).
+- **Plugin default**: the plugin offers "Mobile (view first)" (1.0.58) but keeps Tablet as the default on mobile; defaulting phones to Mobile (`Platform.isPhone`, Tablet on iPad) would need a third setting.
 - **Not yet tried on a device**: the soft keyboard for Text relies on `focus()` of the hidden `#text` textarea running inside the touch handler (the synthetic mousedown in `core/touch.ts` is dispatched synchronously, so iOS should allow it); check it in Obsidian mobile on iOS and Android.
 - **Landscape phones and small tablets** get the portrait layout; there are no width tiers.
 - **The shells duplicate small helpers** (`makeBtn`, `setIcon`, swatches); a shared touch-UI module is worth it once a third consumer appears.
