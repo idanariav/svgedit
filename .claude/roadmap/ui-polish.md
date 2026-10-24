@@ -27,6 +27,14 @@ Done: a polish sweep (2026-10-13: the bar's width tiers moved up so Done is no l
 - **Tool buttons are 46px above 980px, 38px down to 801px and 35px below** (under the 44px touch guideline in a narrow pane: the bar is full, with the menu button on the left reserving 130px); folding the freehand tools into one flyout, or a two-row bar in portrait, would give the room back.
 - **The sheet's columns wrap in a narrow pane** (Object drops to a second line below about 900px; the dividers are hidden there). A swipeable single row, or collapsing Arrange into a flyout, would keep it one line.
 
+### Mobile shell
+
+Done: view-first shell with Edit → Pan / Pencil / Text, colours, widths, undo / redo (`tools.md` › Mobile mode). Remaining:
+- **Plugin**: a `"mobile"` choice for the plugin's `uiModeMobile` setting, passed as `uiMode` (and perhaps the default on phones, `Platform.isPhone`, keeping tablet on iPad).
+- **Not yet tried on a device**: the soft keyboard for Text relies on `focus()` of the hidden `#text` textarea running inside the touch handler (the synthetic mousedown in `core/touch.ts` is dispatched synchronously, so iOS should allow it); check it in Obsidian mobile on iOS and Android.
+- **Landscape phones and small tablets** get the portrait layout; there are no width tiers.
+- **The shells duplicate small helpers** (`makeBtn`, `setIcon`, swatches); a shared touch-UI module is worth it once a third consumer appears.
+
 ### Keyboard shortcuts
 
 Done: Tab/Shift+Tab cycle, `V` select, Duplicate `D`, platform-formatted tooltips, default

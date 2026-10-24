@@ -210,7 +210,7 @@
 | `hostApi.check.ts` | Compile-time conformance check: fails `npm run typecheck` if `Editor` stops satisfying the declared host API |
 | `Hotkeys.ts` | Central keyboard-shortcut registry for the editor |
 | `locale.ts` | Localizing script for SVG-edit UI |
-| `MainMenu.ts` | Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`) |
+| `MainMenu.ts` | Export, Preferences, Tablet / Mobile mode toggles (`clickTabletMode`, `clickMobileMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens… |
 | `panelCommands.ts` | The commands behind the panel / menu buttons, as real registry commands (see commands.js, coreCommands.js) |
 | `panelI18n.ts` | Localise the literal English labels in the static panel templates (RightPanel.html / TopPanel.html) |
 | `pasteClipboardText.ts` | Shared parsing rule for pasted clipboard text |
@@ -226,7 +226,7 @@
 | `toolShortcutBadges.ts` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel and on the top panel's buttons (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the… |
 | `toolSpace.ts` | Tool space: where a canvas tool's pointer and the shapes it edits meet |
 | `tooltips.ts` | Hover tooltips for the editor chrome: a short-delay replacement for the browser's native `title` tooltip, which waits about a second (longer on some platforms) and sometimes never shows |
-| `uiMode.ts` | `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell) |
+| `uiMode.ts` | `applyUiMode(mode, rootEl)` — sets the `ui-tablet` / `ui-mobile` class on `.svg_editor` (desktop ⇄ tablet shell ⇄ mobile shell) |
 | `userDataAdapter.ts` | Module-level registry for an optional host storage adapter used to persist user customizations (custom palette colors, the saved shape library, and custom hotkey bindings) outside the editor's own `localStorage` |
 
 ### `src/editor/components/`
@@ -643,6 +643,7 @@
 | `layerKeyboard.ts` | Keyboard access to the Layers panel (the layer rows and the object tree under them, see layerTree.js) |
 | `layerTree.ts` | Object rows of the Layers panel: under each expanded layer, a row per object and group (groups expand), with an eye (hide), a lock, the name (double-click renames), the selection highlight, and drag to reorder or move… |
 | `LeftPanel.ts` | Drawing tool button handlers; mode switching |
+| `MobileShell.ts` | Mobile mode shell: opens view-only (pan / pinch-zoom); Edit switches to a bottom bar of Pan, Pencil and Text with colours, stroke widths and undo / redo |
 | `RightPanel.ts` | Tabbed properties panel: `activateTab`/`autoSelectTab` + layer ops |
 | `TabletShell.ts` | Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native… |
 | `toolOptionsBar.ts` | The options bar of the current tool: a tray in the top panel (and, in tablet mode, a strip in the shell) drawn from the tool's `options()` descriptors (`ToolDef.options` / `setOption`, core/tool-registry.js) |

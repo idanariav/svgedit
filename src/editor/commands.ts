@@ -69,6 +69,15 @@ export type CommandRecord = CommandSpec & { labelKey: string, group: string, def
 
 export type CommandErrorCode = 'unknown' | 'disabled' | 'badParams' | 'internal'
 
+/**
+ * The commands that still run while the editor is view-only (`editor.viewOnly`, the mobile shell's
+ * view state): navigation, export, and the ways out of view-only. Every other command refuses.
+ */
+export const VIEW_ONLY_COMMANDS = new Set([
+  'zoom_in', 'zoom_out', 'zoom_fit', 'ext-panning', 'tool_export',
+  'mobile_edit_toggle', 'tool_mobile_mode', 'tool_tablet_mode'
+])
+
 export class CommandError extends Error {
   name: string
   code: CommandErrorCode
@@ -238,6 +247,7 @@ export class CommandRegistry {
   isEnabled (id: string): true | string {
     const rec = this.table.get(id)
     if (!rec) return 'unknown command'
+    if (this.editor?.viewOnly && !VIEW_ONLY_COMMANDS.has(id)) return 'view only'
     if (!rec.enabled) return true
     try {
       const r = rec.enabled(this.editor)

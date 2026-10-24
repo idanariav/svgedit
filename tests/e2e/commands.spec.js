@@ -11,7 +11,7 @@ const DOC = `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
 
 const prepare = async (page) => {
   await page.evaluate(() => {
-    window.svgEditor?.configObj?.pref('tabletMode', false, true)
+    window.svgEditor?.configObj?.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
   })
   await page.evaluate(async (doc) => { await window.svgEditor.loadFromString(doc) }, DOC)

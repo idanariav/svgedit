@@ -8,7 +8,7 @@ const setup = async (page) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor').classList.remove('ui-tablet')
   })
   await page.waitForTimeout(300)

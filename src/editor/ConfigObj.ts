@@ -1,5 +1,6 @@
 // ConfigObj.ts — `pref(key)`, `setConfig(obj)`, localStorage persistence
 import { mergeDeep } from '@svgedit/svgcanvas/common/util.ts'
+import { toUiMode } from './uiMode.ts'
 
 /**
 * Escapes special characters in a regular expression.
@@ -108,8 +109,8 @@ export default class ConfigObj {
       bkgd_gradient: '',
       /** UI color theme: 'light' | 'dark' */
       theme: 'light',
-      /** Touch-first tablet shell on/off (see uiMode.js) */
-      tabletMode: false,
+      /** UI shell: 'desktop' | 'tablet' | 'mobile' (see uiMode.ts). `setConfig` still takes the legacy boolean `tabletMode` */
+      uiMode: 'desktop',
       /** Drag a numeric field's label to change its value (seSpinInput.js); a stored 'false' turns it off */
       scrub_numeric_fields: true,
       /** Colour distance (OKLab, black to white = 100) within which "Select same" fill / stroke match; 0 = exact */
@@ -226,7 +227,7 @@ export default class ConfigObj {
       baseUnit: 'px',
       snappingStep: 10,
       showRulers: false,
-      hideTabletToggle: false, // Hide the main menu's "Tablet mode" toggle; for hosts that choose the UI mode themselves via `tabletMode`
+      hideTabletToggle: false, // Hide the main menu's "Tablet mode" / "Mobile mode" toggles; for hosts that choose the UI mode themselves via `uiMode`
       hideTitle: false, // Hide the drawing-name (e.g. "untitled.svg") panel in the top bar; useful when the host UI already shows the filename
 
       // SOURCE OUTPUT BEHAVIOR
@@ -358,6 +359,10 @@ export default class ConfigObj {
         this.defaultPrefs[key] = String(val) // Convert to string for FF (.value fails in Webkit)
       }
     })
+    // `uiMode` replaced the boolean `tabletMode` pref: a saved tablet choice from before carries over.
+    if (!storage.getItem('svg-edit-uiMode') && storage.getItem('svg-edit-tabletMode') === 'true') {
+      this.defaultPrefs.uiMode = 'tablet'
+    }
   }
 
   /**
@@ -380,10 +385,13 @@ have been read.
         cfgObj[key] = val
       }
     }
-    Object.entries(opts).forEach(([key, val]) => {
+    Object.entries(opts).forEach(([optKey, optVal]) => {
+      // The legacy boolean `tabletMode` is an alias of `uiMode` (hosts still pass it).
+      const key = optKey === 'tabletMode' ? 'uiMode' : optKey
+      const val = optKey === 'tabletMode' ? toUiMode(optVal) : optVal
       // Only allow prefs defined in configObj.defaultPrefs or...
       // Membership test (`key in`), not truthiness: prefs whose default is falsy
-      // (e.g. `tabletMode: false`, `bkgd_url: ''`) must still be settable here.
+      // (e.g. `scrub_numeric_fields: false`, `bkgd_url: ''`) must still be settable here.
       if (key in this.defaultPrefs) {
         if (cfgCfg.allowInitialUserOverride === true) {
           this.defaultPrefs[key] = val as string | number | boolean

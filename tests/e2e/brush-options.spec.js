@@ -7,7 +7,7 @@ test('the brush options bar saves, highlights and edits brushes', async ({ page 
   await page.setViewportSize({ width: 1440, height: 800 })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor').classList.remove('ui-tablet')
     window.svgEditor.commands.run('tool_brush')
   })

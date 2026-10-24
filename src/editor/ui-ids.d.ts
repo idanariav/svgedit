@@ -238,6 +238,11 @@ interface ElementIdMap {
   marker_align: HTMLElementTagNameMap['se-select']
   marker_panel: HTMLDivElement
   menuPopup: HTMLDivElement
+  ms_bar: HTMLDivElement
+  ms_edit: HTMLButtonElement
+  ms_edit_icon: HTMLSpanElement
+  ms_palette: HTMLDivElement
+  ms_zoom: HTMLDivElement
   objects_panel: HTMLDivElement
   objects_panel_header: HTMLDivElement
   objects_panel_label: HTMLSpanElement
@@ -464,6 +469,7 @@ interface ElementIdMap {
   tool_mask_set: HTMLElementTagNameMap['se-button']
   tool_match_strokes: HTMLElementTagNameMap['se-button']
   tool_measure: HTMLElementTagNameMap['se-button']
+  tool_mobile_mode: HTMLElementTagNameMap['se-menu-item']
   tool_node_clone: HTMLElementTagNameMap['se-button']
   tool_node_delete: HTMLElementTagNameMap['se-button']
   tool_node_link: HTMLElementTagNameMap['se-button']

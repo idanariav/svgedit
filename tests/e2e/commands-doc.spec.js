@@ -15,7 +15,7 @@ test.use({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebK
 test('.claude/commands.md matches the command registry', async ({ page }) => {
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
   })
   await page.waitForFunction(() => window.svgEditor.extensionsAdded === true, null, { timeout: 20000 })

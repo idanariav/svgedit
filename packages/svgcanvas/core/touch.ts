@@ -2,31 +2,38 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 
-type Host = Pick<SvgCanvas, 'svgroot' | 'getZoom' | 'zoomAtPoint'>
+type Host = Pick<SvgCanvas, 'svgroot' | 'getZoom' | 'zoomAtPoint' | '$id'>
 
 /** Distance between two Touch points in screen pixels. */
 const touchDist = (a: Touch, b: Touch): number => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
 
-/** Whether the editor is currently in tablet mode. */
-const isTabletMode = (svgCanvas: Host): boolean =>
-  Boolean(svgCanvas.svgroot.closest('.svg_editor')?.classList.contains('ui-tablet'))
+/** Whether the editor is showing a touch shell (tablet or mobile mode). */
+const isTouchShell = (svgCanvas: Host): boolean => {
+  const cls = svgCanvas.svgroot.closest('.svg_editor')?.classList
+  return Boolean(cls?.contains('ui-tablet') || cls?.contains('ui-mobile'))
+}
 
 export const init = (svgCanvas: Host): void => {
-  // Pinch-to-zoom (tablet mode) state, per canvas.
+  // Pinch-to-zoom (touch shells) state, per canvas.
   let pinching = false
   let pinchStartDist = 0
   let pinchStartZoom = 1
   let pinchRaf = 0
+  // The fingers' midpoint the workarea was last scrolled for: moving both fingers pans.
+  let panX = 0
+  let panY = 0
 
   const touchHandler = (ev: TouchEvent): void => {
-    // Two-finger pinch-to-zoom — tablet mode only.
-    if (ev.touches?.length === 2 && (pinching || isTabletMode(svgCanvas))) {
+    // Two-finger pinch-to-zoom and pan — touch shells only.
+    if (ev.touches?.length === 2 && (pinching || isTouchShell(svgCanvas))) {
       ev.preventDefault()
       const [t0, t1] = ev.touches
       if (ev.type === 'touchstart') {
         pinching = true
         pinchStartDist = touchDist(t0, t1)
         pinchStartZoom = svgCanvas.getZoom()
+        panX = (t0.clientX + t1.clientX) / 2
+        panY = (t0.clientY + t1.clientY) / 2
         // Abort any draw the first finger may have started.
         t0.target.dispatchEvent(new MouseEvent('mouseup', {
           bubbles: true, cancelable: true, view: window, button: 0
@@ -40,6 +47,14 @@ export const init = (svgCanvas: Host): void => {
         if (!pinchRaf) {
           pinchRaf = requestAnimationFrame(() => {
             pinchRaf = 0
+            // Pan first (the content follows the fingers), then zoom about where they are now.
+            const workarea = svgCanvas.$id('workarea')
+            if (workarea) {
+              workarea.scrollLeft -= midX - panX
+              workarea.scrollTop -= midY - panY
+            }
+            panX = midX
+            panY = midY
             svgCanvas.zoomAtPoint(target, midX, midY)
           })
         }

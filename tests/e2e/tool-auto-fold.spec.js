@@ -5,7 +5,7 @@ const desktop = async (page, width, height) => {
   await page.setViewportSize({ width, height })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
   })
 }

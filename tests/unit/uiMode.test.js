@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { applyUiMode, isTabletMode } from '../../src/editor/uiMode.ts'
+import { applyUiMode, toUiMode } from '../../src/editor/uiMode.ts'
 import { setActiveEditor } from '../../src/editor/domScope.ts'
 
 describe('uiMode.applyUiMode', () => {
@@ -51,17 +51,45 @@ describe('uiMode.applyUiMode', () => {
   })
 })
 
-describe('uiMode.isTabletMode', () => {
-  it('treats the persisted string "true" as tablet mode', () => {
-    expect(isTabletMode('true')).toBe(true)
+describe('uiMode.applyUiMode mobile', () => {
+  afterEach(() => { document.body.textContent = '' })
+
+  it('sets exactly one shell class, and none for desktop', () => {
+    const el = document.createElement('div')
+    el.className = 'svg_editor'
+    document.body.append(el)
+
+    applyUiMode('mobile', el)
+    expect(el.classList.contains('ui-mobile')).toBe(true)
+    expect(el.classList.contains('ui-tablet')).toBe(false)
+
+    applyUiMode('tablet', el)
+    expect(el.classList.contains('ui-mobile')).toBe(false)
+    expect(el.classList.contains('ui-tablet')).toBe(true)
+
+    applyUiMode('desktop', el)
+    expect(el.classList.contains('ui-mobile')).toBe(false)
+    expect(el.classList.contains('ui-tablet')).toBe(false)
+  })
+})
+
+describe('uiMode.toUiMode', () => {
+  it('passes the three modes through', () => {
+    expect(toUiMode('desktop')).toBe('desktop')
+    expect(toUiMode('tablet')).toBe('tablet')
+    expect(toUiMode('mobile')).toBe('mobile')
   })
 
-  it('treats the persisted string "false" as desktop mode, not truthy', () => {
-    expect(isTabletMode('false')).toBe(false)
+  it('reads the legacy tabletMode boolean, persisted or real', () => {
+    expect(toUiMode('true')).toBe('tablet')
+    expect(toUiMode(true)).toBe('tablet')
+    // the persisted string "false" is desktop, not truthy
+    expect(toUiMode('false')).toBe('desktop')
+    expect(toUiMode(false)).toBe('desktop')
   })
 
-  it('passes through real booleans', () => {
-    expect(isTabletMode(true)).toBe(true)
-    expect(isTabletMode(false)).toBe(false)
+  it('falls back to desktop for anything else', () => {
+    expect(toUiMode(undefined)).toBe('desktop')
+    expect(toUiMode('phone')).toBe('desktop')
   })
 })

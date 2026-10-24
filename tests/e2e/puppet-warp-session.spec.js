@@ -18,7 +18,7 @@ test.describe('puppet warp session', () => {
     await visitAndApproveStorage(page)
     await page.evaluate(async (doc) => {
       window.svgEditor.setConfig({ gridSnapping: false })
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
       await window.svgEditor.loadFromString(doc)
       window.svgEditor.svgCanvas.selectOnly([document.getElementById('a')])

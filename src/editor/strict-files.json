@@ -202,6 +202,7 @@
   "src/editor/panels/BottomPanel.ts",
   "src/editor/panels/LeftPanel.ts",
   "src/editor/panels/RightPanel.ts",
+  "src/editor/panels/MobileShell.ts",
   "src/editor/panels/TabletShell.ts",
   "src/editor/panels/TopPanel.ts",
   "src/editor/panels/layerGestures.ts",

@@ -29,6 +29,7 @@ import TopPanel from './panels/TopPanel.ts'
 import BottomPanel from './panels/BottomPanel.ts'
 import RightPanel from './panels/RightPanel.ts'
 import TabletShell from './panels/TabletShell.ts'
+import MobileShell from './panels/MobileShell.ts'
 import MainMenu from './MainMenu.ts'
 import { CommandRegistry } from './commands.ts'
 import { registerCoreCommands } from './coreCommands.ts'
@@ -84,6 +85,7 @@ class Editor extends EditorStartup {
   topPanel: TopPanel
   rightPanel: RightPanel
   tabletShell: TabletShell
+  mobileShell: MobileShell
   mainMenu: MainMenu
   _debugSnapshotLogger: DebugSnapshotLogger | undefined
   _stopDebugActions: (() => void) | null | undefined
@@ -137,6 +139,7 @@ class Editor extends EditorStartup {
     this.topPanel = new TopPanel(this)
     this.rightPanel = new RightPanel(this)
     this.tabletShell = new TabletShell(this)
+    this.mobileShell = new MobileShell(this)
     this.mainMenu = new MainMenu(this)
     // makes svgEditor accessible as a global variable
     window.svgEditor = this
@@ -162,6 +165,7 @@ class Editor extends EditorStartup {
       // The stack was just reset: refresh the undo/redo buttons to match.
       this.topPanel.updateContextPanel()
       this.tabletShell?.syncHistory?.()
+      this.mobileShell?.syncHistory?.()
       return
     }
     if (!noAlert) seAlert(this.i18next.t('notification.errorLoadingSVG'))
@@ -518,6 +522,10 @@ host restore) leave this false to avoid polluting history.
     // Proportion markers are anchored to the canvas width/height, so a
     // resolution change must reposition them (set by ext-proportion-markers).
     this.updateProportionMarkers?.()
+
+    // The touch shells' zoom labels: every zoom (buttons, fit, pinch, wheel) ends here.
+    this.tabletShell?.syncZoom?.()
+    this.mobileShell?.syncZoom?.()
   }
 
   updateWireFrame (): void {

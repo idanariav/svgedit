@@ -328,6 +328,21 @@ export const registerPanelCommands = (commands: CommandRegistry): void => {
     run: (editor) => editor.mainMenu.clickTabletMode()
   })
   commands.register({
+    id: 'tool_mobile_mode',
+    label: 'tools.mobile_mode',
+    group: 'Tools',
+    pd: true,
+    run: (editor) => editor.mainMenu.clickMobileMode()
+  })
+  commands.register({
+    id: 'mobile_edit_toggle',
+    label: 'tools.mobile_edit_toggle',
+    group: 'Tools',
+    pd: true,
+    enabled: (editor) => editor.$svgEditor?.classList.contains('ui-mobile') ? true : 'only in mobile mode',
+    run: (editor) => editor.mobileShell.setEditing(editor.viewOnly)
+  })
+  commands.register({
     id: 'tool_command_search',
     label: 'tools.command_search',
     group: 'Tools',

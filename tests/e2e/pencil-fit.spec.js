@@ -8,7 +8,7 @@ test.describe('Pencil and Smooth Path fit', () => {
     await visitAndApproveStorage(page)
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
     })

@@ -1004,7 +1004,18 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       case 'line':
       case 'circle':
       case 'ellipse':
+        eventShapeDraw.down(evt, { x, y, realX, realY, curShape })
+        break
       case 'text':
+        // A press on an existing text edits it (caret at the press), as the Text tool does in other editors; on
+        // touch it is the only way in, there is no double-click from Select.
+        if (!rightClick && mouseTarget.tagName === 'text') {
+          svgCanvas.setTextFreshCreate(false)
+          svgCanvas.selectOnly([mouseTarget], true)
+          svgCanvas.textActions.select(mouseTarget as SVGTextElement, pt.x, pt.y)
+          eventTextEdit.down(evt, { mouseTarget, zoom })
+          break
+        }
         eventShapeDraw.down(evt, { x, y, realX, realY, curShape })
         break
       case 'path':

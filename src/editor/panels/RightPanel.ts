@@ -169,7 +169,7 @@ class RightPanel {
       if (!pending || !elems?.some(Boolean)) return
       pending = false
       const manual = String(configObj.pref('sidePanelManual')) === 'true'
-      if (manual || $svgEditor.classList.contains('ui-tablet') || $svgEditor.clientWidth < 1100) return
+      if (manual || $svgEditor.classList.contains('ui-tablet') || $svgEditor.classList.contains('ui-mobile') || $svgEditor.clientWidth < 1100) return
       this.toggleSidePanel(true)
     })
   }

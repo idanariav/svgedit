@@ -5,7 +5,7 @@ const desktop = async (page, width = 1440, height = 900) => {
   await page.setViewportSize({ width, height })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor?.configObj?.pref('tabletMode', false, true)
+    window.svgEditor?.configObj?.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
   })
   await page.waitForSelector('#tool_undo', { state: 'attached' })

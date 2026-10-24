@@ -78,6 +78,31 @@ describe('ConfigObj', () => {
     expect(cfg.defaultPrefs.lang).toBe('fr')
   })
 
+  it('takes the legacy boolean tabletMode as the uiMode pref', () => {
+    const cfg = new ConfigObj(stubEditor())
+    cfg.setConfig({ tabletMode: true })
+    expect(cfg.pref('uiMode')).toBe('tablet')
+    cfg.setConfig({ tabletMode: false })
+    expect(cfg.pref('uiMode')).toBe('desktop')
+    cfg.setConfig({ uiMode: 'mobile' })
+    expect(cfg.pref('uiMode')).toBe('mobile')
+  })
+
+  it('carries a saved tabletMode over to uiMode, unless a uiMode is saved', () => {
+    const legacy = stubEditor()
+    legacy.storage.setItem('svg-edit-tabletMode', 'true')
+    const cfg = new ConfigObj(legacy)
+    cfg.loadContentAndPrefs()
+    expect(cfg.pref('uiMode')).toBe('tablet')
+
+    const both = stubEditor()
+    both.storage.setItem('svg-edit-tabletMode', 'true')
+    both.storage.setItem('svg-edit-uiMode', 'mobile')
+    const cfg2 = new ConfigObj(both)
+    cfg2.loadContentAndPrefs()
+    expect(cfg2.pref('uiMode')).toBe('mobile')
+  })
+
   it('does not read configuration or content from the page URL', () => {
     const editor = stubEditor()
     const cfg = new ConfigObj(editor)

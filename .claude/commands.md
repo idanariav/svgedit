@@ -221,6 +221,7 @@
 | `corner_kind_r` | Round corners |  |  |  |
 | `ext-panning` | Panning [Space / mouse wheel + drag] |  |  |  |
 | `glow_remove` | Remove glow and feather |  |  |  |
+| `mobile_edit_toggle` | Mobile: switch between viewing and editing |  |  |  |
 | `outline_remove` | Remove outline |  |  |  |
 | `tool_arc` | Arc Tool |  |  |  |
 | `tool_blend` | Blend tool: click one shape, then another, to blend them. More clicks add more keys |  |  |  |
@@ -252,6 +253,7 @@
 | `tool_measure` | Measure tool: drag between two points to read distance, angle and offsets |  |  |  |
 | `tool_mirror_copy` | Mirror-copy selection across the canvas axis |  |  |  |
 | `tool_mirror_copy_multi` | Mirror-copy selection across the canvas axis |  |  |  |
+| `tool_mobile_mode` | Mobile mode |  |  |  |
 | `tool_node_add_anchors` | Add anchor points |  |  |  |
 | `tool_open` | Open SVG |  |  | dialog |
 | `tool_path` | Path Tool | `p` |  |  |

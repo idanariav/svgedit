@@ -8,7 +8,7 @@ test('the drag rectangle follows the cursor after the document was cleared', asy
   await page.setViewportSize({ width: 1440, height: 900 })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor').classList.remove('ui-tablet')
     window.svgEditor.svgCanvas.clear()
   })

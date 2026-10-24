@@ -152,4 +152,24 @@ describe('touch adapter', () => {
     })
     expect(mouseMove).toBe(1)
   })
+
+  it('pans the workarea with the fingers while pinching, and zooms about their midpoint', () => {
+    const root = createSvgRoot()
+    root.closest = () => ({ classList: { contains: (c) => c === 'ui-mobile' } })
+    const workarea = { scrollLeft: 100, scrollTop: 100 }
+    const zoomAtPoint = vi.fn()
+    initTouch({ svgroot: root, getZoom: () => 1, zoomAtPoint, $id: () => workarea })
+    const raf = vi.spyOn(global, 'requestAnimationFrame').mockImplementation((fn) => { fn(0); return 0 })
+
+    const target = document.createElement('div')
+    const t = (x, y) => ({ target, clientX: x, clientY: y, screenX: x, screenY: y })
+    root.dispatch('touchstart', { type: 'touchstart', touches: [t(0, 0), t(100, 0)], changedTouches: [t(100, 0)], preventDefault: vi.fn() })
+    // Both fingers move 20px right and 10px down, the distance unchanged: a pure pan.
+    root.dispatch('touchmove', { type: 'touchmove', touches: [t(20, 10), t(120, 10)], changedTouches: [t(20, 10)], preventDefault: vi.fn() })
+
+    expect(workarea.scrollLeft).toBe(80)
+    expect(workarea.scrollTop).toBe(90)
+    expect(zoomAtPoint).toHaveBeenCalledWith(1, 70, 10)
+    raf.mockRestore()
+  })
 })

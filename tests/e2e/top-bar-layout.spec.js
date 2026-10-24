@@ -36,7 +36,7 @@ const desktop = async (page, width, height) => {
   await page.setViewportSize({ width, height })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor?.configObj?.pref('tabletMode', false, true)
+    window.svgEditor?.configObj?.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
   })
   await page.waitForSelector('#tool_undo', { state: 'attached' })
@@ -138,7 +138,7 @@ test.describe('Palette and tablet bar in narrow panes', () => {
     test(`tablet command bar fits at ${width}px (Undo/Redo stay visible)`, async ({ page }) => {
       await page.setViewportSize({ width, height: 700 })
       await visitAndApproveStorage(page)
-      await page.evaluate(() => window.svgEditor.configObj.pref('tabletMode', true, true))
+      await page.evaluate(() => window.svgEditor.configObj.pref('uiMode', 'tablet', true))
       await page.reload()
       await page.waitForSelector('#ts_hist', { state: 'attached' })
       await page.waitForTimeout(500)

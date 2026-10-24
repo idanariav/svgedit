@@ -9,7 +9,7 @@ test.describe('Width tool', () => {
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
@@ -230,7 +230,7 @@ test.describe('Width tool: a stroke inside a transformed group', () => {
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     // on the page the line runs (200,200) → (500,200); stroke 5 × 2 = 10 wide

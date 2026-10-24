@@ -19,7 +19,7 @@ test.describe('Right panel spin inputs', () => {
     await page.setViewportSize({ width: 1440, height: 700 })
     await visitAndApproveStorage(page)
     await page.evaluate(() => {
-      window.svgEditor?.configObj?.pref('tabletMode', false, true)
+      window.svgEditor?.configObj?.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     const panelHandle = page.locator('div#sidepanel_handle').first()

@@ -35,7 +35,7 @@ for (const file of fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.svg')).so
     const svg = fs.readFileSync(path.join(FIXTURES, file), 'utf8')
     await visitAndApproveStorage(page)
     await page.evaluate(() => {
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
 

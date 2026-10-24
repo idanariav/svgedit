@@ -8,7 +8,7 @@ const setup = async (page) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await visitAndApproveStorage(page)
   await page.evaluate(() => {
-    window.svgEditor.configObj.pref('tabletMode', false, true)
+    window.svgEditor.configObj.pref('uiMode', 'desktop', true)
     document.querySelector('.svg_editor').classList.remove('ui-tablet')
     const c = window.svgEditor.svgCanvas
     const el = c.addSVGElementsFromJson({ element: 'rect', curStyles: true, attr: { x: 100, y: 100, width: 100, height: 80, fill: '#ff0000', id: 'r1' } })

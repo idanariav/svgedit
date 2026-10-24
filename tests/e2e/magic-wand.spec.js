@@ -9,7 +9,7 @@ test.describe('Magic Wand', () => {
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       window.svgEditor.configObj.pref('select_same_tolerance', 0, true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })

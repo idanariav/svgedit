@@ -1,0 +1,211 @@
+/* ============================================================
+   svgedit · Mobile Mode — view first, rough sketching second
+   Everything here is scoped under `.svg_editor.ui-mobile`, set by
+   uiMode.ts. Colors inherit from svgedit.css design tokens; only
+   geometry + visibility change here. See: panels/MobileShell.ts.
+   ============================================================ */
+
+.svg_editor.ui-mobile {
+  --hit: 44px;
+  --r-pill: 999px;
+
+  /* Collapse the desktop grid: the canvas fills the shell, the controls float over it. */
+  grid-template-rows: 0 0 1fr 0;
+  grid-template-columns: 0 0 0 1fr 0;
+}
+
+.svg_editor.ui-mobile #tools_top,
+.svg_editor.ui-mobile #tools_left,
+.svg_editor.ui-mobile #sidepanels,
+.svg_editor.ui-mobile #tools_bottom,
+.svg_editor.ui-mobile #ruler_corner,
+.svg_editor.ui-mobile #ruler_x,
+.svg_editor.ui-mobile #ruler_y {
+  display: none !important;
+}
+
+.svg_editor:not(.ui-mobile) .mobile-shell {
+  display: none;
+}
+
+/* No browser pan/zoom hijack: one finger pans or draws, two pinch (core/touch.ts). */
+.svg_editor.ui-mobile #workarea {
+  padding: 64px 12px 84px;
+  touch-action: none;
+}
+
+/* The menu (export, the way back to desktop) floats top-left while viewing; editing has no use for it. */
+.svg_editor.ui-mobile #main_button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 60;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+.svg_editor.ui-mobile:has(.mobile-shell.is-editing) #main_button { display: none; }
+
+/* ---------- The shell overlay ---------- */
+.svg_editor.ui-mobile .mobile-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none; /* the canvas underneath gets the touches */
+}
+.svg_editor.ui-mobile .mobile-shell > * { pointer-events: auto; }
+
+/* ---------- Buttons ---------- */
+.svg_editor.ui-mobile .mbtn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--icon);
+  width: var(--hit);
+  height: var(--hit);
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-size: 22px;
+  font-family: inherit;
+  cursor: pointer;
+}
+/* svgIconLoader's inline `width:100%` collapses in the iOS / Android WebView (see tablet.css). */
+.svg_editor.ui-mobile .mbtn svg { width: 24px !important; height: 24px !important; display: block; }
+.svg_editor.ui-mobile .mbtn:active { transform: scale(.92); }
+.svg_editor.ui-mobile .mbtn.is-active { background: var(--accent); color: #fff; }
+.svg_editor.ui-mobile .mbtn[disabled] { opacity: .32; pointer-events: none; }
+
+/* ---------- Zoom pill (both states) ---------- */
+.svg_editor.ui-mobile .ms-zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--r-pill);
+}
+.svg_editor.ui-mobile .ms-zoom .mbtn { width: 40px; height: 40px; }
+.svg_editor.ui-mobile .ms-zoom .mbtn svg { width: 20px !important; height: 20px !important; }
+.svg_editor.ui-mobile .ms-zlabel {
+  min-width: 48px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+/* ---------- View state: the Edit button ---------- */
+.svg_editor.ui-mobile .ms-edit {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 22px 0 18px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(20, 25, 35, .22);
+  cursor: pointer;
+}
+.svg_editor.ui-mobile .ms-edit-ic svg { width: 22px !important; height: 22px !important; display: block; }
+.svg_editor.ui-mobile .mobile-shell.is-editing .ms-edit { display: none; }
+
+/* ---------- Edit state: the bottom bar ---------- */
+.svg_editor.ui-mobile .ms-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--chrome-bg);
+  border-top: 1px solid var(--chrome-border);
+}
+.svg_editor.ui-mobile .mobile-shell.is-editing .ms-bar { display: flex; }
+.svg_editor.ui-mobile .ms-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 8px 2px;
+  background: var(--chrome-border);
+  flex: 0 0 auto;
+}
+.svg_editor.ui-mobile .ms-chip .dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18), 0 0 0 2px var(--field-bg), 0 0 0 3px var(--field-border);
+}
+.svg_editor.ui-mobile .ms-done {
+  height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* ---------- Edit state: colour / width palette, above the bar ---------- */
+.svg_editor.ui-mobile .ms-palette {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(20, 25, 35, .18);
+}
+.svg_editor.ui-mobile .mobile-shell.is-editing .ms-palette.show { display: flex; }
+.svg_editor.ui-mobile .ms-swatch,
+.svg_editor.ui-mobile .ms-width {
+  appearance: none;
+  width: var(--hit);
+  height: var(--hit);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14);
+}
+.svg_editor.ui-mobile .ms-width {
+  display: grid;
+  place-items: center;
+  background: var(--field-bg);
+}
+.svg_editor.ui-mobile .ms-width span {
+  width: 22px;
+  border-radius: 99px;
+  background: var(--fg);
+}
+.svg_editor.ui-mobile .ms-swatch.is-on,
+.svg_editor.ui-mobile .ms-width.is-on {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 3px var(--accent);
+}

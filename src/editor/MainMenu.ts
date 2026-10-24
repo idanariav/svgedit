@@ -1,5 +1,5 @@
-// MainMenu.ts — Export, Preferences, Tablet mode toggle (`clickTabletMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`)
-import { applyUiMode, isTabletMode } from './uiMode.ts'
+// MainMenu.ts — Export, Preferences, Tablet / Mobile mode toggles (`clickTabletMode`, `clickMobileMode`), Hotkey Manager launcher (`tool_hotkeys` → opens `se-hotkey-dialog`), Favorites launcher (`tool_favorites` → opens `se-favorites-dialog`)
+import { applyUiMode, toUiMode, type UiMode } from './uiMode.ts'
 import { applyTheme } from './themeUtil.ts'
 
 export type PrefsDialog = import('./dialogs/editorPreferencesDialog.ts').SeEditPrefsDialog
@@ -20,9 +20,21 @@ class MainMenu {
    * Toggle the touch-first tablet shell on/off and persist the choice.
    * */
   clickTabletMode (): void {
-    const on = !isTabletMode(this.editor.configObj.pref('tabletMode'))
-    this.editor.configObj.pref('tabletMode', on, true)
-    applyUiMode(on, this.editor.$svgEditor)
+    this.toggleUiMode('tablet')
+  }
+
+  /**
+   * Toggle the minimal mobile shell (view first, then Pencil / Text) on/off and persist the choice.
+   * */
+  clickMobileMode (): void {
+    this.toggleUiMode('mobile')
+  }
+
+  /** Switch to `mode`, or back to desktop when it is already on; persist the choice. */
+  toggleUiMode (mode: UiMode): void {
+    const next = toUiMode(this.editor.configObj.pref('uiMode')) === mode ? 'desktop' : mode
+    this.editor.configObj.pref('uiMode', next, true)
+    applyUiMode(next, this.editor.$svgEditor)
   }
 
   hidePreferences (): void {
@@ -157,6 +169,7 @@ class MainMenu {
     const tabletItem = hideTabletToggle
       ? ''
       : `<se-menu-item id="tool_tablet_mode" command="tool_tablet_mode" label="tools.tablet_mode" src="tablet.svg"></se-menu-item>
+        <se-menu-item id="tool_mobile_mode" command="tool_mobile_mode" label="tools.mobile_mode" src="mobile.svg"></se-menu-item>
         <div role="separator"></div>`
     const template = document.createElement('template')
     template.innerHTML = `

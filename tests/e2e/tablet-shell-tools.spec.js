@@ -7,7 +7,7 @@ test.describe('Tablet shell tools', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 700 })
     await visitAndApproveStorage(page)
-    await page.evaluate(() => window.svgEditor.configObj.pref('tabletMode', true, true))
+    await page.evaluate(() => window.svgEditor.configObj.pref('uiMode', 'tablet', true))
     await page.reload()
     await page.waitForSelector('#ts_toolgroup .tbtn', { state: 'attached' })
     await page.waitForTimeout(400)

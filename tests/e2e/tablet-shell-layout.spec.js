@@ -7,7 +7,7 @@ test.describe('Tablet shell layout', () => {
   const open = async (page, width, height = 800) => {
     await page.setViewportSize({ width, height })
     await visitAndApproveStorage(page)
-    await page.evaluate(() => window.svgEditor.configObj.pref('tabletMode', true, true))
+    await page.evaluate(() => window.svgEditor.configObj.pref('uiMode', 'tablet', true))
     await page.reload()
     await page.waitForSelector('#ts_toolgroup .tbtn', { state: 'attached' })
     await page.waitForTimeout(400)

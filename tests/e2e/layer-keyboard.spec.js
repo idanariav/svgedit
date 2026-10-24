@@ -7,7 +7,7 @@ test.describe('Layers panel keyboard access', () => {
   test.beforeEach(async ({ page }) => {
     await visitAndApproveStorage(page)
     await page.evaluate(() => {
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     await page.locator('div#sidepanel_handle').first().click()

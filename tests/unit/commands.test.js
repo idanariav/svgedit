@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { CommandRegistry, CommandError } from '../../src/editor/commands.ts'
+import { CommandRegistry, CommandError, VIEW_ONLY_COMMANDS } from '../../src/editor/commands.ts'
 import { setLogSink } from '../../packages/svgcanvas/common/logger.ts'
 
 const makeEditor = (extra = {}) => ({ svgCanvas: {}, ...extra })
@@ -329,6 +329,37 @@ describe('CommandRegistry', () => {
       reg.register({ id: 'a', label: 'A', run: () => 7 })
       reg.onRun(() => { throw new Error('logger bug') })
       expect(reg.run('a')).toBe(7)
+    })
+  })
+
+  describe('view only (editor.viewOnly)', () => {
+    it('refuses every command outside VIEW_ONLY_COMMANDS, with the reason', () => {
+      const ran = []
+      reg.register({ id: 'tool_delete', label: 'Delete', run: () => ran.push('delete') })
+      reg.register({ id: 'zoom_in', label: 'Zoom in', run: () => ran.push('zoom') })
+      editor.viewOnly = true
+      expect(reg.isEnabled('tool_delete')).toBe('view only')
+      expect(codeOf(() => reg.run('tool_delete'))).toBe('disabled')
+      expect(reg.tryRun('tool_delete')).toBe(false)
+      expect(reg.isEnabled('zoom_in')).toBe(true)
+      reg.run('zoom_in')
+      expect(ran).toEqual(['zoom'])
+    })
+
+    it('runs everything again once view only ends', () => {
+      reg.register({ id: 'tool_delete', label: 'Delete', run: () => 1 })
+      editor.viewOnly = true
+      editor.viewOnly = false
+      expect(reg.run('tool_delete')).toBe(1)
+    })
+
+    it('keeps navigation and the ways out of view only', () => {
+      for (const id of ['zoom_in', 'zoom_out', 'zoom_fit', 'ext-panning', 'mobile_edit_toggle', 'tool_mobile_mode']) {
+        expect(VIEW_ONLY_COMMANDS.has(id)).toBe(true)
+      }
+      for (const id of ['tool_delete', 'paste', 'tool_undo', 'tool_select', 'tool_fhpath']) {
+        expect(VIEW_ONLY_COMMANDS.has(id)).toBe(false)
+      }
     })
   })
 })

@@ -9,7 +9,7 @@ test.describe('Corners tool', () => {
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
@@ -205,7 +205,7 @@ test.describe('Corners tool: a shape inside a transformed group', () => {
     await page.evaluate(() => {
       window.svgEditor.setConfig({ gridSnapping: false })
       window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
-      window.svgEditor.configObj.pref('tabletMode', false, true)
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
     })
     await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">

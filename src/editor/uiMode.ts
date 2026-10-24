@@ -1,30 +1,37 @@
-// uiMode.ts — `applyUiMode(on, rootEl)` — toggles the `ui-tablet` class on `.svg_editor` (desktop ⇄ tablet shell)
+// uiMode.ts — `applyUiMode(mode, rootEl)` — sets the `ui-tablet` / `ui-mobile` class on `.svg_editor` (desktop ⇄ tablet shell ⇄ mobile shell)
 import { getActiveRoot } from './domScope.ts'
 
+/** The editor's UI shell: the desktop panels, the touch-first tablet shell or the minimal mobile shell. */
+export type UiMode = 'desktop' | 'tablet' | 'mobile'
+
 /**
- * Apply the editor UI mode (desktop vs. touch-first tablet shell).
- * Toggles the `ui-tablet` class on `.svg_editor`. When the class is present the
- * desktop panels are hidden and the `.tablet-shell` command bar + sheet are
- * shown (see `tablet.css`). Mirrors `themeUtil.applyTheme` — this helper is the
- * single source of truth for the flip; persistence of the `tabletMode`
- * preference is the caller's responsibility (same split as the theme toggle).
- * Hosts can also toggle the class directly without going through the menu.
- * @param on - `true` for tablet mode, `false` for desktop (the stored pref is a string, see `isTabletMode`)
- * @param rootEl - optional override; defaults to the active editor
-(or the first `.svg_editor` in the document if none is active yet)
+ * Normalise a `uiMode` value into a `UiMode`.
+ * Also reads the legacy boolean `tabletMode` (`true` / `'true'` → `'tablet'`):
+ * prefs come back from `localStorage` as strings, and hosts still pass
+ * `tabletMode`. Anything else is desktop.
+ * @param val - the stored or in-memory `uiMode` (or legacy `tabletMode`) value
  */
-export const applyUiMode = (on: boolean | string, rootEl?: Element) => {
-  const el = rootEl ?? getActiveRoot()
-  if (!el) return
-  el.classList.toggle('ui-tablet', isTabletMode(on))
+export const toUiMode = (val: unknown): UiMode => {
+  if (val === 'tablet' || val === 'mobile') return val
+  return val === true || val === 'true' ? 'tablet' : 'desktop'
 }
 
 /**
- * Normalise a `tabletMode` value into a real boolean.
- * The pref is persisted to `localStorage` as a string, so desktop mode comes
- * back as the string `'false'` — which is truthy under a plain `Boolean()`
- * cast. Both the startup apply and the menu toggle must read it through here so
- * a saved desktop choice survives a reload.
- * @param val - the stored or in-memory `tabletMode` value
+ * Apply the editor UI mode.
+ * Sets `ui-tablet` or `ui-mobile` on `.svg_editor` (neither for desktop). With a
+ * class present the desktop panels are hidden and that shell is shown (see
+ * `tablet.css`, `mobile.css`). Mirrors `themeUtil.applyTheme` — this helper is
+ * the single source of truth for the flip; persistence of the `uiMode`
+ * preference is the caller's responsibility (same split as the theme toggle).
+ * Hosts can also toggle the class directly without going through the menu.
+ * @param mode - a `UiMode`, or a legacy `tabletMode` boolean (see `toUiMode`)
+ * @param rootEl - optional override; defaults to the active editor
+(or the first `.svg_editor` in the document if none is active yet)
  */
-export const isTabletMode = (val: boolean | string): boolean => val === true || val === 'true'
+export const applyUiMode = (mode: unknown, rootEl?: Element) => {
+  const el = rootEl ?? getActiveRoot()
+  if (!el) return
+  const m = toUiMode(mode)
+  el.classList.toggle('ui-tablet', m === 'tablet')
+  el.classList.toggle('ui-mobile', m === 'mobile')
+}

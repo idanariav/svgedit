@@ -10,6 +10,15 @@ When adding an entry: say what it is, why it wasn't done now, and roughly
 how big/risky it is. When an item is finally addressed, delete its entry
 (git history keeps the record).
 
+## A press consolidates an element's transform list in every mode, view-only included
+
+`mouseDownEventImpl` (`core/event.ts`) folds an element's multi-entry transform list into one `matrix(…)` on any press that
+lands on it, before the active tool sees the press, so a pan in the mobile shell's view state can rewrite the `transform`
+attribute of what was under the finger. The geometry is identical and no undo step is recorded, so nothing visibly changes,
+but view-only is not strictly read-only at the attribute level. The fix is to consolidate only when a move or edit actually
+starts (the select / resize paths), which touches the drag code every tool shares; not done with the mobile shell to keep
+that change out of it. Small to medium.
+
 ## Model bounds: arcs are approximated, markers and text are not covered
 
 `core/model/bounds.ts` expands an arc into cubics with `svgpath`'s `unarc()`, so an arc's box can be off the browser's `getBBox`

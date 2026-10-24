@@ -10,7 +10,7 @@ test.describe('Ruler guides', () => {
     await page.evaluate(() => {
       const e = window.svgEditor
       e.setConfig({ gridSnapping: false })
-      e.configObj.pref('tabletMode', false, true)
+      e.configObj.pref('uiMode', 'desktop', true)
       document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
       e.configObj.curConfig.showRulers = true
       e.rulers.display(true)

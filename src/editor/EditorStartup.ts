@@ -18,7 +18,7 @@ import { createPasteFallbackArmer } from './pasteFallbackArmer.ts'
 import { classifyClipboardText } from './pasteClipboardText.ts'
 import { NEW_LAYER_OPTION_VALUE } from './panels/RightPanel.ts'
 import { refreshToolOptions } from './panels/toolOptionsBar.ts'
-// svgedit.css `@import`s tablet.css, so this single inline import carries both.
+// svgedit.css `@import`s tablet.css and mobile.css, so this single inline import carries all three.
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 import type { IdLookup, IdRequire } from '@svgedit/svgcanvas/core/dom-utils.ts'
@@ -82,6 +82,7 @@ class EditorStartup {
   bottomPanel: import('./panels/BottomPanel.ts').default
   rightPanel: import('./panels/RightPanel.ts').default
   tabletShell: import('./panels/TabletShell.ts').default
+  mobileShell: import('./panels/MobileShell.ts').default
   mainMenu: import('./MainMenu.ts').default
   hotkeys: import('./Hotkeys.ts').default
   goodLangs: string[]
@@ -110,6 +111,7 @@ class EditorStartup {
   pasteHandler: ((e: ClipboardEvent) => void) | null
   pasteFallbackArmer: ReturnType<typeof createPasteFallbackArmer> | null
   applyClipboardText: (text: string | undefined) => boolean
+  /** Read-only viewing (the mobile shell's view state): commands outside `VIEW_ONLY_COMMANDS` refuse and paste is ignored */ viewOnly = false
   setPanning: (active: boolean) => void
   toolShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
   topShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
@@ -225,7 +227,7 @@ class EditorStartup {
       this.$svgEditor = (this.$container.querySelector('.svg_editor') as HTMLElement)
       // Apply saved theme + UI mode before any rendering
       applyTheme(this.configObj.pref('theme') || 'light', this.$svgEditor)
-      applyUiMode(this.configObj.pref('tabletMode'), this.$svgEditor)
+      applyUiMode(this.configObj.pref('uiMode'), this.$svgEditor)
       initTooltips(this.$container, this.$svgEditor, this.listenerAbort.signal)
       // allow to prepare the dom without display
       this.$svgEditor.style.visibility = 'hidden'
@@ -336,6 +338,7 @@ class EditorStartup {
     initPanel('topPanel', () => this.topPanel.init())
     initPanel('mainMenu', () => this.mainMenu.init())
     initPanel('tabletShell', () => this.tabletShell.init())
+    initPanel('mobileShell', () => this.mobileShell.init())
 
     const { undoMgr } = this.svgCanvas
     this.canvMenu = $req('se-cmenu_canvas')
@@ -634,6 +637,7 @@ class EditorStartup {
     // pure parsing rule so the native handler below and the keydown fallback
     // (armed above) apply the exact same logic to whatever text they get.
     this.applyClipboardText = (text) => {
+      if (this.viewOnly) return false
       const classified = classifyClipboardText(text)
       if (!classified || !text) return false
       if (classified.type === 'internal') {

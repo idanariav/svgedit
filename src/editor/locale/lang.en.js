@@ -212,6 +212,8 @@ export default {
     smallest_object: 'smallest object',
     export_img: 'Export',
     tablet_mode: 'Tablet mode',
+    mobile_mode: 'Mobile mode',
+    mobile_edit_toggle: 'Mobile: switch between viewing and editing',
     command_search: 'Command search',
     hotkey_manager: 'Keyboard shortcuts',
     favorites_manager: 'Favorites',

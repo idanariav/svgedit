@@ -1,4 +1,5 @@
 @import './tablet.css';
+@import './mobile.css';
 
 /* ── Light Studio theme (default) ───────────────────────────────────── */
 /* The modal dialogs are mounted as siblings of `.svg_editor` (under the
