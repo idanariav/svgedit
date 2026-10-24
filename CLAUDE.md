@@ -216,6 +216,7 @@ code exploration.
 
 | Doc | When to read it |
 |-----|-----------------|
+| [`principles.md`](.claude/principles.md) | **Read before designing any feature, UI change or refactor.** What the editor is for, why people choose it, the core values (drawing safety, creating with ease, beauty in simplicity, at home in Obsidian, built to be worked on) and which one wins when they conflict |
 | [`architecture.md`](.claude/architecture.md) | Understanding init flow, subsystems and the cross-file contracts (undo, tools, host seams); "where does X live" is `file-map.md` |
 | [`tools.md`](.claude/tools.md) | Adding/modifying any toolbar tool or panel control |
 | [`attributes.md`](.claude/attributes.md) | Working with shape attribute panels or the `attrChanger` handler |

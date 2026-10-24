@@ -3,7 +3,8 @@
 Guidelines and planned work that are **not scheduled** but should shape future development. Read this file at the
 start of a task: apply the guidelines, and if the task touches an area in the index below, read that area's file and
 fold its items in. `techdebt.md` is the other half (compromises and known hazards): a roadmap item is something we
-*want*, a techdebt item is something we *owe*.
+*want*, a techdebt item is something we *owe*. The values behind both, and the tie-breakers, are in
+[`principles.md`](principles.md).
 
 When you finish an item, delete it (git history keeps the record). When you defer a feature, add it to its area file
 (a new area gets a new file and a row in the index); when you take a shortcut, add it to `techdebt.md`. Keep this file
