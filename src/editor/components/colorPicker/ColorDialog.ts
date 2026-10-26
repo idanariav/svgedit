@@ -58,8 +58,8 @@ export class SeColorDialog extends HTMLElement {
   get i18next () { return this._i18next }
   /**
    * Swatch this dialog belongs to. When set before the dialog is attached it opens as
-   * a popover next to that element (no backdrop; outside click applies, Escape
-   * cancels) instead of a centred modal with Apply/Cancel.
+   * a popover next to that element (no backdrop; Apply, Enter, the close button and an
+   * outside click apply, Cancel and Escape revert) instead of a centred modal.
    * @type {?Element}
    */
   set anchor (el) { this._anchor = el }
@@ -334,8 +334,9 @@ export class SeColorDialog extends HTMLElement {
       if (e.key === 'Escape') {
         e.preventDefault()
         this._onCancel()
-      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some((n) => (n as Element).tagName === 'INPUT' || (n as Element).tagName === 'BUTTON')) {
-        // Enter inside a field commits that field; elsewhere it commits the popover.
+      } else if (e.key === 'Enter' && this._popover && !e.composedPath().some((n) => (n as Element).tagName === 'SELECT' || (n as Element).classList?.contains('cp-btn'))) {
+        // Fields apply as you type, so Enter commits the popover from anywhere in it
+        // (a focused tab button included); a select and Apply/Cancel keep their own Enter.
         e.preventDefault()
         this._commit()
       }

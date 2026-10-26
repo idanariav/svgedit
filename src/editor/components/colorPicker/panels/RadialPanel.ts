@@ -168,7 +168,7 @@ export function createRadialPanel (paint: import('@svgedit/svgcanvas/core/paint.
     } else {
       focalMarker.style.display = ''
     }
-    _updateMarkers()
+    _updatePreview()
   })
   focalSection.appendChild(matchLabel)
   bottomRow.appendChild(focalSection)
@@ -200,11 +200,12 @@ export function createRadialPanel (paint: import('@svgedit/svgcanvas/core/paint.
   spreadSelect.addEventListener('change', () => {
     panelState.spreadMethod = spreadSelect.value
     ;(selectWrap.querySelector('.cp-select-val') as HTMLElement).textContent = spreadSelect.value
+    _updatePreview()
   })
   settingsSection.appendChild(selectWrap)
 
   const opacSlider = createSlider({ label: t('config.jgraduate_opac') || 'Opacity', min: 0, max: 100, value: panelState.alpha, unit: '%' })
-  opacSlider.addEventListener('change', (e) => { panelState.alpha = (e as CustomEvent).detail.value })
+  opacSlider.addEventListener('change', (e) => { panelState.alpha = (e as CustomEvent).detail.value; _updatePreview() })
   settingsSection.appendChild(opacSlider)
   bottomRow.appendChild(settingsSection)
 

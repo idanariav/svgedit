@@ -208,7 +208,7 @@ export function createHsvBox (initialHex: string, initialAlpha: number = 100, cu
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault()
       el.setPointerCapture(e.pointerId)
-      onMove(e)
+      onMove(e); _emit() // a click without a drag is a change too
       const move = (me: PointerEvent) => { onMove(me); _emit() }
       el.addEventListener('pointermove', move)
       el.addEventListener('pointerup', () => el.removeEventListener('pointermove', move), { once: true })

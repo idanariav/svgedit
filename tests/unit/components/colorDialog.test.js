@@ -75,6 +75,41 @@ describe('se-color-dialog as a popover', () => {
     expect(modal.dialog.isConnected).toBe(true)
   })
 
+  const enterOn = (target) => target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
+
+  it('Enter applies from a field or a focused tab button, not only from empty space', () => {
+    const fromField = open()
+    touch(fromField.dialog)
+    enterOn(fromField.dialog._shadowRoot.querySelector('[data-field="hex"] input'))
+    expect(fromField.events).toEqual(['change'])
+    expect(fromField.dialog.isConnected).toBe(false)
+
+    const fromTab = open()
+    touch(fromTab.dialog)
+    enterOn(fromTab.dialog._shadowRoot.querySelector('.cp-tab'))
+    expect(fromTab.events).toEqual(['change'])
+  })
+
+  it('leaves Enter on the Apply/Cancel buttons to the buttons themselves', () => {
+    const { dialog, events } = open()
+    touch(dialog)
+    enterOn(dialog._shadowRoot.querySelector('.cp-btn-ghost'))
+    expect(events).toEqual([])
+    expect(dialog.isConnected).toBe(true)
+  })
+
+  it('shows Apply/Cancel: Apply applies even an untouched popover, Cancel reverts a changed one', () => {
+    const applied = open()
+    applied.dialog._shadowRoot.querySelector('.cp-btn-primary').click()
+    expect(applied.events).toEqual(['change'])
+    expect(applied.dialog.isConnected).toBe(false)
+
+    const cancelled = open()
+    touch(cancelled.dialog)
+    cancelled.dialog._shadowRoot.querySelector('.cp-btn-ghost').click()
+    expect(cancelled.events).toEqual(['cancel'])
+  })
+
   it('stops listening for outside clicks once removed', () => {
     const { dialog, events } = open()
     dialog.remove()

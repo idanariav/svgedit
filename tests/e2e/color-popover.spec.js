@@ -71,6 +71,39 @@ test.describe('colour popover', () => {
     expect(await fill(page)).toBe('#112233')
   })
 
+  test('a single click in the colour field is a change: previewed, and applied on click-away', async ({ page }) => {
+    await setup(page)
+    await open(page)
+    const box = await page.evaluate(() => {
+      const r = document.querySelector('se-color-dialog').shadowRoot.querySelector('.cp-hsv').getBoundingClientRect()
+      return { x: r.left + r.width * 0.3, y: r.top + r.height * 0.8 }
+    })
+    await page.mouse.click(box.x, box.y) // click, no drag
+    const previewed = await fill(page)
+    expect(previewed).not.toBe('#ff0000')
+    await page.mouse.click(900, 700)
+    await expect.poll(() => isOpen(page)).toBe(false)
+    expect(await fill(page)).toBe(previewed)
+  })
+
+  test('the footer shows Apply and Cancel; Enter from a focused field applies', async ({ page }) => {
+    await setup(page)
+    await open(page)
+    const footVisible = await page.evaluate(() => getComputedStyle(document.querySelector('se-color-dialog').shadowRoot.querySelector('.cp-foot')).display !== 'none')
+    expect(footVisible).toBe(true)
+    await pick(page, '445566')
+    await page.evaluate(() => document.querySelector('se-color-dialog').shadowRoot.querySelector('[data-field="hex"] input').focus())
+    await page.keyboard.press('Enter')
+    await expect.poll(() => isOpen(page)).toBe(false)
+    expect(await fill(page)).toBe('#445566')
+
+    await open(page)
+    await pick(page, '778899')
+    await page.evaluate(() => document.querySelector('se-color-dialog').shadowRoot.querySelector('.cp-btn-ghost').click())
+    await expect.poll(() => isOpen(page)).toBe(false)
+    expect(await fill(page)).toBe('#445566') // Cancel reverts
+  })
+
   test('the touch shell keeps the centred modal', async ({ page }) => {
     await setup(page)
     await page.evaluate(() => { document.querySelector('.svg_editor').classList.add('ui-tablet') })

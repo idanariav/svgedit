@@ -117,6 +117,7 @@ export function createLinearPanel (paint: import('@svgedit/svgcanvas/core/paint.
   spreadSelect.addEventListener('change', () => {
     panelState.spreadMethod = spreadSelect.value
     ;(selectWrap.querySelector('.cp-select-val') as HTMLElement).textContent = spreadSelect.value
+    _updatePreview()
   })
   settingsSection.appendChild(selectWrap)
 
@@ -128,7 +129,7 @@ export function createLinearPanel (paint: import('@svgedit/svgcanvas/core/paint.
     value: panelState.alpha,
     unit: '%'
   })
-  opacSlider.addEventListener('change', (e) => { panelState.alpha = (e as CustomEvent).detail.value })
+  opacSlider.addEventListener('change', (e) => { panelState.alpha = (e as CustomEvent).detail.value; _updatePreview() })
   settingsSection.appendChild(opacSlider)
   bottomRow.appendChild(settingsSection)
 

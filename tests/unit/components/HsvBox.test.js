@@ -92,3 +92,21 @@ describe('createHsvBox — exact hex round-trip', () => {
     expect(emittedHex.toLowerCase()).toBe('2a52be')
   })
 })
+
+describe('createHsvBox — click without a drag', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each(['.cp-hsv', '.cp-hue', '.cp-alpha'])('a single pointerdown on %s emits color-change', (sel) => {
+    const box = createHsvBox('ff0000', 100)
+    document.body.appendChild(box)
+    const el = box.querySelector(sel)
+    el.setPointerCapture = () => {}
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 })
+    const emitted = []
+    box.addEventListener('color-change', (e) => emitted.push(e.detail))
+    el.dispatchEvent(new MouseEvent('pointerdown', { clientX: 20, clientY: 30, bubbles: true }))
+    expect(emitted).toHaveLength(1)
+  })
+})

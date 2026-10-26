@@ -795,11 +795,12 @@ export const css = /* css */`
   .cp-stop-color-editor { padding: 0; flex: 1; min-width: 0; display: flex; }
 
   /* ── Popover mode (anchored to its swatch; see SeColorDialog.anchor) ────── */
-  /* No backdrop, no footer: outside click applies, Escape cancels. The host
+  /* No backdrop: Apply / Enter / outside click apply, Cancel / Escape revert. The host
      shrinks to nothing and the frame is placed with --cp-left / --cp-top. */
   :host(.popover) { inset: auto; display: block; width: 0; height: 0; }
-  :host(.popover) .cp-backdrop,
-  :host(.popover) .cp-foot { display: none; }
+  :host(.popover) .cp-backdrop { display: none; }
+  :host(.popover) .cp-foot { height: 48px; flex-basis: 48px; padding: 0 12px; gap: 8px; border-radius: 0 0 14px 14px; }
+  :host(.popover) .cp-btn { height: 30px; padding: 0 14px; font-size: 12px; border-radius: 8px; }
   :host(.popover) .cp-modal {
     position: fixed;
     left: var(--cp-left, 8px);
