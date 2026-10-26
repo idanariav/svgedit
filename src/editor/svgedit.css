@@ -636,6 +636,9 @@ hr {
 .sidepanel_section_grid se-input[size="15"],
 .sidepanel_section_grid .image_url_field { grid-column: 1 / -1; }
 
+/* Size: W and H, then the ratio lock beside them */
+.size_grid { grid-template-columns: 1fr 1fr auto; align-items: end; }
+
 /* Arc field + 90/180/270 quick-pick chips stacked in one grid cell */
 .arc_field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .arc_presets { display: flex; gap: 4px; }

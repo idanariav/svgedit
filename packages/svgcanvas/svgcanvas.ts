@@ -129,6 +129,7 @@ import type { CutterApi } from './core/cutter.ts'
 import { createSegment } from './core/segment.ts'
 import type { SegmentApi } from './core/segment.ts'
 import { createImageCrop } from './core/image-crop.ts'
+import { createStretch } from './core/stretch.ts'
 import {
   getClosest,
   getParents,
@@ -421,6 +422,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare booleanOps: import('./core/boolean-ops.ts').BooleanOps
   /** The image-crop session (`core/image-crop.ts`). */
   declare imageCrop: import('./core/image-crop.ts').ImageCrop
+  /** Alt-drag stretch of a group without distorting its ends, and the selection's numeric size (`core/stretch.ts`). */
+  declare stretch: import('./core/stretch.ts').Stretch
   /** Pointer-gesture state (rotate / resize / drag starts, alt-clone, pending new element, space-pan). */
   declare gesture: import('./core/gesture-state.ts').GestureState
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
@@ -756,6 +759,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     attachApi(this, 'cutter', createCutter(this), initGuardRegistry)
     attachApi(this, 'segment', createSegment(this), initGuardRegistry)
     this.imageCrop = createImageCrop(this)
+    this.stretch = createStretch(this)
 
     /**
      * Transfers sessionStorage from one tab to another.

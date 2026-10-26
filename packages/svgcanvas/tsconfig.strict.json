@@ -130,6 +130,7 @@
   "core/tool-registry.ts",
   "core/touch.ts",
   "core/transaction.ts",
+  "core/stretch.ts",
   "core/transform-each.ts",
   "core/undo.ts",
   "core/units.ts",

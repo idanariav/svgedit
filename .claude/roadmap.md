@@ -89,6 +89,6 @@ this order, because it needed neither: what it learned about R2 and R3 is in the
 | [`roadmap/infrastructure.md`](roadmap/infrastructure.md) | Tier 0 follow-ups (tool cursors, live-effects preview on transactions, precise `enabled`, puppet warp on `registerTool`, lazy transaction snapshot), round-trip corpus, `svgcanvas.d.ts` / host API, typing the `init` modules, TypeScript conversion steps |
 | [`roadmap/drawing-tools.md`](roadmap/drawing-tools.md) | Measure, Distort, Gradient, Shaper, Pencil / Smooth Path fit, Pen continue / join, centerline tracing, Pencil continue, Smooth tool, ruler guides, snapping while drawing, shape-family tools |
 | [`roadmap/appearance.md`](roadmap/appearance.md) | Recolor Artwork, live effects, Live Corners, art / pattern brushes, Blend, the live stack, width profiles, arrowheads, fitted dashes, Eyedropper Copy style, glow |
-| [`roadmap/objects-layers-text.md`](roadmap/objects-layers-text.md) | Transform Each / Split Into Grid, Layers panel object rows and gestures, area text, scrubby labels, Select Same |
+| [`roadmap/objects-layers-text.md`](roadmap/objects-layers-text.md) | Transform Each / Split Into Grid, group stretch and Size fields, Layers panel object rows and gestures, area text, scrubby labels, Select Same |
 | [`roadmap/ui-polish.md`](roadmap/ui-polish.md) | Toolbar auto-fold, tablet shell, keyboard shortcuts, side panel / top bar, tool cursors, icons and palette |
 | [`roadmap/llm-cli.md`](roadmap/llm-cli.md) | Last priority: debug-log replay and an LLM drawing CLI |

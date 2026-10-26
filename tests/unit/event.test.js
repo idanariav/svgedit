@@ -59,6 +59,7 @@ describe('event', () => {
     canvas = {
       drawSnap: { snapDrawPoint: (x, y) => ({ x, y }), hoverDrawSnap: (x, y) => ({ x, y }), clearDrawHover () {}, clearDrawSnap () {} },
       gesture: createGestureState(),
+      stretch: { isActive: () => false, isEligible: () => false, begin () {}, preview () {}, commit () {}, cancel () {} }, // no Alt-drag stretch here
       started: false,
       rootSctm: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
       rubberBox: null,

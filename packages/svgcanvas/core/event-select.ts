@@ -331,6 +331,12 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.gesture.areaResize = null
       svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
+    // an Alt-drag stretch: its transaction is the undo step, nothing is left to bake below
+    const stretched = mode === 'resize' && svgCanvas.stretch.isActive()
+    if (stretched) {
+      svgCanvas.stretch.commit()
+      svgCanvas.gesture.dragStartTransforms = null
+    }
     const wasMarquee = mode === 'multiselect'
     if (mode === 'resize' || mode === 'multiselect') {
       // The orchestrator returns straight after this function, past its own gesture reset: a group resize ends here.
@@ -373,7 +379,9 @@ export const init = (canvas: SvgCanvas): {
       }
       // if it was being dragged/resized
       // (a rubber-band drag moves nothing: baking there would push a spurious "position" undo step)
-      if (!wasMarquee && (realX !== svgCanvas.getRStartX() || realY !== svgCanvas.getRStartY())) {
+      if (stretched) {
+        // committed above
+      } else if (!wasMarquee && (realX !== svgCanvas.getRStartX() || realY !== svgCanvas.getRStartY())) {
         // Only recalculate dimensions after actual dragging/resizing to avoid
         // unwanted transform flattening on simple clicks
 

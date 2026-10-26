@@ -55,6 +55,18 @@
                         src="trace.svg"></se-button>
                 </div>
             </div>
+            <!-- Size of a group or a multi-selection (its box, as X / Y read it) -->
+            <div class="size_panel sidepanel_section" style="display:none">
+                <div class="sidepanel_section_label">Size</div>
+                <div class="sidepanel_section_grid size_grid">
+                    <se-spin-input id="size_width" size="4" type="text" label="properties.w_label"
+                        title="properties.size_width"></se-spin-input>
+                    <se-spin-input id="size_height" size="4" type="text" label="properties.h_label"
+                        title="properties.size_height"></se-spin-input>
+                    <se-button id="tool_ratio_lock" command="tool_ratio_lock" size="small" title="properties.ratio_lock"
+                        src="ratio_lock.svg"></se-button>
+                </div>
+            </div>
             <div class="circle_panel sidepanel_section" style="display:none">
                 <div class="sidepanel_section_label">Dimensions</div>
                 <div class="sidepanel_section_grid">

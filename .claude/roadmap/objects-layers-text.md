@@ -14,6 +14,15 @@ Done: **Transform Each** (`tool_transform_each`, group Transform): scale H / V %
 - **A path's cells carry its fill / stroke but not its markers**, rounded corners are kept for rects only.
 - Not in the tablet shell; the dialog is modal (the canvas cannot be panned while it is open).
 
+## Group stretch and Size fields (`core/stretch.ts`, `.size_panel`)
+
+Done: Alt-drag on a grip of a group or multi-selection stretches the middle and keeps the ends; W / H fields with a ratio lock for a group or a multi-selection. Remaining:
+- **The slice lines are always the middle** of the selection. A part that crosses the middle but is meant to stay rigid (a label on the body) is stretched; user-placed slice lines (Illustrator's 9-slice guides) would fix it, at the cost of state to persist.
+- **The Size fields are exact for a group, not always for a multi-selection with strokes:** the box includes the strokes, a plain shape bakes the scale and keeps its stroke width, so the result can be a stroke-width off the typed number.
+- **A turned selection is sized along the page axes,** so a turned group gets a skewing `matrix()`; sizing along its own axes would match the grips.
+- **No Size fields for a single path, polygon or text**, which have no W / H today; the same `setSelectionSize` would serve them.
+- The ratio lock is per session (not a saved preference).
+
 ## Layers panel object rows (`panels/layerTree.ts`, `core/object-state.js`): follow-ups from T2.17
 
 Done: a tree under each layer (objects and plain groups, front to back; layers open, groups closed), eye / lock / name per row, click / Shift-range / Cmd-toggle selection that enters the object's layer and group, double-click rename (`data-name`), drag to reorder or move into another layer or group (one undo step, position kept), Locate Object (`layer_locate`), locked objects refused by clicks, rubber bands and `addToSelection`, hidden ones by the rubber band. Remaining:

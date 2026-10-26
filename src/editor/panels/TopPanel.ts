@@ -28,6 +28,8 @@ const targetValue = (e: Event): string => (e.target as HTMLInputElement).value
  */
 class TopPanel {
   editor: EditorInstance
+  /** The Size fields keep the selection's proportions (`tool_ratio_lock`). */
+  ratioLocked = false
 
   /** @param editor svgedit handler */
   constructor (editor: EditorInstance) {
@@ -511,6 +513,36 @@ class TopPanel {
 
     this.editor.svgCanvas.changeSelectedAttribute(attr, val)
     return true
+  }
+
+  /** Toggle whether the Size fields keep the selection's proportions. */
+  clickRatioLock (): void {
+    this.ratioLocked = !this.ratioLocked
+    this.editor.$req('tool_ratio_lock').pressed = this.ratioLocked
+  }
+
+  /**
+   * Set the size of a group or a multi-selection from the Size fields; with the ratio lock on, the other side follows.
+   * @param changed the field the user edited
+   */
+  changeSelectionSize (changed: 'width' | 'height'): void {
+    const { svgCanvas, $req } = this.editor
+    const selected = svgCanvas.getSelectedElements().filter(Boolean)
+    const box = selected.length ? svgCanvas.getStrokedBBoxDefaultVisible(selected) : null
+    if (!box?.width || !box.height) return
+    const unit = this.editor.configObj.curConfig.baseUnit
+    const toPx = unit !== 'px' ? getTypeMap()[unit] : 1
+    let width = parseFloat(String($req('size_width').value)) * toPx
+    let height = parseFloat(String($req('size_height').value)) * toPx
+    if (this.ratioLocked) {
+      if (changed === 'width') height = width * box.height / box.width
+      else width = height * box.width / box.height
+    }
+    if (!(width > 0) || !(height > 0)) {
+      this.updateContextPanel()
+      return
+    }
+    svgCanvas.stretch.setSelectionSize(width, height)
   }
 
   convertToPath (): void {
@@ -1007,6 +1039,8 @@ class TopPanel {
     ].forEach(attrId =>
       $req(attrId).addEventListener('change', this.attrChanger.bind(this))
     )
+    $req('size_width').addEventListener('change', () => this.changeSelectionSize('width'))
+    $req('size_height').addEventListener('change', () => this.changeSelectionSize('height'))
   }
 }
 

@@ -145,6 +145,62 @@ const toTransform = (svgRoot: SVGSVGElement, m: Affine): SVGTransform => {
   return transform
 }
 
+/** What `applyAffines` reads from its canvas. */
+type ApplyHost = Pick<SvgCanvas, 'getSvgRoot' | 'recalculateDimensions' | 'selectorManager' | 'getNextId' | 'setElementsAttributes'>
+
+/**
+ * Apply a matrix in each element's parent coordinates (`m`, applied after the element's own transform) and leave
+ * the element the way the editor's own resize does (see the module comment). Call it inside a transaction.
+ * @param label the label of the attribute edit stated on the model
+ */
+export const applyAffines = (svgCanvas: ApplyHost, label: string, entries: Array<{ el: Element, m: Affine }>): void => {
+  const svgRoot = svgCanvas.getSvgRoot()
+  const stated: Array<{ el: Element, attrs: Record<string, string | null> }> = []
+  for (const { el, m } of entries) {
+    const tlist = getTransformList(el)
+    const box = getBBox(el)
+    if (!tlist || !box) continue
+    const current = transformListToTransform(tlist).matrix
+    const own: Affine = [current.a, current.b, current.c, current.d, current.e, current.f]
+    const result = multiply(m, own)
+    const parts = decompose(result)
+    if (parts && MODEL_BAKE.has(el.localName)) {
+      // A rect / ellipse / line / circle / polyline / polygon takes the scale into its geometry and keeps the rotation as `rotate()`: stated on the model
+      const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
+      const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
+      const baked = affineEdit(el, { a: parts.sx, d: parts.sy, e: c1x - parts.sx * c0.x, f: c1y - parts.sy * c0.y })
+      if (baked) {
+        el.id ||= svgCanvas.getNextId()
+        const r6 = (n: number) => Number(n.toFixed(6)) // as the browser writes a transform attribute
+        baked.transform = parts.angle ? `rotate(${r6(parts.angle)} ${r6(c1x)} ${r6(c1y)})` : null
+        stated.push({ el, attrs: baked })
+        continue
+      }
+    }
+    tlist.clear()
+    if (parts) {
+      // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
+      const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+      const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
+      const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
+      const scale: Affine = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
+      if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
+      if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
+      if (parts.angle) {
+        const rotation = svgRoot.createSVGTransform()
+        rotation.setRotate(parts.angle, c1x, c1y)
+        tlist.insertItemBefore(rotation, 0)
+      }
+    } else {
+      tlist.appendItem(toTransform(svgRoot, result))
+    }
+    svgCanvas.selectorManager.requestSelector(el).resize()
+  }
+  if (stated.length) svgCanvas.setElementsAttributes(label, stated)
+  for (const { el } of stated) svgCanvas.selectorManager.requestSelector(el).resize()
+}
+
 /**
  * Apply Transform Each to the selection (or to copies of it).
  * @param rng random source for `random` (tests pass a seeded one)
@@ -156,13 +212,12 @@ export const transformEach = (
   rng: () => number = Math.random
 ): Element[] => {
   if (!svgCanvas.getSelectedElements().filter(Boolean).length) return []
-  const svgRoot = svgCanvas.getSvgRoot()
   const at = referenceFraction(params.origin)
   let done: Element[] = []
   svgCanvas.transact('Transform each', () => {
     if (params.copy) svgCanvas.cloneSelectedElements(0, 0)
     done = svgCanvas.getSelectedElements().filter(Boolean)
-    const stated: Array<{ el: Element, attrs: Record<string, string | null> }> = []
+    const entries: Array<{ el: Element, m: Affine }> = []
     for (const el of done) {
       const tlist = getTransformList(el)
       const box = getBBox(el)
@@ -180,43 +235,9 @@ export const transformEach = (
       const top = Math.min(...ys)
       const px = left + at.x * (Math.max(...xs) - left)
       const py = top + at.y * (Math.max(...ys) - top)
-      const result = multiply(eachMatrix(resolveAmounts(params, rng), px, py), own)
-      const parts = decompose(result)
-      if (parts && MODEL_BAKE.has(el.localName)) {
-        // A rect / ellipse / line / circle / polyline / polygon takes the scale into its geometry and keeps the rotation as `rotate()`: stated on the model
-        const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-        const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
-        const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
-        const baked = affineEdit(el, { a: parts.sx, d: parts.sy, e: c1x - parts.sx * c0.x, f: c1y - parts.sy * c0.y })
-        if (baked) {
-          el.id ||= svgCanvas.getNextId()
-          const r6 = (n: number) => Number(n.toFixed(6)) // as the browser writes a transform attribute
-          baked.transform = parts.angle ? `rotate(${r6(parts.angle)} ${r6(c1x)} ${r6(c1y)})` : null
-          stated.push({ el, attrs: baked })
-          continue
-        }
-      }
-      tlist.clear()
-      if (parts) {
-        // Scale about the geometry's centre c0, which lands on c1; the rotation is about c1.
-        const c0 = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-        const c1x = result[0] * c0.x + result[2] * c0.y + result[4]
-        const c1y = result[1] * c0.x + result[3] * c0.y + result[5]
-        const scale: Affine = [parts.sx, 0, 0, parts.sy, c1x - parts.sx * c0.x, c1y - parts.sy * c0.y]
-        if (!isIdentityAffine(scale)) tlist.appendItem(toTransform(svgRoot, scale))
-        if (BAKEABLE.has(el.localName)) svgCanvas.recalculateDimensions(el)
-        if (parts.angle) {
-          const rotation = svgRoot.createSVGTransform()
-          rotation.setRotate(parts.angle, c1x, c1y)
-          tlist.insertItemBefore(rotation, 0)
-        }
-      } else {
-        tlist.appendItem(toTransform(svgRoot, result))
-      }
-      svgCanvas.selectorManager.requestSelector(el).resize()
+      entries.push({ el, m: eachMatrix(resolveAmounts(params, rng), px, py) })
     }
-    if (stated.length) svgCanvas.setElementsAttributes('Transform each', stated)
-    for (const { el } of stated) svgCanvas.selectorManager.requestSelector(el).resize()
+    applyAffines(svgCanvas, 'Transform each', entries)
   })
   svgCanvas.call('changed', done)
   return done

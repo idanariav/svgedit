@@ -355,6 +355,8 @@ interface ElementIdMap {
   sidepanel_tabs: HTMLDivElement
   sidepanel_text: HTMLDivElement
   sidepanels: HTMLDivElement
+  size_height: HTMLElementTagNameMap['se-spin-input']
+  size_width: HTMLElementTagNameMap['se-spin-input']
   'sl-shapes-area': HTMLDivElement
   smooth_strength: HTMLElementTagNameMap['se-spin-input']
   spinner: HTMLDivElement
@@ -495,6 +497,7 @@ interface ElementIdMap {
   tool_prefs_cancel: HTMLButtonElement
   tool_prefs_save: HTMLButtonElement
   tool_puppet_warp: HTMLElementTagNameMap['se-button']
+  tool_ratio_lock: HTMLElementTagNameMap['se-button']
   tool_recolor: HTMLElementTagNameMap['se-button']
   tool_rect: HTMLElementTagNameMap['se-button']
   tool_redo: HTMLElementTagNameMap['se-button']

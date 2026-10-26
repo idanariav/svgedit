@@ -153,6 +153,7 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.gesture.areaResize.tx.commit()
       svgCanvas.gesture.areaResize = null
     }
+    if (svgCanvas.stretch.isActive()) svgCanvas.stretch.commit()
     const tlist = getTransformList(mouseTarget)
     if (!tlist) { return }
     svgCanvas.setStarted(true)
@@ -196,6 +197,20 @@ export const init = (canvas: SvgCanvas): {
 
   const move = (evt: MouseEvent, ctx: MoveContext): void => {
     const { selected, x, y, svgRoot, selectedElements } = ctx
+    // Alt at the first movement: stretch the group's middle, its ends keep their shape (core/stretch.ts)
+    if (!svgCanvas.stretch.isActive() && evt.altKey && !svgCanvas.gesture.hasResizeStartTransform && svgCanvas.stretch.isEligible(selectedElements)) {
+      svgCanvas.stretch.begin(selectedElements, svgCanvas.getCurrentResizeMode())
+    }
+    if (svgCanvas.stretch.isActive()) {
+      let dx = x - svgCanvas.getStartX()
+      let dy = y - svgCanvas.getStartY()
+      if (svgCanvas.getCurConfig().gridSnapping) {
+        dx = svgCanvas.snapToGrid(dx)
+        dy = svgCanvas.snapToGrid(dy)
+      }
+      svgCanvas.stretch.preview(dx, dy)
+      return
+    }
     // multi-selection: uniform group scale (no per-element distortion)
     if (svgCanvas.gesture.groupResizeStart) {
       resizeGroup(svgCanvas, x, y)

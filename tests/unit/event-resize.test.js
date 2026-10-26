@@ -30,6 +30,7 @@ describe('event-resize', () => {
     svgCanvas = {
       dragPlan: () => null, // no model here: the transforms are put on the element
       gesture: createGestureState(),
+      stretch: { isActive: () => false, isEligible: () => false, begin () {}, preview () {}, commit () {}, cancel () {} }, // no Alt-drag stretch here
       setStarted: vi.fn(),
       setStartX: vi.fn((v) => { startX = v }),
       setStartY: vi.fn((v) => { startY = v }),

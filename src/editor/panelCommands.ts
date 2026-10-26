@@ -112,6 +112,7 @@ const LABELS: Record<string, string> = {
   tool_node_smooth: 'tools.node_smooth',
   tool_openclose_path: 'tools.openclose_path',
   tool_path: 'tools.mode_path',
+  tool_ratio_lock: 'properties.ratio_lock',
   tool_rect: 'tools.mode_rect',
   tool_select: 'tools.mode_select',
   tool_stroke_to_path: 'tools.stroke_to_path',
@@ -143,6 +144,7 @@ const MODE_BUTTONS = [
 const TOP_PANEL: Array<[string, string, string, { enabled?: (editor: EditorInstance) => true | string, interactive?: boolean }?]> = [
   ['tool_frame', 'View', 'clickFrame'],
   ['tool_wireframe', 'View', 'clickWireframe'],
+  ['tool_ratio_lock', 'Transform', 'clickRatioLock'],
   ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
   ['tool_stroke_to_path', 'Path', 'strokeToPath', { enabled: strokeToPathable }],
   ['tool_match_strokes', 'Tools', 'clickMatchStrokes', { enabled: needsSelection }],

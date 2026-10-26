@@ -295,6 +295,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.gesture.dragStartTransforms = null
       svgCanvas.gesture.altCloneArmed = false
       svgCanvas.gesture.groupResizeStart = null
+      svgCanvas.stretch.cancel()
       svgCanvas.gesture.groupRotateStart = null
       svgCanvas.gesture.groupRotateCenter = null
       svgCanvas.gesture.groupRotateBBox = null

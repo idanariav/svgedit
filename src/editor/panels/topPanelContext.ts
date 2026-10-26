@@ -18,8 +18,24 @@ export const round1 = (n: number) => Number(Number(n).toFixed(1))
 const STANDARD_CONTEXT_PANELS = [
   'selected_panel', 'multiselected_panel', 'g_panel', 'frame_panel',
   'rect_panel', 'circle_panel', 'ellipse_panel', 'line_panel',
-  'text_panel', 'image_panel', 'container_panel', 'use_panel', 'a_panel'
+  'text_panel', 'image_panel', 'container_panel', 'use_panel', 'a_panel', 'size_panel'
 ]
+
+/**
+ * Show the Size section (W / H of the selection's box, as X / Y read it, and the ratio lock).
+ * @param topPanel The owning TopPanel
+ * @param elems the selected group, or the multi-selection
+ */
+const showSelectionSize = (topPanel: import('./TopPanel.ts').default, elems: Element[]): void => {
+  const { svgCanvas, $req } = topPanel.editor
+  const box = svgCanvas.getStrokedBBoxDefaultVisible(elems)
+  if (!box) return
+  topPanel.displayTool('size_panel')
+  const unit = topPanel.editor.configObj.curConfig.baseUnit !== 'px'
+  $req('size_width').value = round1(Number(unit ? svgCanvas.convertUnit(box.width) : box.width))
+  $req('size_height').value = round1(Number(unit ? svgCanvas.convertUnit(box.height) : box.height))
+  $req('tool_ratio_lock').pressed = topPanel.ratioLocked
+}
 
 /**
  * Updates the context panel tools based on the selected element.
@@ -302,6 +318,8 @@ export const updateContextPanel = (topPanel: import('./TopPanel.ts').default): v
           }
         }
 
+        if (tagName === 'g' || tagName === 'a') showSelectionSize(topPanel, [elem])
+
         // A frame is a data-frame rect: it keeps the standard rect dimension panel
         // and additionally shows the editable Frame name field.
         if (tagName === 'rect' && elem.hasAttribute('data-frame')) {
@@ -353,6 +371,7 @@ export const updateContextPanel = (topPanel: import('./TopPanel.ts').default): v
         }
 
         topPanel.displayTool('multiselected_panel')
+        showSelectionSize(topPanel, selElems.filter(Boolean))
         // Switch Layers only applies to exactly two selected elements
         $req('arrange_switch').style.display =
           selElems.filter(Boolean).length === 2 ? '' : 'none'

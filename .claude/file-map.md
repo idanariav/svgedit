@@ -120,6 +120,7 @@
 | `smart-guides.ts` | Smart alignment guides — object-to-object snapping math |
 | `snapshot-history.ts` | Undo and redo as model snapshots (R1 step d): the drawing after every command, and a step is `reconcile(dom, now, snapshot)` |
 | `split-grid.ts` | Split Into Grid: replace a shape with `rows × cols` rectangles that fill its bounding box, in the shape's own coordinates (so a rotated rect keeps its rotation) and with its look |
+| `stretch.ts` | Stretch a group (or a multi-selection) without distorting its ends, and set the selection's size by number |
 | `svg-defs.ts` | Defs / reference maintenance for the document: id uniquification, `<use>` wiring, unused-def cleanup, and the load-time gradient and drop-shadow-filter conversions |
 | `svg-exec.ts` | SVG text in and out of the canvas: serializing the drawing (`svgToString`, `svgCanvasToString`), loading it (`setSvgString`), importing and inserting fragments, embedding images and fonts, and rasterising the result |
 | `svgroot.ts` | The `svgroot` element (with the canvas drop-shadow filter) a canvas starts from |

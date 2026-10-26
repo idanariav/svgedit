@@ -287,6 +287,7 @@
 |---|---|---|---|---|
 | `tool_flip_h` | Flip Horizontally |  |  |  |
 | `tool_flip_v` | Flip Vertically |  |  |  |
+| `tool_ratio_lock` | Keep proportions when changing width or height |  |  |  |
 | `tool_transform_each` | Transform each: scale, move, rotate or reflect every selected object about its own point |  |  | dialog |
 
 ## View
