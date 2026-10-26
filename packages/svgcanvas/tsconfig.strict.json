@@ -13,6 +13,7 @@
   "common/logger.ts",
   "common/util.ts",
   "core/anchor-path.ts",
+  "core/align-box.ts",
   "core/arrow-align.ts",
   "core/art-brush-canvas.ts",
   "core/art-brush.ts",

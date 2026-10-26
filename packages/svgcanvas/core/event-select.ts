@@ -13,6 +13,7 @@ import { assignAttributes, walkTree, getRotationAngle, restoreTransformAttr } fr
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
+import { getAlignBoxOf } from './align-box.ts'
 import { toCurrentGroupLocalDelta } from './event-group-context.ts'
 import * as hstry from './history.js'
 import { parseMatrix } from './model/matrix.ts'
@@ -169,7 +170,8 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.gesture.hasDragStartTransform = true
       // Snapshot the selection bbox at drag start so proportion snapping can
       // test edge/center positions against the candidate (post-delta) bbox.
-      svgCanvas.gesture.dragStartBBox = svgCanvas.getStrokedBBoxDefaultVisible(selectedElements)
+      // (a group with an alignment box snaps by that child, core/align-box.ts)
+      svgCanvas.gesture.dragStartBBox = getAlignBoxOf(svgCanvas, selectedElements.filter(Boolean))
     }
     // we temporarily use a translate on the element(s) being dragged
     // this transform is removed upon mousing up and the element is

@@ -73,3 +73,10 @@ Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour t
 - **The tolerance outside the wand is still a preference only**: the Select Same menu has no field next to it, so changing it there means opening Editor Preferences.
 - **A click picks the top-level shape under the pointer** (the open group's child, else the layer's child); it does not select inside closed groups.
 - Only the **top level of each layer (or the open group)** is scanned; shapes nested inside closed groups are not matched. Gradient and pattern fills only match by identical reference. Weight ignores `vector-effect` and transforms (a scaled shape reports its attribute value).
+
+## Alignment box (`core/align-box.ts`, `se:align-box`): follow-ups
+
+- **No button or panel row yet**: the two commands are reached through the command picker and the favorites (quick-action) menu, which also covers touch. A natural home is the Layers panel object row of a group's child (a "use as alignment box" toggle) and a Clear button in the `.g_panel` tray.
+- **The X / Y fields read the full painted box**, not the alignment box (decided so position entry and resize grips agree). An option to type the alignment box's position is open.
+- **A mark that leaves its group by a route other than Ungroup** (Layers-panel drag, move to layer, release from a group) stays on the element; it is ignored outside a group and the first mark in a group wins, so a later Group with it can pick it up. Clear those routes too if it surprises anyone. Children without an id cannot be marked (model edits go by id).
+- **A turned group** is measured by the axis-aligned box of its turned alignment box, like every other align box.

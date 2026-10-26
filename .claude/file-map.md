@@ -27,6 +27,7 @@
 
 | File | What it is |
 |---|---|
+| `align-box.ts` | Alignment boxes: a group (or link) can name one of its children as the box it is aligned by, so a figure with a dangling cape or a desk grouped with its shadow lines up by the part that matters, not by everything it… |
 | `anchor-path.ts` | Anchor-based path model — a small, DOM-free representation of a path as subpaths of anchors with in/out Bézier handles, plus the geometry helpers the live-effect pipeline needs (non-linear mapping, Catmull-Rom… |
 | `arrow-align.ts` | Arrowhead alignment: where a marker head sits on the end of its line |
 | `art-brush-canvas.ts` | Art and pattern brushes on the canvas: the elements, the brush library and the canvas API |

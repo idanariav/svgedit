@@ -45,7 +45,7 @@
   "packages/svgcanvas/core/recolor.ts": 4,
   "packages/svgcanvas/core/sanitize.ts": 16,
   "packages/svgcanvas/core/segment.ts": 18,
-  "packages/svgcanvas/core/select.ts": 49,
+  "packages/svgcanvas/core/select.ts": 53,
   "packages/svgcanvas/core/selected-elem.ts": 7,
   "packages/svgcanvas/core/selection.ts": 6,
   "packages/svgcanvas/core/shape-builder.ts": 18,

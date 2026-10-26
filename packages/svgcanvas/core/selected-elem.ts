@@ -13,6 +13,7 @@ import { setAttrsById } from './model/edit.ts'
 import { translationEdit } from './model-commands.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import { createGroupOps } from './group-ops.ts'
+import { getAlignBox } from './align-box.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { HistoryCommand } from '../svgcanvas.ts'
@@ -362,7 +363,8 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
         break
       }
       const elem = selectedElements[i]
-      bboxes[i] = svgCanvas.getStrokedBBoxDefaultVisible([elem])
+      // a group with an alignment box is aligned by that child (core/align-box.ts)
+      bboxes[i] = getAlignBox(svgCanvas, elem) as Box
     }
 
     // distribute horizontal and vertical align is not support smallest and largest

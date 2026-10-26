@@ -130,6 +130,7 @@ import { createSegment } from './core/segment.ts'
 import type { SegmentApi } from './core/segment.ts'
 import { createImageCrop } from './core/image-crop.ts'
 import { createStretch } from './core/stretch.ts'
+import { createAlignBox } from './core/align-box.ts'
 import {
   getClosest,
   getParents,
@@ -424,6 +425,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare imageCrop: import('./core/image-crop.ts').ImageCrop
   /** Alt-drag stretch of a group without distorting its ends, and the selection's numeric size (`core/stretch.ts`). */
   declare stretch: import('./core/stretch.ts').Stretch
+  /** The child a group is aligned and snapped by (`core/align-box.ts`). */
+  declare alignBox: import('./core/align-box.ts').AlignBox
   /** Pointer-gesture state (rotate / resize / drag starts, alt-clone, pending new element, space-pan). */
   declare gesture: import('./core/gesture-state.ts').GestureState
   // Gesture state shared by the select / rotate / resize handlers (null / false outside a gesture)
@@ -760,6 +763,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     attachApi(this, 'segment', createSegment(this), initGuardRegistry)
     this.imageCrop = createImageCrop(this)
     this.stretch = createStretch(this)
+    this.alignBox = createAlignBox(this)
 
     /**
      * Transfers sessionStorage from one tab to another.

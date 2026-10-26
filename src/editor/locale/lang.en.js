@@ -273,6 +273,8 @@ export default {
     hide_selection: 'Hide Selection',
     show_all: 'Show All',
     group_elements: 'Group Elements',
+    use_as_align_box: 'Use as Alignment Box',
+    clear_align_box: 'Clear Alignment Box',
     make_link: 'Make (hyper)link',
     set_link_url: 'Set link URL (leave empty to remove)',
     to_path: 'Convert to Path',

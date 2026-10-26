@@ -17,6 +17,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
+import { alignBoxChild, getAlignBox } from './align-box.ts'
 import { parseAnchors } from './anchor-path.ts'
 import { visibleGuides } from './guides.ts'
 import { getTransformList, transformListToTransform, transformPoint } from './math.ts'
@@ -93,7 +94,7 @@ export const collectSnapTargets = (svgCanvas: SnapHost, excludeElems: Element[])
       if (isExcluded(el) || el.hasAttribute('data-frame')) continue
       let bb: Box | false | null
       try {
-        bb = svgCanvas.getStrokedBBoxDefaultVisible([el])
+        bb = getAlignBox(svgCanvas, el)
       } catch {
         continue
       }
@@ -299,6 +300,11 @@ export const collectPointTargets = (svgCanvas: SnapHost, excludeElems: Element[]
       if (!bb || (!bb.width && !bb.height)) continue
       elements++
       addBox(bb)
+      // a group with an alignment box offers that box too (core/align-box.ts)
+      if (alignBoxChild(el)) {
+        const ab = getAlignBox(svgCanvas, el)
+        if (ab) addBox(ab)
+      }
       if (anchors >= MAX_DRAW_ANCHORS) continue
       try {
         const local = localAnchors(el)

@@ -9,6 +9,7 @@
 import { isWebkit } from '../common/browser.ts'
 import { getRotationAngle } from './dom-utils.ts'
 import { getBBox } from './bbox-utils.ts'
+import { alignBoxChild, getAlignBox } from './align-box.ts'
 import { transformListToTransform, transformBox, transformPoint, matrixMultiply, getTransformList } from './math.ts'
 import { NS } from './namespaces'
 import { warn } from '../common/logger.ts'
@@ -87,6 +88,8 @@ export const createSelect = (canvas: SvgCanvas): SelectApi => {
     hasGrips?: boolean
     selectorGroup: Element
     selectorRect: Element
+    /** the dashed box of a group's alignment box, made on first use */
+    alignBoxRect?: Element
     gripCoords: Record<string, number[]>
 
     /**
@@ -291,6 +294,7 @@ export const createSelect = (canvas: SvgCanvas): SelectApi => {
         }
         selectedBox.setAttribute('d', dstr)
         this.selectorGroup.setAttribute('transform', xform)
+        this.drawAlignBox(m, zoom, angle, cx, cy)
         Object.entries(this.gripCoords).forEach(([dir, coords]) => {
           selectedGrips[dir].setAttribute('cx', String(coords[0]))
           selectedGrips[dir].setAttribute('cy', String(coords[1]))
@@ -305,6 +309,50 @@ export const createSelect = (canvas: SvgCanvas): SelectApi => {
         mgr.rotateGrip.setAttribute('cx', String(nbax + (nbaw) / 2))
         mgr.rotateGrip.setAttribute('cy', String(nbay - (gripRadius * 5)))
       }
+    }
+
+    /**
+  * Show a group's alignment box (`core/align-box.ts`) as a fainter dashed box inside the selection box, or hide it.
+  * @param m - The element's transform to the canvas, with the zoom applied to its translation (as in `resize`)
+  * @param zoom - The current zoom
+  * @param angle - The element's rotation; the box is turned back by it about (`cx`, `cy`), as the selector group turns it again
+  * @param cx - Centre of the selection box
+  * @param cy - Centre of the selection box
+  */
+    drawAlignBox (m: SVGMatrix, zoom: number, angle: number, cx: number, cy: number): void {
+      const child = alignBoxChild(this.selectedElement)
+      const bb = child && getAlignBox(svgCanvas, child)
+      if (!bb) {
+        this.alignBoxRect?.setAttribute('display', 'none')
+        return
+      }
+      if (!this.alignBoxRect) {
+        this.alignBoxRect = svgCanvas.createSVGElement({
+          element: 'path',
+          attr: {
+            id: `selectedAlignBox${this.id}`,
+            fill: 'none',
+            stroke: '#22C',
+            'stroke-opacity': '0.6',
+            'stroke-width': '1',
+            'stroke-dasharray': '2,3',
+            style: 'pointer-events:none'
+          }
+        })
+        this.selectorGroup.insertBefore(this.alignBoxRect, this.selectorRect.nextSibling)
+      }
+      const box = transformBox(bb.x * zoom, bb.y * zoom, bb.width * zoom, bb.height * zoom, m)
+      let pts = [box.tl, box.tr, box.br, box.bl]
+      if (angle) {
+        const rot = svgCanvas.getSvgRoot().createSVGTransform()
+        rot.setRotate(-angle, cx, cy)
+        pts = pts.map((pt) => transformPoint(pt.x, pt.y, rot.matrix))
+      }
+      const xs = pts.map((pt) => pt.x)
+      const ys = pts.map((pt) => pt.y)
+      const [l, t, r, b] = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
+      this.alignBoxRect.setAttribute('d', `M${l},${t} L${r},${t} ${r},${b} ${l},${b}z`)
+      this.alignBoxRect.setAttribute('display', 'inline')
     }
 
     // STATIC methods

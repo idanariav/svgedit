@@ -7,6 +7,7 @@
  */
 
 import { NS } from './namespaces.ts'
+import { clearAlignBoxMarks } from './align-box.ts'
 import { element } from './model/node.ts'
 import { wrapIds, unwrapId } from './model/edit.ts'
 import * as hstry from './history.js'
@@ -592,7 +593,8 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
         svgCanvas.transact('Ungroup Elements', () => {
           pushGroupProperty(group as SVGGElement, true)
           svgCanvas.clearSelection()
-          svgCanvas.snapshotHistory.edit('Ungroup Elements', (root) => unwrapId(root, group.id))
+          // the children leave the group: an alignment box mark would mean nothing (or the wrong thing in a later group)
+          svgCanvas.snapshotHistory.edit('Ungroup Elements', (root) => unwrapId(clearAlignBoxMarks(group)(root), group.id))
           children = kids.map((c) => svgCanvas.getElement(c.id)).filter((c): c is Element => Boolean(c))
         })
         svgCanvas.addToSelection(children)

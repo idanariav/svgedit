@@ -9,7 +9,8 @@
  * @module coreCommands
  */
 
-import { canPaste, needsSelection } from './commandGates.ts'
+import { canPaste, needsSelection, selectedOf } from './commandGates.ts'
+import { alignBoxChild, canBeAlignBox, isAlignBoxMark } from '@svgedit/svgcanvas/core/align-box.ts'
 
 const hasSelection = (editor: EditorInstance): true | string => (editor.selectedElement || editor.multiselected) ? true : 'No selection'
 
@@ -47,6 +48,32 @@ export const registerCoreCommands = (commands: import('./commands.ts').CommandRe
     enabled: (editor) => editor.selectedElement ? true : 'Select a group',
     atomic: true,
     run: (editor) => editor.svgCanvas.ungroupSelectedElement()
+  })
+  // Alignment box (core/align-box.ts): the child of a group that align, distribute and smart snapping measure it by.
+  // Clear works on the group, or on its alignment box child (selected inside the group).
+  const alignBoxGroups = (editor: EditorInstance): Element[] => selectedOf(editor)
+    .map((el) => alignBoxChild(el) ? el : (isAlignBoxMark(el) && canBeAlignBox(el) ? el.parentElement : null))
+    .filter((g): g is Element => !!g)
+  commands.register({
+    id: 'group_align_box',
+    label: 'tools.use_as_align_box',
+    group: 'Group',
+    icon: 'align_box.svg',
+    enabled: (editor) => {
+      const sel = selectedOf(editor)
+      if (sel.length !== 1 || !canBeAlignBox(sel[0])) return 'Select one object inside a group'
+      return isAlignBoxMark(sel[0]) ? 'Already the alignment box' : true
+    },
+    run: (editor) => editor.svgCanvas.alignBox.set(selectedOf(editor)[0])
+  })
+  commands.register({
+    id: 'group_align_box_clear',
+    label: 'tools.clear_align_box',
+    group: 'Group',
+    icon: 'align_box.svg',
+    enabled: (editor) => alignBoxGroups(editor).length ? true : 'Select a group with an alignment box',
+    atomic: true,
+    run: (editor) => alignBoxGroups(editor).forEach((g) => editor.svgCanvas.alignBox.clear(g))
   })
   // Layers-panel object state, from the canvas (Illustrator's Cmd+2 / Cmd+3 family).
   const objectState: Array<[string, string, string, (editor: EditorInstance) => true | string, (editor: EditorInstance) => unknown]> = [

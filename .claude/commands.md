@@ -96,6 +96,8 @@
 
 | Id | Label | Keys | Params | |
 |---|---|---|---|---|
+| `group_align_box` | Use as Alignment Box |  |  |  |
+| `group_align_box_clear` | Clear Alignment Box |  |  |  |
 | `tool_group_elements` | Group Elements | `g` |  |  |
 | `tool_make_link` | Make |  |  |  |
 | `tool_make_link_multi` | Make |  |  |  |

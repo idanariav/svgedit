@@ -1,0 +1,14 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:se="http://svg-edit.googlecode.com">
+ <g class="layer">
+  <title>L</title>
+  <g id="g1">
+   <rect fill="#999" height="40" id="shadow1" width="100" x="120" y="70"/>
+   <rect fill="#a65" height="40" id="desk1" se:align-box="true" width="100" x="100" y="50"/>
+  </g>
+  <g id="g2" transform="translate(0 200)">
+   <rect fill="#a65" height="40" id="desk2" se:align-box="true" width="100" x="300" y="50"/>
+   <rect fill="#999" height="40" id="shadow2" width="100" x="260" y="70"/>
+  </g>
+ </g>
+
+</svg>
