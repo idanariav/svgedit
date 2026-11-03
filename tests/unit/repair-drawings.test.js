@@ -11,7 +11,7 @@ const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
   it('ships only the current repairs (they are deleted once run)', () => {
-    expect(REPAIRS.map((r) => r.name)).toEqual(['retraced-path'])
+    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -63,8 +63,23 @@ describe('repair-drawings: plugin notes', () => {
   })
 })
 
+describe('repair-drawings: dimmed-leak', () => {
+  const [dimmed] = REPAIRS
+
+  it('drops the leaked dimming and nothing else', () => {
+    const bad = '<svg xmlns="http://www.w3.org/2000/svg"><defs opacity="0.33"/><title opacity="0.33">D</title>' +
+      '<g class="layer" id="l" opacity="0.33"><title opacity="0.33">L</title><g id="g" opacity="0.33" transform="matrix(1 0 0 1 0 5)">' +
+      '<rect fill-opacity="0.33" stroke-opacity="0.33" opacity="0.5"/></g><text id="t" opacity="0.33" x="1">0.33</text></g></svg>'
+    const { source, applied } = repairSvg(bad, [dimmed])
+    expect(applied).toEqual(['dimmed-leak'])
+    expect(source).toBe('<svg xmlns="http://www.w3.org/2000/svg"><defs/><title>D</title>' +
+      '<g class="layer" id="l"><title>L</title><g id="g" transform="matrix(1 0 0 1 0 5)">' +
+      '<rect fill-opacity="0.33" stroke-opacity="0.33" opacity="0.5"/></g><text id="t" x="1">0.33</text></g></svg>')
+  })
+})
+
 describe('repair-drawings: retraced-path', () => {
-  const [retraced] = REPAIRS
+  const [, retraced] = REPAIRS
 
   it('opens a closed line that runs out and back over itself, relative or absolute', () => {
     const bad = doc('<path d="m449,472.9l-31.14,15.97l31.14,-15.97z" fill="none" id="p" stroke="#000"/><path d="M0 0 L10 5 Z" id="q"/>')

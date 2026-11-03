@@ -28,6 +28,17 @@ import { retracedLine } from '../packages/svgcanvas/core/drawing-invariants.ts'
  */
 export const REPAIRS = [
   {
+    // An undo after editing inside a group brought back the dimming of the group's siblings (setContext's synthetic
+    // `opacity="0.33"`), and it was saved: whole layers, groups and texts at 33% (checkDrawing's `dimmed-leak`). Drops an
+    // `opacity` of exactly 0.33 from any element, and any `opacity` from a never-rendered one. A 33% opacity set on purpose
+    // would go too, so read the dry run before writing.
+    name: 'dimmed-leak',
+    run: (source) => source.replace(/<([a-zA-Z][\w:-]*)\b[^>]*>/g, (tag, name) =>
+      ['title', 'desc', 'metadata', 'defs', 'style'].includes(name)
+        ? tag.replace(/\sopacity="[^"]*"/, '')
+        : tag.replace(/\sopacity="0\.33"/, ''))
+  },
+  {
     // The Pen closed a path finished by a click on its last point (`M A L B L A Z`): the line it
     // was meant to be is `M A L B` (checkDrawing's `retraced-path`).
     name: 'retraced-path',

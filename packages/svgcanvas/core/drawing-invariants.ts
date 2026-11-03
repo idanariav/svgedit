@@ -106,6 +106,10 @@ const NUMERIC_ATTRS = [
   'x', 'y', 'width', 'height', 'cx', 'cy', 'r', 'rx', 'ry', 'x1', 'y1', 'x2', 'y2',
   'points', 'd', 'transform', 'dx', 'dy', 'stroke-width', 'font-size'
 ]
+/** Elements that are never rendered, so nothing but the in-group dimming (see `setContext`) ever gives them an `opacity`. */
+const NON_RENDERED = new Set(['title', 'desc', 'metadata', 'defs', 'style'])
+/** The inline style `setContext` puts on the siblings it dims while the user is inside a group. */
+const DIMMED_RE = /pointer-events:\s*none/
 /** Children allowed directly under `<svg id="svgcontent">` besides layers. */
 const ROOT_CHILDREN = new Set(['defs', 'title', 'metadata', 'desc', 'style'])
 
@@ -199,6 +203,13 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
     // never saved is not part of the drawing)
     if (tag === 'path' && !el.hasAttribute('d') && !el.closest('[data-se-ephemeral]')) {
       add('empty-path', '<path> has no d attribute', el)
+    }
+
+    // dimmed-leak: the in-group dimming (`opacity="0.33"` on the siblings of the group being edited) outlived the group
+    // context: an undo once restored it from a snapshot taken inside the group. It shows on the never-rendered siblings
+    // (a layer's <title>, the root's <defs>); while the user is still inside the group they carry the dimming's style.
+    if (NON_RENDERED.has(tag) && el.hasAttribute('opacity') && !DIMMED_RE.test(el.getAttribute('style') ?? '')) {
+      add('dimmed-leak', `<${tag}> has opacity="${el.getAttribute('opacity')}" (the in-group dimming outlived the group)`, el)
     }
 
     // retraced-path: a closed two-point line (the Pen once closed a path finished on its last point)

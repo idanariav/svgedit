@@ -74,6 +74,12 @@ export interface SnapshotTarget {
   before: () => void
   /** called with the elements the step changed, after the DOM shows the snapshot */
   patched: (touched: Element[]) => void
+  /**
+   * runs `fn` with the editor's display-only changes to the drawing taken off (the in-group dimming: siblings of the group
+   * being edited carry a synthetic `opacity="0.33"` and `pointer-events: none`), so a snapshot never records them, an undo
+   * never brings them back, and a step patched while inside the group leaves them on
+   */
+  undimmed?: <T>(fn: () => T) => T
 }
 
 export class SnapshotHistory {
@@ -129,17 +135,27 @@ export class SnapshotHistory {
     if (shown) measureTexts(this.target.content(), shown, this.textMetrics)
   }
 
+  /** The drawing as it is now, without the editor's display-only changes (see `SnapshotTarget.undimmed`). */
+  private snapshot (): ModelElement {
+    const content = this.target.content()
+    if (!this.target.undimmed) return readSnapshot(content)
+    const model = this.target.undimmed(() => readSnapshot(content))
+    // taking the dimming off and putting it back is not a change to the drawing
+    this.take()
+    return model
+  }
+
   /** The drawing as it is now, sharing what it has in common with `like`. */
   private read (like: ModelElement | undefined): ModelElement {
-    return share(like, readSnapshot(this.target.content())) as ModelElement
+    return share(like, this.snapshot()) as ModelElement
   }
 
   /** The stack was cleared: the drawing as it is now is the new start. */
   reset (): void {
     const content = this.target.content()
-    this.states = [readSnapshot(content)]
-    this.pool.clear()
     this.watch(content)
+    this.states = [this.snapshot()]
+    this.pool.clear()
     this.listen()
     this.dirty = false
     this.at = 0
@@ -271,7 +287,10 @@ export class SnapshotHistory {
       .map((el) => ({ el, parent: el.parentNode as Node, next: el.nextSibling }))
     parked.forEach((p) => p.el.remove())
     const touched = new Set<Element>()
-    reconcile(content, shown, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) })
+    // the models hold the drawing without the in-group dimming, so the DOM is patched without it too, and the dimming goes back on after
+    const patch = (): void => { reconcile(content, shown, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) }) }
+    if (this.target.undimmed) this.target.undimmed(patch)
+    else patch()
     for (const { el, parent, next } of parked) parent.insertBefore(el, next && next.parentNode === parent ? next : null)
     this.take()
     this.dirty = false

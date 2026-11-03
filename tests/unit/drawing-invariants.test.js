@@ -64,6 +64,14 @@ describe('checkDrawing', () => {
     expect(codes(wrap('<path id="p" d="M0 0 C5 5 5 5 10 0 L0 0 Z"/>'))).toEqual([])
   })
 
+  it('dimmed-leak (the in-group dimming left on a never-rendered element)', () => {
+    expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33">'))).toEqual(['dimmed-leak'])
+    expect(codes(wrap('<rect id="a"/>', '<defs opacity="0.33"/>'))).toEqual(['dimmed-leak'])
+    // still inside the group: the dimming is live, not leaked
+    expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33" style="pointer-events: none">'))).toEqual([])
+    expect(codes(wrap('<rect id="a" opacity="0.33"/>'))).toEqual([])
+  })
+
   it('bad-number in geometry', () => {
     expect(codes(wrap('<rect id="a" x="NaN" y="1" width="undefined" height="2"/>'))).toEqual(['bad-number', 'bad-number'])
     expect(codes(wrap('<path id="p" d="M 0 0 L Infinity 5"/>'))).toEqual(['bad-number'])

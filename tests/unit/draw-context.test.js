@@ -99,8 +99,17 @@ describe('draw context', () => {
     expect(currentGroup).toBe(null)
     expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })
     expect(sibling.getAttribute('opacity')).toBe('inherit')
-    expect(sibling.getAttribute('style')).toBe('pointer-events: inherit')
+    expect(sibling.hasAttribute('style')).toBe(false) // it had none before the dimming
     expect(dataStorage.has(sibling, 'orig_opac')).toBe(false)
+    expect(dataStorage.has(sibling, 'orig_style')).toBe(false)
+  })
+
+  it('gives a dimmed sibling its own inline style back on leaveContext', () => {
+    sibling.setAttribute('style', 'stroke: red; pointer-events: inherit;')
+    canvas.setContext(editGroup)
+    expect(sibling.getAttribute('style')).toBe('pointer-events: none')
+    canvas.leaveContext()
+    expect(sibling.getAttribute('style')).toBe('stroke: red; pointer-events: inherit;')
   })
 
   it('still clears the selection on leaveContext when the group has no siblings to re-enable', () => {
@@ -135,6 +144,16 @@ describe('draw context', () => {
       sibling.setAttribute('opacity', '0.5')
       resume() // second call must not touch anything
       expect(sibling.getAttribute('opacity')).toBe('0.5')
+    })
+
+    it('takes the dimming style off too, back to what the sibling had', () => {
+      sibling.setAttribute('style', 'stroke: red')
+      canvas.setContext(editGroup)
+      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
+      const resume = canvas.suspendContextDimming()
+      expect(sibling.getAttribute('style')).toBe('stroke: red')
+      resume()
+      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
     })
 
     it('does not re-dim siblings once the context was left meanwhile', () => {

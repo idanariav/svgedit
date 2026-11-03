@@ -261,6 +261,7 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
       },
       signal: () => svgCanvas.destroyAbort.signal,
       content: () => svgCanvas.getSvgContent(),
+      undimmed: (fn) => svgCanvas.withContextUndimmed ? svgCanvas.withContextUndimmed(fn) : fn(),
       before: () => {
         svgCanvas.clearSelection()
         layersBefore = layerSignature(svgCanvas.getSvgContent()).join('\n')

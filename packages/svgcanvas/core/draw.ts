@@ -1023,8 +1023,15 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
         } else {
           elem.setAttribute('opacity', orig)
         }
-        elem.setAttribute('style', 'pointer-events: inherit')
+        // the element's own style comes back (dimming replaced it with `pointer-events: none`)
+        const origStyle = dataStorage.get(elem, 'orig_style')
+        if (origStyle === null || origStyle === undefined) {
+          elem.removeAttribute('style')
+        } else {
+          elem.setAttribute('style', origStyle)
+        }
         dataStorage.remove(elem, 'orig_opac')
+        dataStorage.remove(elem, 'orig_style')
       }
       disabledElems = []
     }
@@ -1043,8 +1050,8 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
   }
 
   /**
- * Undo the in-group dimming (see setContext) and hand back a function that
- * re-applies it, leaving the current group, selection and `disabledElems`
+ * Undo the in-group dimming (see setContext: the synthetic opacity and
+ * `pointer-events: none` style) and hand back a function that re-applies it, leaving the current group, selection and `disabledElems`
  * untouched. For anything that must see the drawing's true colours while the
  * user stays inside the group, including work that spans async gaps (the colour
  * dialog's screen eyedropper). The returned function is idempotent and skips
@@ -1054,26 +1061,26 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
   const suspendContextDimming = (): () => void => {
     if (!disabledElems.length) { return () => {} }
     const dataStorage = svgCanvas.getDataStorage()
-    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity') }))
-    for (const { elem } of dimmed) {
-      const orig = dataStorage.get(elem, 'orig_opac')
-      if (orig === null || orig === undefined) {
-        elem.removeAttribute('opacity')
+    const setOrRemove = (elem: Element, name: string, value: string | null | undefined): void => {
+      if (value === null || value === undefined) {
+        elem.removeAttribute(name)
       } else {
-        elem.setAttribute('opacity', orig)
+        elem.setAttribute(name, value)
       }
+    }
+    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity'), style: elem.getAttribute('style') }))
+    for (const { elem } of dimmed) {
+      setOrRemove(elem, 'opacity', dataStorage.get(elem, 'orig_opac'))
+      setOrRemove(elem, 'style', dataStorage.get(elem, 'orig_style'))
     }
     let resumed = false
     return () => {
       if (resumed) { return }
       resumed = true
-      for (const { elem, opacity } of dimmed) {
+      for (const { elem, opacity, style } of dimmed) {
         if (!disabledElems.includes(elem)) { continue }
-        if (opacity === null) {
-          elem.removeAttribute('opacity')
-        } else {
-          elem.setAttribute('opacity', opacity)
-        }
+        setOrRemove(elem, 'opacity', opacity)
+        setOrRemove(elem, 'style', style)
       }
     }
   }
@@ -1082,8 +1089,8 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
  * Run `fn` with the in-group dimming (see setContext) temporarily undone, then
  * re-apply it, leaving the current group, selection and `disabledElems`
  * untouched. For serialization while the user must stay inside the group
- * (e.g. node-editing a path): dimmed siblings carry a synthetic
- * `opacity="0.33"` that must never reach the output, but leaveContext() would
+ * (e.g. node-editing a path) and undo snapshots: dimmed siblings carry a
+ * synthetic `opacity="0.33"` and style that must never reach the output, but leaveContext() would
  * also exit the group and clear the selection.
  * @returns Whatever `fn` returns
  */
@@ -1164,6 +1171,7 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
     // Store the original's opacity
       const origOpacity = curthis.getAttribute('opacity')
       dataStorage.put(curthis, 'orig_opac', origOpacity)
+      dataStorage.put(curthis, 'orig_style', curthis.getAttribute('style'))
       const parsedOpacity = Number.parseFloat(origOpacity ?? '')
       const opac = Number.isFinite(parsedOpacity) ? parsedOpacity : 1
       curthis.setAttribute('opacity', String(opac * 0.33))
