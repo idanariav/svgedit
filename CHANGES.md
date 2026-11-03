@@ -1,5 +1,12 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.16
+- UI: a group can align by one of its children (`group_align_box` / `group_align_box_clear`): align, distribute and smart snapping measure the group by that child, shown as a fainter dashed box; selection and resize keep the full box.
+- UI: Alt-drag on a resize grip of a group or multi-selection stretches its middle (parts past the middle line move, parts across it stretch); a Size section (W / H with a ratio lock) for groups and multi-selections.
+- UI: the colour popover has an Apply / Cancel footer and Enter applies from anywhere in it.
+- Fix: a single click in the colour field, the hue / alpha strips or the gradient tabs' controls counts as an edit, so the popover no longer drops the colour on an outside click, Enter or close.
+- Fix: undo after editing inside a group no longer brings back the group's dimming (siblings stuck at 33% opacity, and saved that way); an undo while still inside keeps the dimmed siblings unclickable. Leaving a group gives the dimmed siblings their own inline style back. `checkDrawing` reports a leaked dimming (`dimmed-leak`) and `scripts/repair-drawings.mjs` removes it.
+
 ## 7.4.1-fork.15
 - UI: Mobile mode (`uiMode: 'mobile'`), a phone shell for viewing and rough sketching. Drawings open view-only (one finger pans, two pinch-zoom and pan; every command except zoom, pan, export and the mode toggles refuses, paste and the context menu are off); Edit gives a bottom bar with Pan, Pencil and Text, seven colours, three stroke widths, undo / redo and Done. The `uiMode` pref (`desktop` / `tablet` / `mobile`) replaces the boolean `tabletMode`, which `setConfig` still accepts.
 - UI: a press with the Text tool on an existing text edits it instead of placing a new text on top.
