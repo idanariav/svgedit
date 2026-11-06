@@ -8,8 +8,8 @@ export type ToolEntry = [string, string, string]
 
 // Command-bar tools, in order. `null` is a tray separator. Each entry is
 // [mode, iconFile, label]; every mode already exists on the canvas (built-in or
-// provided by a default extension). The Shapes flyout is inserted between
-// `line` and `text`.
+// provided by a default extension). The Shape library and the Shapes flyout follow,
+// then Text.
 const TOOLS: Array<ToolEntry | null> = [
   ['select', 'select.svg', 'Select'],
   ['ext-panning', 'panning.svg', 'Pan'],
@@ -18,8 +18,7 @@ const TOOLS: Array<ToolEntry | null> = [
   ['brush', 'brush.svg', 'Brush'],
   ['path', 'pen.svg', 'Pen'],
   ['curvature', 'curvature.svg', 'Curvature'],
-  null,
-  ['line', 'line_tool.svg', 'Line']
+  null
 ]
 
 const SHAPES: ToolEntry[] = [
@@ -158,6 +157,18 @@ class TabletShell {
       tg.append(b)
     })
 
+    // Shape library — reuse the real <se-shape-library> component. ext-shapes
+    // handles its `shape-insert` event via a document-level listener (decoupled
+    // from the desktop #tool_shapelib element), so this instance drives the same
+    // insertion flow. Picking arms the 'shapelib' mode; the user then drags to
+    // place the shape on the canvas, exactly like desktop.
+    const extPath = this.editor.configObj.curConfig.extPath
+    this.shapeLib = document.createElement('se-shape-library')
+    this.shapeLib.setAttribute('title', 'Shape library')
+    this.shapeLib.setAttribute('lib', `${extPath}/ext-shapes/shapelib/`)
+    this.shapeLib.setAttribute('src', 'shapelib.svg')
+    tg.append(this.shapeLib)
+
     // Combined shape selector (rect / square / ellipse / circle / star / polygon)
     this.shapesBtn = this.makeBtn(this.shapeIcon(), { title: 'Shapes' })
     this.shapesBtn.classList.add('has-caret')
@@ -203,18 +214,6 @@ class TabletShell {
       this.popover(this.moreBtn, menu, { title: 'More tools', place: 'bottom' })
     })
     tg.append(this.moreBtn)
-
-    // Shape library — reuse the real <se-shape-library> component. ext-shapes
-    // handles its `shape-insert` event via a document-level listener (decoupled
-    // from the desktop #tool_shapelib element), so this instance drives the same
-    // insertion flow. Picking arms the 'shapelib' mode; the user then drags to
-    // place the shape on the canvas, exactly like desktop.
-    const extPath = this.editor.configObj.curConfig.extPath
-    this.shapeLib = document.createElement('se-shape-library')
-    this.shapeLib.setAttribute('title', 'Shape library')
-    this.shapeLib.setAttribute('lib', `${extPath}/ext-shapes/shapelib/`)
-    this.shapeLib.setAttribute('src', 'shapelib.svg')
-    tg.append(this.shapeLib)
   }
 
   /**

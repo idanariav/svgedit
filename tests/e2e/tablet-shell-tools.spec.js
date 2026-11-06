@@ -17,6 +17,14 @@ test.describe('Tablet shell tools', () => {
   const bar = (page, title) => page.locator(`#ts_toolgroup .tbtn[title="${title}"]`)
   const popItems = (page) => page.locator('.ts-pop .menu-item span:last-child').allTextContents()
 
+  test('the bar has no Line button; the Shape library sits in its place, before the Shapes flyout', async ({ page }) => {
+    await expect(bar(page, 'Line')).toHaveCount(0)
+    const order = await page.evaluate(() => [...document.querySelector('#ts_toolgroup').children]
+      .map((el) => el.getAttribute('title')).filter(Boolean))
+    expect(order.slice(order.indexOf('Curvature') + 1, order.indexOf('Text')))
+      .toEqual(['Shape library', 'Shapes'])
+  })
+
   test('More tools lists every editing tool and arms the one tapped', async ({ page }) => {
     await bar(page, 'More tools').click()
     expect(await popItems(page)).toEqual(['Shaper', 'Smooth', 'Width', 'Blend', 'Distort', 'Gradient', 'Corners', 'Measure', 'Magic Wand'])
