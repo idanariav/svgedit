@@ -48,6 +48,25 @@ describe('se-palette', () => {
     expect(swatch.classList.contains('is-customised')).toBe(true)
   })
 
+  it('entries() lists the shown swatches with their customised colours, leaving removed ones out', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 1: '#abcdef', removed: [2] }))
+    const el = mountElement('se-palette')
+    const entries = el.entries()
+    expect(entries.length).toBe(41)
+    expect(entries[0]).toEqual({ color: 'none', css: 'none' })
+    expect(entries[1]).toEqual({ color: '#abcdef', css: '#abcdef' })
+    expect(entries[2].color).toBe('#9ca3af') // index 2 was removed
+  })
+
+  it('entries() hands a gradient swatch over as a Paint with a CSS preview', () => {
+    const xml = '<linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff"/></linearGradient>'
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 3: { type: 'linearGradient', xml, alpha: 100 } }))
+    const [, , , g] = mountElement('se-palette').entries()
+    expect(g.color).toBe('gradient')
+    expect(g.css).toMatch(/^linear-gradient\(/)
+    expect(g.paint.type).toBe('linearGradient')
+  })
+
   it('init() sets the ui-palette_info attribute via i18next.t', () => {
     const el = mountElement('se-palette')
     el.init({ t: (key) => `translated:${key}` })

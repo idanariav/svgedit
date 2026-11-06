@@ -1,13 +1,7 @@
 // TabletShell.ts — Tablet mode shell: builds the touch command bar + contextual bottom sheet, binds directly to the `selected`/`changed`/`zoomed` `svgCanvas` events (`svgCanvas.bind` is backed by a native…
 import tabletShellHTML from './TabletShell.html'
 import { fetchSvgEl } from '../components/svgIconLoader.ts'
-
-// Preset palette for the lightweight swatch popovers (custom colors go through
-// the existing seColorPicker via the "More…" entry).
-const PRESET_COLORS = [
-  '#000000', '#FFFFFF', '#E11D48', '#F59E0B',
-  '#FACC15', '#22C55E', '#2563EB', '#7C3AED', 'none'
-]
+import type { PaletteEntry } from '../components/sePalette.ts'
 
 /** `[mode, iconFile, label]` */
 export type ToolEntry = [string, string, string]
@@ -247,10 +241,10 @@ class TabletShell {
       e.stopPropagation()
       const box = this.el('div')
       box.append(this.el('div', 'sec-label', 'Stroke'),
-        this.swatchRow(this.svgCanvas.getColor('stroke'), (c) => { this.svgCanvas.setColor('stroke', c); this.paintStyleDot() }))
+        this.swatchRow(this.svgCanvas.getColor('stroke'), (c) => { this.pick('stroke', c); this.paintStyleDot() }))
       const fill = this.el('div'); fill.style.marginTop = '14px'
       fill.append(this.el('div', 'sec-label', 'Fill'),
-        this.swatchRow(this.svgCanvas.getColor('fill'), (c) => this.svgCanvas.setColor('fill', c)))
+        this.swatchRow(this.svgCanvas.getColor('fill'), (c) => this.pick('fill', c)))
       const wd = this.el('div'); wd.style.marginTop = '16px'
       wd.append(this.slider('Width', 0, 24, Number(this.svgCanvas.getStrokeWidth() || 0), (n) => this.svgCanvas.setStrokeWidth(n)))
       box.append(fill, wd)
@@ -292,26 +286,33 @@ class TabletShell {
 
   /* ─────────────────── color popovers ─────────────────── */
 
-  swatchEl (color: string) {
-    const s = this.el('div', 'swatch' + (color === 'none' ? ' none' : ''))
-    if (color !== 'none') s.style.background = color
+  /** @param css a colour, a CSS gradient or `'none'` */
+  swatchEl (css: string) {
+    const s = this.el('div', 'swatch' + (css === 'none' ? ' none' : ''))
+    if (css !== 'none') s.style.background = css
     return s
   }
 
+  /** Apply a swatch the way the bottom palette does (it also keeps the hidden Fill / Stroke pickers in step). */
+  pick (type: 'fill' | 'stroke', entry: PaletteEntry) {
+    this.editor.bottomPanel.applyPalettePick(type, entry.color, entry.paint)
+  }
+
   /**
-   * A row of preset swatches + a "More…" entry that opens the full seColorPicker.
+   * The user's palette (the bottom panel's `<se-palette>`, customised swatches included) + a "More…" entry that
+   * opens the full seColorPicker.
  * @param type set to offer the "More…" entry
    */
-  swatchRow (current: string, onPick: (color: string) => void, type?: 'fill' | 'stroke'): HTMLElement {
+  swatchRow (current: string, onPick: (entry: PaletteEntry) => void, type?: 'fill' | 'stroke'): HTMLElement {
     const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     const row = this.el('div', 'swrow')
-    PRESET_COLORS.forEach((c) => {
-      const s = this.swatchEl(c)
-      if (c === current) s.classList.add('is-on')
+    $req('palette').entries().forEach((entry) => {
+      const s = this.swatchEl(entry.css)
+      if (entry.color.toLowerCase() === current?.toLowerCase()) s.classList.add('is-on')
       s.addEventListener('click', () => {
         row.querySelectorAll('.swatch').forEach((x) => x.classList.remove('is-on'))
         s.classList.add('is-on')
-        onPick(c)
+        onPick(entry)
       })
       row.append(s)
     })
@@ -359,9 +360,9 @@ class TabletShell {
     sw.style.cursor = 'pointer'
     sw.addEventListener('click', (e: { stopPropagation: () => void; }) => {
       e.stopPropagation()
-      this.popover(sw, this.swatchRow(current, (c: string) => {
-        this.svgCanvas.setColor(type, c)
-        if (c === 'none') { sw.classList.add('none'); sw.style.background = '' } else { sw.classList.remove('none'); sw.style.background = c }
+      this.popover(sw, this.swatchRow(current, (c) => {
+        this.pick(type, c)
+        if (c.css === 'none') { sw.classList.add('none'); sw.style.background = '' } else { sw.classList.remove('none'); sw.style.background = c.css }
         this.closePop()
       }, type), { title: label, place: 'top' })
     })

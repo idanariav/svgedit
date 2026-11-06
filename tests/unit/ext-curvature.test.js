@@ -117,6 +117,41 @@ describe('ext-curvature', () => {
     expect(layer.querySelector('#curvature_preview')).toBeNull()
   })
 
+  const dotFills = () => [...layer.querySelectorAll('circle')].map((c) => c.getAttribute('fill'))
+
+  it('tapping a placed anchor toggles it smooth ⇄ corner (the touch way to a corner)', () => {
+    click(10, 10)
+    click(60, 10)
+    click(60, 60)
+    expect(dotFills()).toEqual(['#06f', '#06f', '#06f'])
+    click(60, 10)
+    expect(dotFills()).toEqual(['#06f', '#e00', '#06f'])
+    expect(layer.querySelector('#curvature_preview').getAttribute('d')).toContain('L')
+    click(60, 10)
+    expect(dotFills()).toEqual(['#06f', '#06f', '#06f'])
+  })
+
+  it('dragging a placed anchor moves it without toggling it', () => {
+    click(10, 10)
+    click(60, 10)
+    click(60, 60)
+    down(60, 10)
+    tool.pointerMove(ctx, ev(70, 20))
+    up(70, 20)
+    expect(dotFills()).toEqual(['#06f', '#06f', '#06f'])
+  })
+
+  it('a double-click on a placed anchor finishes without toggling it', () => {
+    click(10, 10)
+    click(60, 10)
+    click(60, 60)
+    click(60, 60) // the double-click's first click lands on the last anchor…
+    down(60, 60, { detail: 2 }) // …and its second finishes, taking the toggle back
+    up(60, 60)
+    const path = [...layer.querySelectorAll('path')].find((p) => p.id !== 'curvature_preview')
+    expect(path.getAttribute('d')).not.toMatch(/L/)
+  })
+
   it('clicking the start anchor again closes the path', () => {
     click(10, 10)
     click(60, 10)

@@ -39,6 +39,8 @@ const RECENT_LIMIT = 5
 /** `{ index: color | gradient }`, plus `removed: number[]` (see REMOVED_KEY). */
 export type GradientOverride = { xml: string, type?: string, alpha?: number }
 export type Overrides = Record<string, unknown>
+/** A visible swatch: `color` is `#rrggbb`, `'none'` or `'gradient'` (then `paint` holds it); `css` previews it. */
+export type PaletteEntry = { color: string, css: string, paint?: Paint }
 
 const loadOverrides = (): Overrides => {
   const adapter = getUserDataAdapter()
@@ -466,6 +468,22 @@ export class SEPalette extends HTMLElement {
   getColor (i: number): string | GradientOverride {
     const override = this._overrides[i] as string | GradientOverride | undefined
     return override ?? DEFAULT_PALETTE[i]
+  }
+
+  /**
+   * The swatches the palette shows, in order (removed ones left out), for another view
+   * of the same palette (the tablet shell's colour popover).
+   */
+  entries (): PaletteEntry[] {
+    return DEFAULT_PALETTE.flatMap((_, i) => {
+      if (this.isRemoved(i)) return []
+      const val = this.getColor(i)
+      if (isGradientOverride(val)) {
+        const css = gradientToCss(gradientElFromXml(val.xml))
+        return css ? [{ color: 'gradient', css, paint: paintFromOverride(val) }] : []
+      }
+      return [{ color: val, css: val }]
+    })
   }
 
   isCustomised (i: number) {

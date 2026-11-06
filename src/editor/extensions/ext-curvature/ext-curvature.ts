@@ -16,7 +16,10 @@
  *   • Alt+Shift+click    → add an end anchor that's also a sharp corner
  *   • Click-drag an
  *     existing anchor    → reposition it, reshaping its adjoining segment(s)
- *   • Double-click        → add corner (sharp) anchor point
+ *   • Click (tap) an
+ *     existing anchor    → toggle it smooth ⇄ corner (the touch way to make a
+ *                          corner: there is no Shift on a tablet)
+ *   • Double-click        → finalize as open path
  *   • Mouse move          → rubber-band preview to cursor
  *   • Click on start      → close path and finalize
  *   • Escape              → finalize as open path
@@ -255,6 +258,9 @@ export default defineFeature({
     // this flips true, so a click that merely lands within the (larger) hit
     // radius but not exactly on the anchor doesn't register as a drag.
     let dragMoved = false
+    // The anchor the last click toggled smooth ⇄ corner, so the second click of a
+    // double-click (finish) can take back what its first click did.
+    let toggledIndex = -1
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -418,9 +424,12 @@ export default defineFeature({
         // otherwise always hit-test against that just-placed point and be
         // mistaken for a drag/close gesture instead of reaching this check.
         if (isDoubleClick && isDrawing) {
+          if (toggledIndex >= 0) points[toggledIndex].corner = !points[toggledIndex].corner
+          toggledIndex = -1
           finalizeOnRelease = true
           return
         }
+        toggledIndex = -1
 
         // Clicking on an already-placed anchor picks it up for dragging
         // instead of adding a new point. points[0] is ambiguous with the
@@ -499,7 +508,16 @@ export default defineFeature({
           return
         }
 
-        if (draggingIndex >= 0) resetDragState()
+        if (draggingIndex >= 0) {
+          // A tap on a placed anchor (no drag) toggles it smooth ⇄ corner.
+          if (!dragMoved) {
+            points[draggingIndex].corner = !points[draggingIndex].corner
+            toggledIndex = draggingIndex
+            redrawAnchorDots()
+            updatePreview(null, false)
+          }
+          resetDragState()
+        }
         // otherwise a plain click: the point was added on press and the session stays open
       },
 

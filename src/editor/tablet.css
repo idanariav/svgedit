@@ -336,7 +336,16 @@
   box-shadow: 0 18px 50px rgba(20, 25, 35, .2), 0 2px 8px rgba(20, 25, 35, .1);
   padding: 16px;
 }
-.svg_editor.ui-tablet .swrow { display: flex; gap: 9px; flex-wrap: wrap; max-width: 232px; }
+/* The user's palette, six to a row (its first row is none + the neutrals, then each tone splits in two);
+   a long custom palette scrolls. The padding keeps the selected swatch's ring from clipping. */
+.svg_editor.ui-tablet .swrow {
+  display: grid;
+  grid-template-columns: repeat(6, 44px);
+  gap: 6px;
+  padding: 3px;
+  max-height: min(344px, 50vh);
+  overflow-y: auto;
+}
 
 /* dropdown menu list */
 .svg_editor.ui-tablet .menu { display: flex; flex-direction: column; min-width: 188px; }

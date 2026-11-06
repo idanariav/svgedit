@@ -137,16 +137,26 @@ class BottomPanel {
   }
 
   handlePalette (e: Event) {
-    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     e.preventDefault()
     // `picker` is the destination chosen by the palette (Alt/Shift-click = stroke).
-    const { picker, color, paint: incomingPaint } = (e as CustomEvent).detail
+    const { picker, color, paint } = (e as CustomEvent).detail
+    this.applyPalettePick(picker, color, paint)
+  }
+
+  /**
+   * Apply a palette swatch, as a click on the bottom palette does (also the tablet shell's swatches).
+   * @param picker `'fill'`, `'stroke'` or `'background'`
+   * @param color `#rrggbb` or `'none'`
+   * @param incomingPaint a gradient swatch's ready-made Paint, in place of `color`
+   */
+  applyPalettePick (picker: string, color: string, incomingPaint?: Paint) {
+    const { $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     // Gradient swatches dispatch a ready-made Paint instead of a color string.
     if (incomingPaint) {
       if (picker === 'background') {
         $req('bg_color').setPaint(incomingPaint)
         if (incomingPaint.type === 'linearGradient' || incomingPaint.type === 'radialGradient') {
-          this.editor.setBackground('gradient', '', incomingPaint[incomingPaint.type], true)
+          this.editor.setBackground('gradient', '', incomingPaint[incomingPaint.type] ?? undefined, true)
         }
         return
       }
