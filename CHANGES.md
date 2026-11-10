@@ -1,5 +1,15 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.17
+- UI: Escape returns every tool to Select (Smooth, Shaper, Blend, Brush, Pencil, Width… were left out). Pressing a tool's key twice locks it, like a double-click on its button.
+- UI: Shape builder, Blend and Shaper show a hint pill at the top of the canvas while active (how to use the tool, a live count, Done). Blend marks the picked shape and the one a click would pick; Shape builder's picked regions are drawn bolder.
+- UI: the Cutter splits a group it cuts through: one side stays in the group, the other goes to a copy of it (nested groups likewise).
+- UI: a multi-selection resizes each axis on its own, as a single shape does; Shift keeps the proportions.
+- UI: Shift while dragging a path anchor snaps it to the x / y of the path's other nodes.
+- UI: the top bar takes less room: the logo menu has no title, zoom is a compact pill (zoom out / in in its dropdown), and the view tray (frame, wireframe, canvas, grid…) folds to a chevron. Hosts that restate the editor grid must match the new `grid-template-areas` (`main` spans two columns).
+- UI: the right-click menus look like the main menu.
+- Fix: the Additional tools drawer and the flyouts fit the editor's own box, not the window, and scroll, so no tool is cut off in a short host pane.
+
 ## 7.4.1-fork.16
 - UI: a group can align by one of its children (`group_align_box` / `group_align_box_clear`): align, distribute and smart snapping measure the group by that child, shown as a fainter dashed box; selection and resize keep the full box.
 - UI: Alt-drag on a resize grip of a group or multi-selection stretches its middle (parts past the middle line move, parts across it stretch); a Size section (W / H with a ratio lock) for groups and multi-selections.
