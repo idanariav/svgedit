@@ -111,6 +111,8 @@ export default class ConfigObj {
       theme: 'light',
       /** UI shell: 'desktop' | 'tablet' | 'mobile' (see uiMode.ts). `setConfig` still takes the legacy boolean `tabletMode` */
       uiMode: 'desktop',
+      /** The top bar's view tray (frame, wireframe, canvas, grid…) folded down to its toggle, for room in a narrow pane */
+      view_tray_collapsed: false,
       /** Drag a numeric field's label to change its value (seSpinInput.js); a stored 'false' turns it off */
       scrub_numeric_fields: true,
       /** Colour distance (OKLab, black to white = 100) within which "Select same" fill / stroke match; 0 = exact */

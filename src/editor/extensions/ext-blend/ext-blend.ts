@@ -25,17 +25,20 @@
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 import type { ElementsPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
+import type { ToolContext } from '@svgedit/svgcanvas'
+import { createToolHint } from '../../toolHint.ts'
 
 const name = 'blend'
 const P = 'ext-blend'
 const INK = '#2b7fff'
+const INK_FILL = 'rgba(43, 127, 255, 0.14)'
 
 export default defineFeature({
   name,
   async init (svgEditor) {
     addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const { svgCanvas } = svgEditor
-    const { $id, $req } = svgCanvas
+    const { $id, $req, assignAttributes } = svgCanvas
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
     const selected = () => svgCanvas.getSelectedElements().filter(Boolean)
@@ -61,61 +64,78 @@ export default defineFeature({
     /** The shape (or blend) the Blend tool picked first, and the one under the press. */
     let first: Element | null = null
     let pending: Element | null = null
-    let marker: SVGRectElement | null = null
+    /** Their markers: the picked one filled and solid, the one a click would pick next dashed. */
+    let picked: SVGRectElement | null = null
+    let hovered: SVGRectElement | null = null
+    const hint = createToolHint(svgEditor, 'blend_hint')
 
     const pick = (ev: import('@svgedit/svgcanvas').ToolEvent) => {
       const target = svgCanvas.getMouseTarget(ev.event)
       return svgCanvas.getBlendGroup(target) ?? (svgCanvas.isBlendKeyCandidate(target) ? target : null)
     }
 
-    const mark = (ctx: import('@svgedit/svgcanvas').ToolContext) => {
-      if (!first) return
-      if (!marker) {
-        marker = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        marker.setAttribute('fill', 'none')
-        marker.setAttribute('stroke', INK)
-        marker.setAttribute('stroke-width', '1.5')
-        marker.setAttribute('stroke-dasharray', '5 3')
-        marker.setAttribute('vector-effect', 'non-scaling-stroke')
-        marker.setAttribute('pointer-events', 'none')
-      }
-      const box = (first as SVGGraphicsElement).getBBox()
-      marker.setAttribute('x', String(box.x))
-      marker.setAttribute('y', String(box.y))
-      marker.setAttribute('width', String(box.width))
-      marker.setAttribute('height', String(box.height))
-      // The overlay is in document units: carry the shape's own transforms over.
-      const to = (first as SVGGraphicsElement).getCTM(); const root = svgCanvas.getSvgContent().getCTM()
-      if (to && root) {
-        const m = root.inverse().multiply(to)
-        marker.setAttribute('transform', `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`)
-      }
-      // The overlay is emptied when a gesture ends: put the marker back.
-      if (!marker.isConnected) ctx.addOverlay(marker)
+    const marker = (solid: boolean) => {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      assignAttributes(rect, {
+        fill: solid ? INK_FILL : 'none',
+        stroke: INK,
+        'stroke-width': solid ? '2.5' : '1.5',
+        'stroke-dasharray': solid ? 'none' : '5 3',
+        'vector-effect': 'non-scaling-stroke',
+        'pointer-events': 'none'
+      })
+      return rect
     }
 
-    const reset = (ctx: import('@svgedit/svgcanvas').ToolContext) => {
+    /** Fit a marker to the element's box, or take it away when there is no element. */
+    const place = (ctx: ToolContext, rect: SVGRectElement, el: Element | null) => {
+      if (!el) { rect.remove(); return }
+      const box = (el as SVGGraphicsElement).getBBox()
+      // a few screen pixels clear of the shape, so the marker never hides in its outline
+      const pad = 4 / svgCanvas.getZoom()
+      assignAttributes(rect, { x: box.x - pad, y: box.y - pad, width: box.width + 2 * pad, height: box.height + 2 * pad, rx: pad })
+      // The overlay is in document units: carry the shape's own transforms over.
+      const to = (el as SVGGraphicsElement).getCTM(); const root = svgCanvas.getSvgContent().getCTM()
+      if (to && root) {
+        const m = root.inverse().multiply(to)
+        rect.setAttribute('transform', `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`)
+      }
+      // A cancelled gesture empties the overlay: put the marker back.
+      if (!rect.isConnected) ctx.addOverlay(rect)
+    }
+
+    const mark = (ctx: ToolContext, under: Element | null = null) => {
+      place(ctx, picked ??= marker(true), first)
+      place(ctx, hovered ??= marker(false), under === first ? null : under)
+    }
+
+    const showHint = () => hint.show(tr(first ? 'hintNext' : 'hintStart'), first ? tr('hintPicked') : '')
+
+    const reset = (ctx: ToolContext) => {
       first = null
       pending = null
       ctx?.clearOverlays()
-      marker = null
+      picked = hovered = null
     }
 
     svgCanvas.registerTool({
       id: 'blend',
       undoLabel: 'Blend',
       wantsHover: true,
+      // the picked shape's marker stays on show between clicks (reset() clears it)
+      keepOverlays: true,
 
-      activate (ctx) { reset(ctx) },
-      deactivate (ctx) { reset(ctx) },
+      activate (ctx) { reset(ctx); showHint() },
+      deactivate (ctx) { reset(ctx); hint.hide() },
 
       pointerDown (ctx, ev) {
         pending = pick(ev)
       },
 
       pointerMove (ctx, ev) {
-        mark(ctx)
-        svgCanvas.setCursorHint(pick(ev) ? 'pointer' : null) // a click picks this shape or blend
+        const under = pick(ev)
+        mark(ctx, under)
+        svgCanvas.setCursorHint(under ? 'pointer' : null) // a click picks this shape or blend
       },
 
       pointerUp (ctx) {
@@ -123,11 +143,13 @@ export default defineFeature({
         pending = null
         if (!hit) {
           reset(ctx)
+          showHint()
           return
         }
         if (!first) {
           first = hit
           mark(ctx)
+          showHint()
           return
         }
         if (hit === first) return
@@ -137,9 +159,10 @@ export default defineFeature({
           first = hit
           mark(ctx)
         }
+        showHint()
       },
 
-      cancel (ctx) { reset(ctx) },
+      cancel (ctx) { reset(ctx); showHint() },
 
       options: () => {
         const cur = current()

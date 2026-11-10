@@ -267,3 +267,66 @@ test.describe('Cutter tool', () => {
     expect(totalArea).toBeCloseTo(800, 0)
   })
 })
+
+test.describe('Cutter tool on a group', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+    await page.evaluate(() => window.svgEditor.setConfig({ gridSnapping: false }))
+    // an apple: body, stem above it, leaf beside the stem, inside a nested group
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer">
+        <title>Layer 1</title>
+        <g id="apple">
+          <ellipse id="body" cx="200" cy="250" rx="100" ry="90" fill="#d22" />
+          <g id="top">
+            <rect id="stem" x="195" y="120" width="10" height="45" fill="#630" />
+            <ellipse id="leaf" cx="235" cy="140" rx="25" ry="10" fill="#2a2" />
+          </g>
+          <circle id="seed" cx="200" cy="300" r="8" fill="#000" />
+        </g>
+      </g>
+    </svg>`)
+  })
+
+  const layerGroups = (page) => page.evaluate(() =>
+    [...document.querySelectorAll('#svgcontent g.layer > g')].map((g) => ({
+      id: g.id,
+      leaves: [...g.querySelectorAll('path, ellipse, rect, circle')].map((el) => el.id || el.tagName),
+      bottom: g.getBBox().y + g.getBBox().height
+    })))
+
+  test('a cut through a group leaves one group per side, nested groups and missed children going with their side', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.selectOnly([document.getElementById('apple')], true)
+      c.cutShapes([{ x: 50, y: 240 }, { x: 350, y: 240 }])
+    })
+    const groups = await layerGroups(page)
+    expect(groups).toHaveLength(2)
+    const [upper, lower] = [...groups].sort((a, b) => a.bottom - b.bottom)
+    // the top half holds the upper body piece and the stem + leaf group; the bottom half the lower piece and the seed
+    expect(upper.leaves).toEqual(expect.arrayContaining(['stem', 'leaf']))
+    expect(upper.leaves).not.toContain('seed')
+    expect(lower.leaves).toContain('seed')
+    expect(lower.leaves).not.toContain('stem')
+    expect(upper.leaves.filter((l) => l.startsWith('svg_') || l === 'path')).toHaveLength(1)
+    expect(lower.leaves.filter((l) => l.startsWith('svg_') || l === 'path')).toHaveLength(1)
+    // the two halves are selected, and one undo puts the apple back
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.getSelectedElements().filter(Boolean).map((el) => el.tagName))).toEqual(['g', 'g'])
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await layerGroups(page)).toEqual([expect.objectContaining({ id: 'apple' })])
+    expect(await page.locator('#svgcontent #body').count()).toBe(1)
+  })
+
+  test('cutting a nested group splits it inside its parent, which stays whole', async ({ page }) => {
+    // the cut crosses the stem and the leaf, not the body
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.selectOnly([document.getElementById('top')], true)
+      c.cutShapes([{ x: 180, y: 140 }, { x: 270, y: 140 }])
+    })
+    expect(await page.evaluate(() => document.querySelectorAll('#svgcontent g.layer > g').length)).toBe(1)
+    expect(await page.evaluate(() => document.querySelectorAll('#apple > g').length)).toBe(2)
+    expect(await page.evaluate(() => [...document.querySelectorAll('#apple > g')].every((g) => g.querySelectorAll('path').length === 2))).toBe(true)
+  })
+})

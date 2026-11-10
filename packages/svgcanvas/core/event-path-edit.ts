@@ -46,7 +46,9 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.setStartX(sp.x)
       svgCanvas.setStartY(sp.y)
     }
-    if (evt.shiftKey) {
+    // Shift while an anchor is dragged snaps it to the other nodes' alignment (path-actions.ts), not to an angle
+    const draggingNode = Boolean(svgCanvas.getPathObj()?.dragging && !svgCanvas.getPathObj()?.dragctrl)
+    if (evt.shiftKey && !draggingNode) {
       // `path.js` never exports a `path` binding (only `init`), so this used
       // to always take the `else` branch below regardless of drag state --
       // svgCanvas.getPathObj() is the real accessor for the currently tracked
@@ -74,7 +76,7 @@ export const init = (canvas: SvgCanvas): {
         height: Math.abs(realY - svgCanvas.getRStartY() * zoom)
       }, 100)
     }
-    svgCanvas.pathActions.mouseMove(x, y)
+    svgCanvas.pathActions.mouseMove(x, y, evt.shiftKey)
   }
 
   // The pointer moving over the canvas with no button down in `path` / `fhpath` mode: the Pen (or the pencil, for

@@ -280,7 +280,7 @@ se-command-search-dialog.theme-dark {
   grid-template-rows: minmax(var(--top-toolbar-min-height), auto) 15px 1fr 56px;
   grid-template-columns: 56px 15px 50px 1fr 15px;
   grid-template-areas:
-    "main main   main top top"
+    "main main   top  top top"
     "left corner rulerX rulerX side"
     "left rulerY workarea workarea side"
     "left bottom bottom bottom bottom";
@@ -391,11 +391,10 @@ se-command-search-dialog.theme-dark {
   background: var(--chrome-bg);
 }
 
-/* Shape Builder hint bar — instructions, a live picked-region count, and an
-   explicit exit affordance, shown over the workarea while a shapebuilder
-   session is active. Same grid-cell-sibling pattern as #layer_focus_badge so
-   it stays pinned to the top instead of scrolling with the canvas. */
-#shape_builder_hint {
+/* A tool's hint pill (toolHint.ts): how to use the tool, a live status and an explicit
+   exit, shown over the workarea while the tool is active. Same grid-cell-sibling pattern as
+   #layer_focus_badge so it stays pinned to the top instead of scrolling with the canvas. */
+.tool_hint {
   grid-area: workarea;
   align-self: start;
   justify-self: center;
@@ -404,6 +403,8 @@ se-command-search-dialog.theme-dark {
   display: none;
   align-items: center;
   gap: 8px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
   padding: 6px 8px 6px 14px;
   border-radius: 999px;
   font-size: 12px;
@@ -412,14 +413,16 @@ se-command-search-dialog.theme-dark {
   border: 1px solid var(--chrome-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
-#shape_builder_hint.visible {
+.tool_hint.visible {
   display: inline-flex;
 }
-#shape_builder_hint .sb-hint-count {
+.tool_hint .tool-hint-status {
   color: var(--accent);
   font-weight: 600;
+  white-space: nowrap;
 }
-#shape_builder_hint .sb-hint-done {
+.tool_hint .tool-hint-status:empty { display: none; }
+.tool_hint .tool-hint-done {
   font: inherit;
   font-weight: 600;
   color: var(--fg);
@@ -429,7 +432,7 @@ se-command-search-dialog.theme-dark {
   padding: 3px 10px;
   cursor: pointer;
 }
-#shape_builder_hint .sb-hint-done:hover {
+.tool_hint .tool-hint-done:hover {
   background: var(--icon-hover-bg);
 }
 
@@ -1119,7 +1122,7 @@ hr {
   grid-area: main;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 6px;
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--chrome-border);
   border-right: 1px solid var(--chrome-border);
@@ -1128,8 +1131,8 @@ hr {
 #main_icon {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 8px;
+  gap: 2px;
+  padding: 6px;
   border-radius: 10px;
   background: var(--brand-bg);
   border: 1px solid var(--brand-border);
@@ -1288,6 +1291,12 @@ hr {
   border: 1px solid var(--group-border);
   border-radius: 10px;
 }
+
+/* The view tray's fold toggle stays last (extensions append their view buttons after it) and is all that
+   shows while the tray is collapsed; its chevron turns to point the way the tray will open. */
+#tool_view_tray_toggle { order: 1; }
+#editor_panel.collapsed > :not(#tool_view_tray_toggle) { display: none; }
+#editor_panel.collapsed > #tool_view_tray_toggle { transform: scaleX(-1); transform-origin: 50% 50%; }
 
 /* Path-node fields (transient pathedit toolbar): lay the X/Y labels inline
    beside the field instead of stacked above it. Stacked labels make the tray

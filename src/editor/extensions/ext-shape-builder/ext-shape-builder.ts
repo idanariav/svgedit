@@ -11,7 +11,7 @@
  * **merge** them into one shape (carved out of the sources), or hold **Alt**
  * to delete them. Each gesture is one undo step and the session continues
  * with the resulting shapes; press Escape, switch tool, or click **Done** on
- * the `#shape_builder_hint` bar to leave — that same bar shows the usage
+ * the `#shape_builder_hint` bar (`toolHint.ts`) to leave — that same bar shows the usage
  * instructions and a live picked-region count so the click/drag/Alt
  * distinctions aren't only discoverable via the toolbar tooltip. The mode
  * also exits when fewer than 2 shapes remain or an outside change (e.g.
@@ -21,12 +21,15 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import { createToolHint } from '../../toolHint.ts'
 
 const name = 'shape-builder'
 
-const HOVER_FILL = 'rgba(41, 98, 255, 0.28)'
-const PICK_FILL = 'rgba(41, 98, 255, 0.5)'
+const HOVER_FILL = 'rgba(41, 98, 255, 0.22)'
+const PICK_FILL = 'rgba(41, 98, 255, 0.55)'
 const STROKE = '#2962FF'
+/** A region's outline: dashed while idle, solid under the pointer, solid and heavier once picked. */
+const OUTLINE = { idle: ['1.25', '4 3'], hover: ['2', 'none'], picked: ['2.75', 'none'] } as const
 
 export default defineFeature({
   name,
@@ -42,10 +45,7 @@ export default defineFeature({
     let regionPaths: SVGPathElement[] = [] // overlay <path> per region index
     let picked = new Set<number>()
     let started = false
-    /**
-* @type {string | Node | null}
-*/
-    let hintEl: HTMLDivElement | null = null
+    const hint = createToolHint(svgEditor, 'shape_builder_hint')
 
     // Overlay: a zoom-scaled group inside an svg aligned with #svgcontent.
     const overlay = svgdoc.createElementNS(NS.SVG, 'svg')
@@ -73,23 +73,8 @@ export default defineFeature({
     // On-canvas hint: usage instructions + a live picked-region count + an
     // explicit "Done" exit, so the mode's flexibility (single click vs. drag
     // vs. Alt) and how to leave it aren't only discoverable via a tooltip.
-    const ensureHint = () => {
-      if (hintEl) return hintEl
-      hintEl = document.createElement('div')
-      hintEl.id = 'shape_builder_hint'
-      hintEl.innerHTML = `
-        <span class="sb-hint-text">${svgEditor.i18next.t(`${name}:hint`)}</span>
-        <span class="sb-hint-count"></span>
-        <button type="button" class="sb-hint-done">${svgEditor.i18next.t(`${name}:done`)}</button>
-      `
-      hintEl.querySelector('.sb-hint-done')?.addEventListener('click', () => svgCanvas.setMode('select'))
-      svgEditor.$svgEditor.append(hintEl)
-      return hintEl
-    }
-
     const updateHintCount = (n: number) => {
-      ;(ensureHint().querySelector('.sb-hint-count') as Element).textContent =
-        n > 0 ? svgEditor.i18next.t(`${name}:picked`, { count: n }) : ''
+      hint.show(svgEditor.i18next.t(`${name}:hint`), n > 0 ? svgEditor.i18next.t(`${name}:picked`, { count: n }) : '')
     }
 
     const renderRegions = (descs: { index: number; d: string; }[]) => {
@@ -101,8 +86,8 @@ export default defineFeature({
           d,
           fill: 'transparent',
           stroke: STROKE,
-          'stroke-width': 1.25,
-          'stroke-dasharray': '4 3',
+          'stroke-width': OUTLINE.idle[0],
+          'stroke-dasharray': OUTLINE.idle[1],
           'vector-effect': 'non-scaling-stroke'
         })
         frag.append(p)
@@ -111,16 +96,18 @@ export default defineFeature({
       scaleGroup.replaceChildren(frag)
       syncOverlay()
       overlay.style.display = 'block'
-      ensureHint().classList.add('visible')
       updateHintCount(0)
     }
 
     const paintStates = (hoverIndex: number) => {
       regionPaths.forEach((p, i) => {
-        p.setAttribute('fill', picked.has(i)
-          ? PICK_FILL
-          : i === hoverIndex ? HOVER_FILL : 'transparent')
+        const state = picked.has(i) ? 'picked' : i === hoverIndex ? 'hover' : 'idle'
+        p.setAttribute('fill', state === 'picked' ? PICK_FILL : state === 'hover' ? HOVER_FILL : 'transparent')
+        p.setAttribute('stroke-width', OUTLINE[state][0])
+        p.setAttribute('stroke-dasharray', OUTLINE[state][1])
       })
+      // a picked or hovered region's outline is drawn over its neighbours' shared edges
+      for (const i of [hoverIndex, ...picked]) regionPaths[i]?.parentNode?.append(regionPaths[i])
       updateHintCount(picked.size)
     }
 
@@ -149,7 +136,7 @@ export default defineFeature({
       regionPaths = []
       scaleGroup.replaceChildren()
       overlay.style.display = 'none'
-      hintEl?.classList.remove('visible')
+      hint.hide()
       svgCanvas.shapeBuilder.end()
     }
 

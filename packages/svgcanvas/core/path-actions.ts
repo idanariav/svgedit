@@ -51,7 +51,8 @@ interface ConvertSeg {
 export interface PathActionsApi {
   select: (target: Element) => void
   mouseDown: (evt: MouseEvent, target: Element, startX: number, startY: number) => void
-  mouseMove: (mouseX: number, mouseY: number) => void
+  /** `snap` (Shift): a dragged anchor snaps to the other nodes' x / y */
+  mouseMove: (mouseX: number, mouseY: number, snap?: boolean) => void
   mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => { keep: boolean, element?: Element | null } | void
   clear: (keepSelection?: boolean) => void
   canDeleteNodes?: boolean
@@ -311,6 +312,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
     // drag-start, read (and logged) once at drag-end, since the per-mousemove
     // snap decision itself is too high-frequency to log.
     #snappedDuringDrag = false
+    /** How far a Shift-snap has put the dragged anchor from the pointer (path units) */
+    #snapOffset = { x: 0, y: 0 }
 
     /**
   * This function converts a polyline (created by the fh_path tool) into
@@ -771,6 +774,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         curPt = path.cur_pt = Number.parseInt(id.slice(14))
         path.dragging = [startX, startY]
         this.#snappedDuringDrag = false
+        this.#snapOffset = { x: 0, y: 0 }
         const seg = path.segs[curPt]
 
         // only clear selection if shift is not pressed (otherwise, add
@@ -791,6 +795,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
       } else if (id.startsWith('ctrlpointgrip_')) {
         path.dragging = [startX, startY]
         this.#snappedDuringDrag = false
+        this.#snapOffset = { x: 0, y: 0 }
 
         const parts = id.split('_')[1].split('c')
         curPt = Number(parts[0])
@@ -828,7 +833,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
       return undefined
     }
 
-    mouseMove (mouseX: number, mouseY: number): void {
+    mouseMove (mouseX: number, mouseY: number, snap: boolean = false): void {
       const zoom = svgCanvas.getZoom()
       this.#hasMoved = true
       const drawnPath = svgCanvas.getDrawnPath()
@@ -934,27 +939,31 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         } else {
         // Node-alignment guides: when the dragged anchor's x/y lines up with
         // another anchor node of the same path, show a guide line (and ring
-        // the matched node) but leave the cursor free -- path nodes are too
-        // small a target to fight a hard snap free of once alignment is
-        // found. Informational only; the node always tracks the raw drag
-        // delta. Gated on the same `smartSnapping` flag as object-to-object
-        // guides.
+        // the matched node). Without Shift the cursor stays free -- path nodes
+        // are too small a target to fight a hard snap free of -- and the guides
+        // follow the `smartSnapping` flag; with Shift the anchor snaps onto the
+        // matched line. The pointer's own position (`raw`) is tracked apart
+        // from the snapped one (`#snapOffset`), so letting go of Shift, or
+        // moving out of reach, puts the node back under the pointer.
           const curSeg = path.segs[path.cur_pt as number]
-          if (svgCanvas.getCurConfig().smartSnapping !== false && curSeg?.item) {
+          let moveX = diffX
+          let moveY = diffY
+          if ((snap || svgCanvas.getCurConfig().smartSnapping !== false) && curSeg?.item) {
             const exclude = [path.cur_pt as number, ...path.selected_pts]
             const targets = collectPathNodeTargets(path, exclude)
             const tol = 8 / zoom // ~8 screen px
-            const snap = snapPathNodeToTargets(curSeg.item.x + diffX, curSeg.item.y + diffY, targets, tol)
-            if (snap.x || snap.y) this.#snappedDuringDrag = true
-            svgCanvas.showPathNodeGuides?.({
-              x: snap.x,
-              y: snap.y,
-              from: { x: curSeg.item.x + diffX, y: curSeg.item.y + diffY }
-            })
+            const raw = { x: curSeg.item.x + diffX - this.#snapOffset.x, y: curSeg.item.y + diffY - this.#snapOffset.y }
+            const match = snapPathNodeToTargets(raw.x, raw.y, targets, tol)
+            if (match.x || match.y) this.#snappedDuringDrag = true
+            const to = snap ? { x: match.x?.pos ?? raw.x, y: match.y?.pos ?? raw.y } : raw
+            this.#snapOffset = { x: to.x - raw.x, y: to.y - raw.y }
+            moveX = to.x - curSeg.item.x
+            moveY = to.y - curSeg.item.y
+            svgCanvas.showPathNodeGuides?.({ x: match.x, y: match.y, from: to })
           } else {
             svgCanvas.showPathNodeGuides?.(null)
           }
-          path.movePts(diffX, diffY)
+          path.movePts(moveX, moveY)
         }
       } else {
         path.selected_pts = []

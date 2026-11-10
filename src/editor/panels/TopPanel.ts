@@ -308,6 +308,12 @@ class TopPanel {
   }
 
   /** Toggle wireframe mode. */
+  /** Fold the view tray down to its toggle button, or open it again; remembered as a pref. */
+  toggleViewTray (collapsed = !this.editor.$req('editor_panel').classList.contains('collapsed')): void {
+    this.editor.$req('editor_panel').classList.toggle('collapsed', collapsed)
+    this.editor.configObj.pref('view_tray_collapsed', collapsed, true)
+  }
+
   clickWireframe (): void {
     const { $id, $req } = this.editor // container-scoped lookups (see EditorStartup constructor)
     $req('tool_wireframe').pressed = !$req('tool_wireframe').pressed
@@ -871,6 +877,7 @@ class TopPanel {
       const titlePanel = $id('title_panel')
       if (titlePanel) titlePanel.style.display = 'none'
     }
+    if (String(this.editor.configObj.pref('view_tray_collapsed')) === 'true') this.toggleViewTray(true)
     // svg editor source dialoag added to DOM
     const newSeEditorDialog = document.createElement(
       'se-svg-source-editor-dialog'

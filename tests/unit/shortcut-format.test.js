@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatShortcutAttr, tooltipText } from '../../src/editor/Hotkeys.ts'
+import { formatShortcutAttr, formatCanonicalShortcut, tooltipText } from '../../src/editor/Hotkeys.ts'
 import { CommandRegistry } from '../../src/editor/commands.ts'
 import { buildEditorShortcuts } from '../../src/editor/editorShortcuts.ts'
 import { DEFAULT_FAVORITES } from '../../src/editor/favorites.ts'
@@ -9,6 +9,10 @@ describe('shortcut formatting', () => {
     expect(formatShortcutAttr('ctrl+Z')).toBe('Ctrl+Z')
     expect(formatShortcutAttr('mod+k')).toBe('Ctrl+K')
     expect(formatShortcutAttr('D')).toBe('D')
+  })
+  it('writes a canonical key compactly, as the menus show it (the right-click menu included)', () => {
+    expect(formatCanonicalShortcut('ctrl+a')).toBe('Ctrl+A')
+    expect(formatCanonicalShortcut('shift+n')).toBe('Shift+N')
   })
   it('leaves decorative multi-key strings as authored', () => {
     expect(formatShortcutAttr('Delete/Backspace')).toBe('Delete/Backspace')

@@ -4,6 +4,7 @@ import { fetchSvgEl } from './svgIconLoader.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
+import { placeBeside } from './popoverPlacement.ts'
 
 /**
  * `<se-tool-overflow>` — the left panel's "Additional tools" drawer.
@@ -242,17 +243,8 @@ export class ToolOverflow extends HTMLElement {
       ev.stopPropagation()
       if ((ev.target as Element).nodeName === 'SE-TOOL-OVERFLOW') {
         this.opened = !this.opened
-        if (this.opened) {
-          const rect = this.getBoundingClientRect()
-          const vh = window.innerHeight
-          // taller than the window: cap it and let it scroll, else the last tools are out of reach
-          this.$menu.style.maxHeight = `${vh - 16}px`
-          const menuRect = this.$menu.getBoundingClientRect()
-          const top = menuRect.height > 0 && rect.top + menuRect.height > vh - 8
-            ? Math.max(8, vh - 8 - menuRect.height)
-            : rect.top
-          this.$menu.style.top = top + 'px'
-        }
+        // taller than the editor: cap it and let it scroll, else the last tools are out of reach
+        if (this.opened) placeBeside(this.$menu, this, this.closest('.svg_editor'), true)
       } else if ((ev.target as Element).nodeName !== 'SE-FLYINGBUTTON') {
         // A slotted leaf tool handled its own click — close the drawer after,
         // mirroring se-flyingbutton's close-after-pick behavior. A slotted

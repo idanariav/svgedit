@@ -10,7 +10,7 @@ vi.mock('@svgedit/svgcanvas', () => ({
   }
 }))
 
-const { default: LeftPanel } = await import('../../../src/editor/panels/LeftPanel.ts')
+const { default: LeftPanel, DOUBLE_PRESS_MS } = await import('../../../src/editor/panels/LeftPanel.ts')
 
 /**
  * Builds a real LeftPanel, running its actual init() (using the real
@@ -32,7 +32,9 @@ const buildLeftPanel = () => {
   root.append(imageImportDialog)
 
   const extensionsAddedHandlers = []
+  const runListeners = []
   const editor = {
+    commands: { onRun: (fn) => { runListeners.push(fn) } },
     $svgEditor: root,
     $id,
     $req: $id,
@@ -48,7 +50,10 @@ const buildLeftPanel = () => {
   leftPanel.init()
   extensionsAddedHandlers.forEach((cb) => cb())
 
-  return { leftPanel, $id, editor }
+  // what the command registry reports after a run (commands.ts `RunEntry`)
+  const ran = (id, source = 'hotkey') => runListeners.forEach((fn) => fn({ id, source, depth: 0, outcome: 'ran' }))
+
+  return { leftPanel, $id, editor, ran }
 }
 
 const shiftEnter = (el) => {
@@ -120,5 +125,51 @@ describe('LeftPanel keyboard lock (Shift+Enter)', () => {
     textTool.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
 
     expect(textTool.getAttribute('locked')).toBe('true')
+  })
+})
+
+describe('LeftPanel double press of a tool key locks it, like a double-click', () => {
+  let $id, editor, ran
+
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class { observe () {} disconnect () {} })
+    vi.useFakeTimers()
+    ;({ $id, editor, ran } = buildLeftPanel())
+  })
+
+  it('locks a lockable tool pressed twice in quick succession', () => {
+    ran('tool_path')
+    expect($id('tool_path').hasAttribute('locked')).toBe(false)
+    vi.advanceTimersByTime(DOUBLE_PRESS_MS / 2)
+    ran('tool_path')
+    expect($id('tool_path').getAttribute('locked')).toBe('true')
+    expect(editor.svgCanvas.setToolLocked).toHaveBeenLastCalledWith(true)
+  })
+
+  it('does not lock when the presses are too far apart', () => {
+    ran('tool_path')
+    vi.advanceTimersByTime(DOUBLE_PRESS_MS + 50)
+    ran('tool_path')
+    expect($id('tool_path').hasAttribute('locked')).toBe(false)
+  })
+
+  it('locks the Shapes flyout for a shape variant\'s key', () => {
+    ran('tool_rect')
+    ran('tool_rect')
+    expect($id('tools_shapes').getAttribute('locked')).toBe('true')
+  })
+
+  it('ignores two different keys, non-hotkey runs and tools that cannot lock', () => {
+    ran('tool_path'); ran('tool_line')
+    ran('tool_text', 'button'); ran('tool_text', 'button')
+    ran('tool_select'); ran('tool_select')
+    expect(editor.svgCanvas.setToolLocked).not.toHaveBeenCalledWith(true)
+  })
+
+  it('a third press starts a new pair rather than locking again', () => {
+    ran('tool_path'); ran('tool_path')
+    editor.svgCanvas.setToolLocked.mockClear()
+    ran('tool_path')
+    expect(editor.svgCanvas.setToolLocked).not.toHaveBeenCalledWith(true)
   })
 })

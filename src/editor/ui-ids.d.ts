@@ -543,6 +543,7 @@ interface ElementIdMap {
   tool_undo: HTMLElementTagNameMap['se-button']
   tool_ungroup: HTMLElementTagNameMap['se-button']
   tool_unlink_use: HTMLElementTagNameMap['se-button']
+  tool_view_tray_toggle: HTMLElementTagNameMap['se-button']
   tool_wand: HTMLElementTagNameMap['se-button']
   tool_width: HTMLElementTagNameMap['se-button']
   tool_wireframe: HTMLElementTagNameMap['se-button']

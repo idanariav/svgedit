@@ -21,6 +21,11 @@
  * through completely untouched, and only loops it actually crosses (an even
  * number of times) get split.
  *
+ * A cut through a group splits the group too: what lies on one side of the cut
+ * (the pieces, and the children the cut missed) stays in it, the other side
+ * moves to a copy of the group inserted after it, nested groups likewise. A cut
+ * apple becomes a top group and a bottom group.
+ *
  * @module cutter
  * @license MIT
  */
@@ -30,6 +35,8 @@ import type { BatchCommand } from './history.js'
 import { getMatrixScale, getOwnTransformScale, getPaperScope, getStyleAttrs, scaleStrokeWidth, svgToPaper, toAbsolutePathData } from './paper-utils.ts'
 import { getMatrixToContent, isIdentity } from './math.ts'
 import { warn } from '../common/logger.ts'
+import { element, type ModelElement } from './model/node.ts'
+import { findById, moveNextTo, pathOfId, withChildren, appendIdsTo } from './model/edit.ts'
 
 // Element types that cannot be converted to a path (used for the
 // selection-fallback filter below; svgToPaper applies the same check itself).
@@ -92,6 +99,86 @@ const getElemAsPath = (elem: Element, scope: paper.PaperScope): paper.CompoundPa
   }
   return item
 }
+
+/**
+ * Which side of the cut `p` lies on: the sign of the cross product against the
+ * nearest stretch of the cut, its first and last stretches extended past the
+ * ends, so the cut parts the whole plane in two. 1 or -1.
+ */
+export const sideOfCut = (points: Pt[], p: Pt): number => {
+  let best = Infinity
+  let side = 1
+  const last = points.length - 2
+  for (let i = 0; i <= last; i++) {
+    const a = points[i]; const b = points[i + 1]
+    const dx = b.x - a.x; const dy = b.y - a.y
+    const len2 = dx * dx + dy * dy
+    if (!len2) continue
+    let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2
+    if (i > 0) t = Math.max(t, 0)
+    if (i < last) t = Math.min(t, 1)
+    const dist = Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+    if (dist < best) {
+      best = dist
+      side = dx * (p.y - a.y) - dy * (p.x - a.x) < 0 ? -1 : 1
+    }
+  }
+  return side
+}
+
+/** A leaf's position in content space, for `sideOfCut`: the centre of its box. */
+const contentCentre = (svgCanvas: SvgCanvas, el: Element): Pt | null => {
+  const g = el as SVGGraphicsElement
+  const box = g.getBBox?.()
+  const to = g.getCTM?.()
+  const root = (svgCanvas.getSvgContent() as unknown as SVGGraphicsElement).getCTM()
+  if (!box || !to || !root) return null
+  const m = root.inverse().multiply(to)
+  const x = box.x + box.width / 2; const y = box.y + box.height / 2
+  return { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f }
+}
+
+/** How a group the cut went through splits: the children that move to its copy, in order, nested splits included. */
+interface GroupSplit { id: string, copyId: string, moves: Array<string | GroupSplit> }
+
+/**
+ * Plan the split of a group the cut went through: the children on the -1 side
+ * move to a copy of the group (whole, or split again when they are groups
+ * across the cut). Read from the DOM; `applySplit` states it on the model.
+ */
+const planSplit = (svgCanvas: SvgCanvas, group: Element, sidesOf: (el: Element) => Set<number>): GroupSplit => {
+  const moves: Array<string | GroupSplit> = []
+  for (const child of Array.from(group.children)) {
+    const sides = sidesOf(child)
+    if (sides.size === 2) moves.push(planSplit(svgCanvas, child, sidesOf))
+    else if (sides.has(-1) && child.id) moves.push(child.id)
+  }
+  return { id: group.id, copyId: svgCanvas.getNextId(), moves }
+}
+
+/** A copy of the group `id`: its attributes (with `copyId`) and its `<title>`, no other children. */
+const emptyCopy = (root: ModelElement, id: string, copyId: string): ModelElement | null => {
+  const group = findById(root, id)
+  if (!group) return null
+  const attrs = group.attrs.map((a) => (a.name === 'id' ? { ...a, value: copyId } : a))
+  return element(group.name, attrs, group.children.filter((c) => c.kind === 'element' && c.name === 'title'))
+}
+
+/** Append an empty copy of `split.id` to the element `intoId`, then move into it what goes. */
+const fillCopy = (root: ModelElement, split: GroupSplit, intoId: string): ModelElement => {
+  const copy = emptyCopy(root, split.id, split.copyId)
+  const at = pathOfId(root, intoId)
+  if (!copy || !at) return root
+  let out = withChildren(root, at, (kids) => [...kids, copy])
+  for (const move of split.moves) {
+    out = typeof move === 'string' ? appendIdsTo(out, split.copyId, [move]) : fillCopy(out, move, split.copyId)
+  }
+  return out
+}
+
+/** The split, on the model: the copy goes right after the group. */
+const applySplit = (root: ModelElement, split: GroupSplit): ModelElement =>
+  moveNextTo(fillCopy(root, split, split.id), split.copyId, split.id, 'after')
 
 // A valid piece has non-trivial path data (more than a lone "M x,y")
 const hasValidPiece = (p: { pathData?: string } | null | undefined): boolean => Boolean(p && p.pathData && p.pathData.length > 4)
@@ -314,7 +401,8 @@ const cutShapePath = (scope: paper.PaperScope, shapePath: paper.CompoundPath, po
  * Replace `elem` with the cut pieces (2 or more), batched into `batchCmd`.
  */
 const replaceWithPieces = (
-  svgCanvas: SvgCanvas, elem: Element, pieces: paper.PathItem[], batchCmd: BatchCommand, resultElems: Element[]
+  svgCanvas: SvgCanvas, elem: Element, pieces: paper.PathItem[], batchCmd: BatchCommand, resultElems: Element[],
+  pieceSide: (piece: paper.PathItem) => number, sides: Map<Element, number>
 ): void => {
   const { InsertElementCommand, RemoveElementCommand } = svgCanvas.history
   const styleAttrs = getStyleAttrs(elem)
@@ -345,6 +433,8 @@ const replaceWithPieces = (
     elem.before(newPath)
     batchCmd.addSubCommand(new InsertElementCommand(newPath))
     resultElems.push(newPath)
+    // a piece may be concave: a point inside it, not its box's centre, says which side it is on
+    sides.set(newPath, pieceSide(piece))
     piece.remove()
   }
 
@@ -362,18 +452,23 @@ const replaceWithPieces = (
 const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
   // Prefer selected elements; fall back to all shapes in the current layer
   // (mirrors Illustrator knife tool: selection scopes the cut, but is optional)
-  let elems = svgCanvas.getSelectedElements().filter(Boolean)
-  if (elems.length === 0) {
+  let targets = svgCanvas.getSelectedElements().filter(Boolean)
+  if (targets.length === 0) {
     const layer = svgCanvas.getCurrentDrawing().getCurrentLayer() as SVGGElement
-    elems = Array.from(layer.children)
+    targets = Array.from(layer.children)
   }
-  elems = collectCuttableElements(elems)
+  const elems = collectCuttableElements(targets)
   if (elems.length === 0) return
 
   const scope = getPaperScope()
   const { BatchCommand } = svgCanvas.history
   const batchCmd = new BatchCommand('Cut shapes')
   const resultElems: Element[] = []
+  const sides = new Map<Element, number>()
+  const pieceSide = (piece: paper.PathItem): number => {
+    const p = piece.interiorPoint
+    return sideOfCut(points, { x: p.x, y: p.y })
+  }
 
   for (const elem of elems) {
     const shapePath = getElemAsPath(elem, scope)
@@ -386,16 +481,36 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
     shapePath.remove()
     if (!pieces) continue
 
-    replaceWithPieces(svgCanvas, elem, pieces, batchCmd, resultElems)
+    replaceWithPieces(svgCanvas, elem, pieces, batchCmd, resultElems, pieceSide, sides)
   }
 
   if (batchCmd.isEmpty()) return
 
+  // The groups the cut went through split in two along it.
+  const sidesOf = (el: Element): Set<number> => {
+    if (el.tagName === 'title') return new Set()
+    if (CONTAINER_TAGS.has(el.tagName)) return new Set(Array.from(el.children).flatMap((c) => [...sidesOf(c)]))
+    let side = sides.get(el)
+    if (side === undefined) {
+      const c = contentCentre(svgCanvas, el)
+      side = c ? sideOfCut(points, c) : 1
+      sides.set(el, side)
+    }
+    return new Set([side])
+  }
+  const cutGroups = targets.filter((el) => el.isConnected && CONTAINER_TAGS.has(el.tagName) &&
+    resultElems.some((piece) => el.contains(piece)) && sidesOf(el).size === 2)
+  const splits = cutGroups.filter((group) => group.id).map((group) => planSplit(svgCanvas, group, sidesOf))
+  if (splits.length) svgCanvas.snapshotHistory.edit('Cut shapes', (root) => splits.reduce(applySplit, root))
+  const halves = splits.flatMap(({ id, copyId }) => [svgCanvas.getElement(id), svgCanvas.getElement(copyId)]).filter((el): el is Element => Boolean(el))
+  // a split group is selected as its two halves
+  const selection = [...halves, ...resultElems.filter((piece) => !halves.some((h) => h.contains(piece)))]
+
   svgCanvas.clearSelection()
   svgCanvas.addCommandToHistory(batchCmd)
-  if (resultElems.length > 0) {
-    svgCanvas.selectOnly(resultElems, true)
-    svgCanvas.call('changed', resultElems)
+  if (selection.length > 0) {
+    svgCanvas.selectOnly(selection, true)
+    svgCanvas.call('changed', selection)
   }
 }
 
@@ -408,6 +523,7 @@ export const createCutter = (canvas: SvgCanvas): CutterApi => {
   const svgCanvas = canvas
 
   return {
-    cutShapes: (points: Pt[]) => cutShapes(svgCanvas, points)
+    // one undo step: the pieces (written to the DOM) and a group split (stated on the model)
+    cutShapes: (points: Pt[]) => { svgCanvas.transact('Cut shapes', () => cutShapes(svgCanvas, points)) }
   }
 }

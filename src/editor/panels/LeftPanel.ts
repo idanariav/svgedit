@@ -17,6 +17,9 @@ const { $click } = SvgCanvas
 // Plain buttons lock themselves; shape groups lock via the flyout host, which
 // locks whatever variant is currently active.
 const LOCKABLE_TOOL_IDS = ['tool_fhpath', 'tool_line', 'tool_path', 'tool_text', 'tools_shapes']
+const LOCKABLE_SELECTOR = LOCKABLE_TOOL_IDS.map((id) => `#${id}`).join(',')
+// A tool's key pressed twice within this many ms locks it, like a double-click on its button.
+export const DOUBLE_PRESS_MS = 400
 
 /*
  * register actions for left panel
@@ -237,6 +240,18 @@ or the se-flyingbutton host for a shape variant)
     LOCKABLE_TOOL_IDS.forEach((id) => {
       const el = $req(id)
       el.addEventListener('dblclick', () => this.lockTool(el))
+    })
+
+    // The key equivalent: the second press has already run the command (clearing any lock), as a double-click's
+    // second click has, so locking now leaves the tool armed and locked. A shape variant locks its flyout.
+    let last = { id: '', at: 0 }
+    this.editor.commands.onRun((entry) => {
+      if (entry.source !== 'hotkey' || entry.outcome !== 'ran' || entry.depth !== 0) return
+      const now = performance.now()
+      const twice = entry.id === last.id && now - last.at < DOUBLE_PRESS_MS
+      last = twice ? { id: '', at: 0 } : { id: entry.id, at: now }
+      const target = twice ? this.editor.$id(entry.id)?.closest(LOCKABLE_SELECTOR) : null
+      if (target) this.lockTool(target)
     })
   }
 }

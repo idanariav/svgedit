@@ -224,6 +224,7 @@
 | `toolAutoFold.ts` | Fold the left column's last tools into "Additional tools" while the pane is too short to show them all, and bring them back when it grows |
 | `toolCursors.ts` | The canvas cursor of each tool (mode) |
 | `toolDragReorder.ts` | Drag-to-reorder for the left panel's tools |
+| `toolHint.ts` | The pill pinned to the top of the canvas that says how to use the current tool, with a live count and a Done button |
 | `toolOrder.ts` | Persistence for the left panel's user-customized tool order |
 | `toolShortcutBadges.ts` | Tool shortcut badges: the key that activates a tool, drawn at the bottom right of its icon in the left panel and on the top panel's buttons (a `data-shortcut` attribute that `svgedit.css` paints with `::after`, so the… |
 | `toolSpace.ts` | Tool space: where a canvas tool's pointer and the shapes it edits meet |
@@ -239,6 +240,7 @@
 | `fieldAutoBlur.ts` | Release keyboard focus held by panel input fields |
 | `index.ts` | Imports every custom-element component so that each registers itself |
 | `PaintBox.ts` | `<se-paint-box>` — Fill/stroke paint control |
+| `popoverPlacement.ts` | Places a toolbar popover (a flyout or the Additional tools drawer) beside its button, inside the editor's own box |
 | `seButton.ts` | `<se-button>` — Icon button with pressed/disabled states |
 | `seCanvasSettings.ts` | `<se-canvas-settings>` — Canvas-resize popover (W/H inputs + ratio/size presets + Apply/Reset) |
 | `seClassSelect.ts` | `<se-class-select>` — Class/style-preset picker for `#elem_class`: scope-filtered dropdown of saved classes + "+"/trash buttons + save/update popover (name, scope, attribute checklist, "Default for… |
@@ -317,6 +319,7 @@
 | `cmenuDialog.ts` | Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu |
 | `cmenuLayersDialog.ts` | `<se-cmenu-layers>` — right-click menu of the Layers panel |
 | `commandSearchDialog.ts` | `<se-command-search-dialog>` — command search: type to find a command by name or key and run it |
+| `contextMenu.css.js` | Shared look of the right-click menus (the canvas quick-action menu and the Layers panel's) |
 | `dialogSkin.css.js` | Shared look for the form-style dialogs (export, SVG source, document properties, preferences, alert/confirm/prompt) |
 | `editorPreferencesDialog.ts` | Editor preferences modal (units, rulers, theme; grid settings moved to the grid-settings popover) |
 | `exportDialog.ts` | Export dialog (region, format, scale 1–4×, quality for JPEG/WebP, output-size preview) |

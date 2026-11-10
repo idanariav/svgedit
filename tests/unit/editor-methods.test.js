@@ -91,3 +91,21 @@ describe('Editor.loadFromURL', () => {
     expect(self.loadSvgString).not.toHaveBeenCalled()
   })
 })
+
+describe('Editor.cancelTool (Escape)', () => {
+  const run = (mode) => {
+    const self = { svgCanvas: { getMode: () => mode }, leftPanel: { clickSelect: vi.fn() } }
+    call('cancelTool', self)
+    return self.leftPanel.clickSelect
+  }
+
+  it('returns every tool to Select, the extension tools included', () => {
+    for (const mode of ['path', 'rect', 'fhpath', 'brush', 'smooth', 'shaper', 'blend', 'width', 'gradient', 'corners', 'distort', 'measure', 'ext-panning']) {
+      expect(run(mode), mode).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('leaves Select, text editing and image crop (which cancels itself) alone', () => {
+    for (const mode of ['select', 'textedit', 'imagecrop']) expect(run(mode), mode).not.toHaveBeenCalled()
+  })
+})

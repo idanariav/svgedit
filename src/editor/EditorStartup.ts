@@ -1066,9 +1066,10 @@ class EditorStartup {
    */
   cancelTool () {
     const mode = this.svgCanvas.getMode()
-    // list of modes that are currently save to cancel
-    const modesToCancel = ['zoom', 'rect', 'square', 'circle', 'ellipse', 'line', 'text', 'star', 'polygon', 'spiral', 'arc', 'rectgrid', 'polargrid', 'shapelib', 'image', 'shapebuilder', 'repeat-pick-center', 'cutter', 'curvature', 'path', 'pathedit']
-    if (modesToCancel.includes(mode)) {
+    // Every tool exits to Select, except the modes that own their Escape (image crop
+    // cancels its session) and text editing (the textarea has the keyboard).
+    const keepModes = ['select', 'imagecrop', 'textedit']
+    if (!keepModes.includes(mode)) {
       this.leftPanel.clickSelect()
     }
   }

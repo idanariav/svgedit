@@ -123,7 +123,8 @@ const LABELS: Record<string, string> = {
   tool_text_decoration_underline: 'properties.text_decoration_underline',
   tool_topath: 'tools.to_path',
   tool_unlink_use: 'tools.tool_unlink_use',
-  tool_wireframe: 'tools.wireframe_mode'
+  tool_wireframe: 'tools.wireframe_mode',
+  view_tray_toggle: 'tools.view_tray_toggle'
 }
 
 /** the layer buttons that depend on where the current layer sits */
@@ -144,6 +145,7 @@ const MODE_BUTTONS = [
 const TOP_PANEL: Array<[string, string, string, { enabled?: (editor: EditorInstance) => true | string, interactive?: boolean }?]> = [
   ['tool_frame', 'View', 'clickFrame'],
   ['tool_wireframe', 'View', 'clickWireframe'],
+  ['view_tray_toggle', 'View', 'toggleViewTray'],
   ['tool_ratio_lock', 'Transform', 'clickRatioLock'],
   ['tool_topath', 'Path', 'convertToPath', { enabled: convertible }],
   ['tool_stroke_to_path', 'Path', 'strokeToPath', { enabled: strokeToPathable }],

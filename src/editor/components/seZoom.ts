@@ -1,6 +1,4 @@
 // seZoom.ts — `<se-zoom>` — Zoom percentage selector
-import { fetchSvgEl } from './svgIconLoader.ts'
-import { requireOwnerEditor } from '../domScope.ts'
 import { t } from '../locale.ts'
 
 const template = document.createElement('template')
@@ -14,34 +12,23 @@ template.innerHTML = `
     display: inline-flex;
     align-items: center;
     height: 36px;
-    gap: 5px;
-    padding: 0 8px;
-    background: var(--group-bg, #F6F7F9);
-    border: 1px solid var(--group-border, #E6E8EC);
-    border-radius: 10px;
+    gap: 0;
+    padding: 0 2px 0 4px;
+    border-radius: 8px;
+    cursor: pointer;
   }
-  #icon {
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--icon, #4B5563);
-    flex-shrink: 0;
-  }
-  #icon svg, #icon img {
-    width: 18px;
-    height: 18px;
-    display: block;
+  /* the #zoom_panel tray around it draws the box */
+  #tool-wrapper:hover {
+    background: var(--icon-hover-bg, #EEF1F5);
   }
   input {
     border: none;
     background: transparent;
     color: var(--fg, #1B1F24);
     min-width: unset;
-    width: 40px;
+    width: 36px;
     height: 22px;
-    padding: 0 2px;
+    padding: 0 1px;
     font: inherit;
     font-size: 12.5px;
     font-weight: 500;
@@ -50,19 +37,23 @@ template.innerHTML = `
     box-sizing: border-box;
     outline: none;
   }
+  /* zoom out / in: the dropdown's first row */
   #spinner {
     display: flex;
-    flex-direction: row-reverse;
+    justify-content: space-between;
     align-items: center;
     gap: 2px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--chrome-border, #E6E8EC);
   }
   #spinner > div {
-    height: 20px;
-    width: 20px;
+    height: 28px;
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1;
     color: var(--muted, #6B7280);
     cursor: pointer;
@@ -74,7 +65,7 @@ template.innerHTML = `
     background: var(--icon-hover-bg, #EEF1F5);
   }
   #pct {
-    margin-left: -4px;
+    margin-left: -2px;
     font-size: 12.5px;
     font-weight: 500;
     color: var(--muted, #6B7280);
@@ -124,6 +115,7 @@ template.innerHTML = `
     border-radius: 7px;
     color: var(--fg, #1B1F24);
     font-size: 13px;
+    white-space: nowrap;
     cursor: pointer;
   }
   ::slotted(*:hover) {
@@ -131,18 +123,17 @@ template.innerHTML = `
   }
   </style>
   <div id="tool-wrapper">
-    <span id="icon"></span>
-    <div id="spinner">
-      <div id="arrow-up" title="Zoom in" aria-label="Zoom in">+</div>
-      <span id="pct">%</span>
-      <input/>
-      <div id="arrow-down" title="Zoom out" aria-label="Zoom out">−</div>
-    </div>
+    <input/>
+    <span id="pct">%</span>
     <div id="down">
       <span id="down-icon">▾</span>
     </div>
   </div>
   <div id="options-container" style="display:none">
+    <div id="spinner">
+      <div id="arrow-down" title="Zoom out" aria-label="Zoom out">−</div>
+      <div id="arrow-up" title="Zoom in" aria-label="Zoom in">+</div>
+    </div>
     <slot></slot>
   </div>
 `
@@ -155,8 +146,6 @@ class SeZoom extends HTMLElement {
   slotElement: HTMLSlotElement
   inputElement: HTMLInputElement
   clickArea: HTMLDivElement
-  imgPath: unknown
-  $icon: HTMLSpanElement
   arrowUp: HTMLDivElement
   arrowDown: HTMLDivElement
   optionsContainer: HTMLElement
@@ -198,14 +187,6 @@ class SeZoom extends HTMLElement {
     this.clickArea = (this._shadowRoot.querySelector('#down') as HTMLDivElement)
     this.clickArea.addEventListener('click', this.handleClick.bind(this))
 
-    this.imgPath = requireOwnerEditor(this).configObj.curConfig.imgPath
-    this.$icon = (this._shadowRoot.querySelector('#icon') as HTMLSpanElement)
-    // Load zoom icon
-    const srcAttr = this.getAttribute('src')
-    if (srcAttr) {
-      this._loadIcon(srcAttr, this.$icon, 18)
-    }
-
     // hookup events for arrow buttons
     this.arrowUp = (this._shadowRoot.querySelector('#arrow-up') as HTMLDivElement)
     this.arrowUp.title = this.arrowUp.ariaLabel = t('hotkeys.zoom_in')
@@ -242,22 +223,6 @@ class SeZoom extends HTMLElement {
     // add an event listener to close the popup
     this._globalAbort = new AbortController()
     document.addEventListener('click', e => this.handleClose(e), { signal: this._globalAbort.signal })
-  }
-
-  async _loadIcon (src: string, container: HTMLSpanElement, size = 18) {
-    if (!src || !container) return
-    const url = `${this.imgPath}/${src}`
-    const svgEl = await fetchSvgEl(url)
-    if (svgEl) {
-      svgEl.style.cssText = `width:${size}px;height:${size}px;display:block;`
-      container.replaceChildren(svgEl)
-    } else {
-      const img = document.createElement('img')
-      img.src = url
-      img.alt = 'icon'
-      img.style.cssText = `width:${size}px;height:${size}px;display:block;`
-      container.replaceChildren(img)
-    }
   }
 
   static get observedAttributes () {
@@ -338,7 +303,8 @@ class SeZoom extends HTMLElement {
     const below = zoomPos.bottom + gap
     const fitsBelow = below + popupPos.height <= window.innerHeight
     const top = fitsBelow ? below : zoomPos.top - popupPos.height - gap
-    const left = zoomPos.left
+    // the pill is narrower than its menu and sits at the bar's right end: hang the menu from its right edge
+    const left = Math.max(gap, zoomPos.right - popupPos.width)
 
     this.optionsContainer.style.position = 'fixed'
     this.optionsContainer.style.top = `${top}px`

@@ -173,7 +173,7 @@ class MainMenu {
         <div role="separator"></div>`
     const template = document.createElement('template')
     template.innerHTML = `
-    <se-menu id="main_button" label="Sketch Editor" src="logo.svg" alt="logo">
+    <se-menu id="main_button" src="logo.svg" alt="logo">
         <se-menu-item id="tool_export" command="tool_export" label="tools.export_img" src="export.svg"></se-menu-item>
         <div role="separator"></div>
         ${tabletItem}

@@ -6,6 +6,7 @@
     <se-button id="tool_frame" command="tool_frame" title="tools.tool_frame" shortcut="U" src="frame.svg"></se-button>
     <se-button id="tool_wireframe" command="tool_wireframe" title="tools.wireframe_mode" shortcut="F" src="wireframe.svg"></se-button>
     <se-canvas-settings id="tool_canvas_settings" title="Canvas settings" src="canvas.svg"></se-canvas-settings>
+    <se-button id="tool_view_tray_toggle" command="view_tray_toggle" title="tools.view_tray_toggle" src="chevron_left.svg"></se-button>
   </div> <!-- editor_panel (view toggles) -->
   <div id="theme_panel"></div> <!-- theme_panel -->
   <!-- Path node editing (transient, pathedit mode) -->
@@ -120,7 +121,7 @@
   </div> <!-- history_panel (fixed slot beside zoom; contextual trays fill the space before it) -->
   <!-- Zoom (far right) -->
   <div id="zoom_panel">
-    <se-zoom id="zoom" src="zoom.svg" title="Change zoom level" inputsize="40px">
+    <se-zoom id="zoom" title="Change zoom level" inputsize="40px">
       <se-text value="1000" text="1000%"></se-text>
       <se-text value="400" text="400%"></se-text>
       <se-text value="200" text="200%"></se-text>

@@ -160,8 +160,8 @@ export const formatShortcutAttr = (raw: string | null): string => {
   return formatCanonicalShortcut(canonical)
 }
 
-/** A canonical key as tooltip text, per platform: `meta+z` → `⌘Z` (Mac) / `Meta+Z`. */
-const formatCanonicalShortcut = (canonical: string): string => formatHotkey(canonical).replace(/ \+ /g, isMac() ? '' : '+')
+/** A canonical key as tooltip / menu text, per platform: `meta+z` → `⌘Z` (Mac) / `Meta+Z`. */
+export const formatCanonicalShortcut = (canonical: string): string => formatHotkey(canonical).replace(/ \+ /g, isMac() ? '' : '+')
 
 /**
  * Tooltip text: the name, plus the formatted shortcut in brackets if any

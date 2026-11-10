@@ -279,6 +279,7 @@
 | `tool_text_on_path` | Put text on path |  |  |  |
 | `tool_text_path_release` | Detach text from path |  |  |  |
 | `tool_trace_image` | Convert to editable SVG |  |  | dialog |
+| `tool_view_tray_toggle` | Show / hide the view settings |  |  |  |
 | `tool_wand` | Magic Wand: click a shape to select every shape that looks like it |  |  |  |
 | `tool_width` | Width tool |  |  |  |
 | `tools_shapes` | Shapes Tool |  |  |  |
@@ -301,6 +302,7 @@
 | `guides_toggle_show` | Show / hide guides | `meta+;` |  |  |
 | `tool_frame` | Frame | `u` |  |  |
 | `tool_wireframe` | Wireframe Mode | `f` |  |  |
+| `view_tray_toggle` | Show / hide the view settings |  |  |  |
 | `zoom_fit` | Fit to canvas |  |  |  |
 
 ## Zoom

@@ -1,11 +1,12 @@
 // cmenuDialog.ts — Canvas quick-action menu (`se-cmenu_canvas-dialog`) — replaces the old static right-click menu
 import cMenuDialogHTML from './cmenuDialog.html'
+import { contextMenuCss } from './contextMenu.css.js'
 import { positionContextMenu } from './positionContextMenu.ts'
 import { closestRoot, requireOwnerEditor } from '../domScope.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
 import { fetchSvgEl } from '../components/svgIconLoader.ts'
 import { loadFavorites } from '../favorites.ts'
-import { formatHotkey } from '../Hotkeys.ts'
+import { formatCanonicalShortcut } from '../Hotkeys.ts'
 import {
   getFavoriteMeta,
   isValueControl,
@@ -17,7 +18,7 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import type { i18n } from 'i18next'
 
 const template = document.createElement('template')
-template.innerHTML = cMenuDialogHTML
+template.innerHTML = `<style>${contextMenuCss}</style>${cMenuDialogHTML}`
 
 // Actions that stay available with no selection; everything else is disabled
 // when nothing is selected (mirrors the original context menu's behaviour).
@@ -138,7 +139,7 @@ export class SeCMenuDialog extends HTMLElement {
     if (key) {
       const sc = document.createElement('span')
       sc.className = 'qa-shortcut'
-      sc.textContent = formatHotkey(key)
+      sc.textContent = formatCanonicalShortcut(key) // as the main menu writes it
       a.append(sc)
     }
     if (meta.src) this._loadIcon(icon, meta.src)

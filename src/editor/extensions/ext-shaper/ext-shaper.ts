@@ -23,6 +23,7 @@
 import { recognize } from '@svgedit/svgcanvas/core/shape-recognize.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 import { toolSpace } from '../../toolSpace.ts'
+import { createToolHint } from '../../toolHint.ts'
 
 const name = 'shaper'
 
@@ -198,9 +199,14 @@ export default defineFeature({
       })
     }
 
+    const hint = createToolHint(svgEditor, 'shaper_hint')
+
     svgCanvas.registerTool({
       id: 'shaper',
       undoLabel: 'Shape stroke',
+
+      activate () { hint.show(svgEditor.i18next.t(`${name}:hint`)) },
+      deactivate () { hint.hide() },
 
       pointerDown (ctx, ev) {
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')

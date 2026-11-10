@@ -5,6 +5,7 @@ import { fetchSvgEl } from './svgIconLoader.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
+import { placeBeside } from './popoverPlacement.ts'
 
 /**
  * @class FlyingButton
@@ -147,6 +148,8 @@ export class FlyingButton extends HTMLElement {
           flex-direction: column;
           gap: 2px;
           margin-left: 44px;
+          box-sizing: border-box;
+          overflow-y: auto;
           z-index: 100;
           box-shadow: 0 4px 16px -2px rgba(0,0,0,0.12);
         }
@@ -361,13 +364,7 @@ export class FlyingButton extends HTMLElement {
             this.removeAttribute('opened')
           } else {
             this.setAttribute('opened', 'opened')
-            const rect = this.getBoundingClientRect()
-            const menuRect = this.$menu.getBoundingClientRect()
-            const vh = window.innerHeight
-            const top = menuRect.height > 0 && rect.top + menuRect.height > vh - 8
-              ? Math.max(8, vh - 8 - menuRect.height)
-              : rect.top
-            this.$menu.style.top = top + 'px'
+            placeBeside(this.$menu, this, this.closest('.svg_editor'), true)
           }
           break
         default:

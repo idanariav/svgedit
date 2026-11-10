@@ -24,6 +24,23 @@ describe('se-zoom', () => {
     expect(el.optionsContainer).toBeTruthy()
   })
 
+  it('is a compact pill: no icon, and zoom out / in are the first row of its menu', () => {
+    const el = mountElement('se-zoom')
+    expect(el.shadowRoot.querySelector('#icon')).toBeNull()
+    expect(el.optionsContainer.contains(el.arrowDown)).toBe(true)
+    expect(el.optionsContainer.contains(el.arrowUp)).toBe(true)
+    expect(el.shadowRoot.querySelector('#tool-wrapper').contains(el.inputElement)).toBe(true)
+  })
+
+  it('keeps its menu open on zoom out / in, so they can be pressed again', () => {
+    const el = mountElement('se-zoom')
+    el.value = '100'
+    el.handleClick()
+    el.arrowUp.click()
+    expect(el.value).toBe('110')
+    expect(el.optionsContainer.style.display).toBe('flex')
+  })
+
   it('reflects the value attribute onto the input and via the property', () => {
     const el = mountElement('se-zoom')
     el.value = '150'

@@ -1,7 +1,7 @@
 /**
  * Resize mode (`resize`) mouse handlers, extracted from the `resize` case of
  * `event.js`'s mouseDown/mouseMove switches. Covers both single-element
- * resize and the multi-element uniform group scale (`resizeGroup`).
+ * resize and the multi-element group scale (`resizeGroup`).
  *
  * Note: the `resize` mouseUp case is NOT here — it is two lines (hide the
  * rubber box, switch to 'select' mode) that intentionally fall through into
@@ -22,12 +22,13 @@ interface DownContext { x: number, y: number, zoom: number, selectedElements: El
 interface MoveContext { selected: Element, x: number, y: number, svgRoot: SVGSVGElement, selectedElements: Element[] }
 
 /**
- * Uniform group scale for a multi-element selection. Scales every selected
- * element by the SAME factor about a common pivot (the corner/edge opposite the
- * dragged grip), so no shape is distorted and the relative layout is preserved.
- * `x`,`y` are the current pointer position in content/user coords.
+ * Group scale for a multi-element selection. Scales every selected element by
+ * the SAME factors about a common pivot (the corner/edge opposite the dragged
+ * grip), so the relative layout is preserved. Like a single shape, each axis
+ * follows its own grip (a side grip changes only that side), and Shift keeps
+ * the proportions. `x`,`y` are the current pointer position in content/user coords.
  */
-const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
+const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number, proportional: boolean): void => {
   const svgRoot = svgCanvas.getSvgRoot()
   const initb = svgCanvas.getInitBbox()
   const bx = initb.x; const by = initb.y; const bw = initb.width; const bh = initb.height
@@ -48,15 +49,18 @@ const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
   if (mode.includes('n')) { sy = bh ? (bh - dy) / bh : 1 }
   if (mode.includes('w')) { sx = bw ? (bw - dx) / bw : 1 }
 
-  // collapse to a single uniform factor (the axis dragged furthest wins)
-  const s = Math.abs(1 - sx) >= Math.abs(1 - sy) ? sx : sy
+  // Shift: one factor for both axes (the axis dragged furthest wins)
+  if (proportional) {
+    const s = Math.abs(1 - sx) >= Math.abs(1 - sy) ? sx : sy
+    sx = sy = s
+  }
 
   // pivot = the fixed corner/edge opposite the dragged grip
   const ax = bx + (mode.includes('w') ? bw : 0)
   const ay = by + (mode.includes('n') ? bh : 0)
 
-  // group matrix T(ax,ay) · S(s) · T(-ax,-ay)
-  const gm = svgRoot.createSVGMatrix().translate(ax, ay).scale(s).translate(-ax, -ay)
+  // group matrix T(ax,ay) · S(sx,sy) · T(-ax,-ay)
+  const gm = svgRoot.createSVGMatrix().translate(ax, ay).scaleNonUniform(sx, sy).translate(-ax, -ay)
 
   const starts = svgCanvas.gesture.groupResizeStart as Map<Element, SVGMatrix>
   // Shapes that can take the scale in their own coordinates are shown by the renderer (the model states each size)
@@ -66,7 +70,7 @@ const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
   }
   const plan = svgCanvas.gesture.dragPlan
   if (plan) {
-    svgCanvas.previewAfter(plan, { a: s, d: s, e: ax - s * ax, f: ay - s * ay })
+    svgCanvas.previewAfter(plan, { a: sx, d: sy, e: ax - sx * ax, f: ay - sy * ay })
     for (const elem of starts.keys()) svgCanvas.selectorManager.requestSelector(elem).resize()
   }
   starts.forEach((startMatrix, elem) => {
@@ -82,10 +86,10 @@ const resizeGroup = (svgCanvas: SvgCanvas, x: number, y: number): void => {
 
   // redraw the group box scaled about the same pivot
   svgCanvas.selectorManager.showGroupSelector({
-    x: ax + (bx - ax) * s,
-    y: ay + (by - ay) * s,
-    width: bw * s,
-    height: bh * s
+    x: ax + (bx - ax) * sx,
+    y: ay + (by - ay) * sy,
+    width: bw * sx,
+    height: bh * sy
   })
   svgCanvas.call('transition', svgCanvas.getSelectedElements())
 }
@@ -169,7 +173,7 @@ export const init = (canvas: SvgCanvas): {
     svgCanvas.gesture.groupResizeStart = null
 
     // multi-selection: record per-element start matrices and the union bbox,
-    // then let mouseMove apply a single uniform group-scale matrix to each.
+    // then let mouseMove apply a single group-scale matrix to each.
     const groupElems = selectedElements.filter(Boolean)
     if (groupElems.length > 1) {
       svgCanvas.setInitBbox(svgCanvas.getStrokedBBoxDefaultVisible(groupElems))
@@ -211,9 +215,9 @@ export const init = (canvas: SvgCanvas): {
       svgCanvas.stretch.preview(dx, dy)
       return
     }
-    // multi-selection: uniform group scale (no per-element distortion)
+    // multi-selection: one scale about the selection's box
     if (svgCanvas.gesture.groupResizeStart) {
-      resizeGroup(svgCanvas, x, y)
+      resizeGroup(svgCanvas, x, y, evt.shiftKey)
       return
     }
     // an area text keeps its type and changes its box (rotated or transformed ones scale like any text)
