@@ -120,6 +120,7 @@ import type { LiveEffectsApi } from './core/live-effects.ts'
 import { init as liveEffectsDistortInit } from './core/live-effects-distort.ts'
 import { init as warpInit } from './core/warp.ts'
 import { init as distortInit } from './core/distort.ts'
+import { init as rotate3dInit } from './core/rotate3d.ts'
 import { createTextPath } from './core/text-path.ts'
 import type { TextPathApi } from './core/text-path.ts'
 import { createShapeBuilder } from './core/shape-builder.ts'
@@ -757,6 +758,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     liveEffectsDistortInit()
     warpInit()
     distortInit()
+    rotate3dInit()
     attachApi(this, 'textPath', createTextPath(this), initGuardRegistry)
     this.shapeBuilder = createShapeBuilder(this)
     attachApi(this, 'cutter', createCutter(this), initGuardRegistry)

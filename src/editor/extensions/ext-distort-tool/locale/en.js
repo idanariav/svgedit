@@ -2,11 +2,13 @@ export default {
   name: 'Distort tool',
   buttons: [
     {
-      title: 'Distort tool: drag a corner of the selected shape'
+      title: 'Distort tool: drag a corner of the selected shape or group'
     }
   ],
   mode: 'Distort',
   modeFree: 'Free',
   modePerspective: 'Perspective',
-  modeTitle: 'Free bends the shape between the corners; Perspective keeps every straight line straight'
+  modeTitle: 'Free bends the shape between the corners; Perspective keeps every straight line straight',
+  reset: 'Reset',
+  resetTitle: 'Take the distortion off'
 }

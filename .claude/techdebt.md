@@ -193,3 +193,12 @@ deliberate: text on accent buttons, colour-picker maths, danger red, grid defaul
 `svgCanvas.getPathObj()` is honest (`PathObject | null`). Make the handlers take the path from a `requirePath()` that
 throws (or pass it in from the session) when `PathActions` is next reworked; the same applies to the `Path` / `Segment`
 fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
+
+## A group distortion's shared frame is not remapped when a member's geometry is baked (2026-11-18)
+
+Each member of a distorted / turned group carries its map into the group's box in the `frame*` params of its entry
+(`core/distort.ts`, `framedTarget.ts`). Moving or resizing one member on its own bakes the transform into `se:fx-d`
+(`remapFxSource`) but leaves those params as they were, so the member is then warped where it now sits in the group's
+field rather than moving rigidly as drawn; the next drag of the group recomputes every member's frame from where it is.
+Moving the whole group is unaffected (its own transform). The proper fix is a geometry-remap hook that composes the
+frame with the remap's inverse when the remap is affine (`registerGeometryRemap`).

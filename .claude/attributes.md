@@ -222,6 +222,10 @@ A path carrying a re-editable effect stack (see `packages/svgcanvas/core/live-ef
 
 `freeDistort(topLeftX=0,topLeftY=0,topRightX=1,topRightY=0,bottomRightX=1,bottomRightY=1,bottomLeftX=0,bottomLeftY=1)` and `perspective(…same…)` (`core/distort.js`, edited on the canvas by ext-distort-tool): the four corners the source box's corners move to, in unit box coordinates (`0,0` = the source box's top left, `1,1` = its bottom right), so they follow a resize of the source; the defaults are the identity. A flat source box (a straight line) uses the other axis' size for the unit. Perspective on a non-convex quad draws the bilinear map instead.
 
+`rotate3d(rotationX=0,rotationY=0,rotationZ=0,perspective=0)` (`core/rotate3d.js`, edited by ext-rotate3d-tool): degrees, turned on X, then Y, then Z about the box's centre, then seen through a camera with a `perspective`° field of view (0 = none, up to 160).
+
+**Shared frame** (`freeDistort`, `perspective`, `rotate3d`): `frameA`…`frameF`, `frameW`, `frameH`, hidden in the Effects panel and left out of `se:fx` while all zero. Set on each member of a distorted / turned group: the affine map from the element's own coordinates to the group's box (`0,0` its top left) and the box's size; the unit corners (or the centre the rotation turns about) refer to that box instead of the element's source box.
+
 Shares an element with a width stroke (`se:taper-d`) unless the stack has a stroke-output effect (Scribble), not with `se:orig-d`. A transform baked into the path (move/resize) transforms `se:fx-d` and regenerates `d`; effect params are **not** rescaled. If `d` is edited elsewhere (node editing), both attributes are dropped on the next selection (`reconcileLiveEffects`, compared within 0.1px because the saver rewrites `d` as rounded relative commands).
 
 ---

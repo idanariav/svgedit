@@ -46,6 +46,7 @@ const MORE_TOOLS: ToolEntry[] = [
   ['width', 'width-tool.svg', 'Width'],
   ['blend', 'blend-tool.svg', 'Blend'],
   ['distort', 'distort-tool.svg', 'Distort'],
+  ['rotate3d', 'rotate3d-tool.svg', '3D Rotate'],
   ['gradient', 'gradient-tool.svg', 'Gradient'],
   ['corners', 'corner-tool.svg', 'Corners'],
   ['measure', 'measure.svg', 'Measure'],

@@ -13,13 +13,19 @@ Done: `tool_measure` (mode `measure`, `registerTool`, button after the Eyedroppe
 ## Distort tool (`core/distort.js`, `ext-distort-tool`): follow-ups from T2.7
 
 Done: `freeDistort` (bilinear) and `perspective` (projective, Heckbert's square-to-quad) live effects on eight unit-box corner params; the Distort tool (`tool_distort`, mode `distort`): four grips on the selected shape's source box, drag one (Shift = one axis) for one undo step, Free / Perspective on the options bar (converts a distorted selection), a press on another shape selects it. The effect stacks with the others (the corners edit the first distort entry; the unit box is the source box, whatever comes before it). Remaining:
-- **Shapes only, no groups.** A group (or text, image, compound selection) is skipped; the plan's alternative was an effect per child. Distorting several selected shapes with one set of corners (their common box) is not offered either.
-- **Perspective is the free-corner homography.** VectorCraft's "Perspective" *mode* is a drag constraint (the corner and its partner move symmetrically) on top of the bilinear effect; here each corner is free and the map is truly projective, so a quad that stops being convex is refused while dragging (the last valid corner stays) and falls back to bilinear if it arrives from the panel's numbers.
+- **Groups: an effect per member on a shared frame** (done, `framedTarget.ts`). Remaining: text and images in a group are left undistorted (they cannot take live effects; VectorCraft bakes them with the map's affine approximation at their centre); a group in a group distorted on its own and then with its parent share one framed entry per leaf (the first framed one); the Effects panel shows a group's entry only on a single member, so Expand for a whole group is missing; a *live* group effect (the group holds the effect, like Affinity's Warp Group) waits on R1. Distorting several selected shapes with one set of corners (their common box) is not offered either.
+- **Perspective is the free-corner homography.** VectorCraft's "Perspective" *mode* is a drag constraint (the corner and its partner move symmetrically, `distort_quad` in `crates/tools/src/xform/free.rs`) on top of the bilinear effect; here each corner is free and the map is truly projective, so a quad that stops being convex is refused while dragging (the last valid corner stays) and falls back to bilinear if it arrives from the panel's numbers.
 - **No snapping** to other objects or guides (`snap: true` on the tool def needs the corner to follow the pointer by an offset, not jump to it; with grid snapping on, the grid is used). No measurement label.
 - **A corner jumps to the pointer** by up to the grab radius (10 px) on the first move; the grab offset is not kept.
-- **Reset** is the ✕ on the effect's row in the Effects panel; there is no double-click-a-grip or Enter-to-reset gesture.
+- **Reset** is the options bar's Reset (or the ✕ on the effect's row in the Effects panel); there is no double-click-a-grip or Enter-to-reset gesture.
 - **In the tablet shell's More tools flyout** (touch only: the Shift constraint is not available there).
 - A pathological stack (a distort entry before another effect that changes the anchor count a lot) can hit `MAX_FX_ANCHORS`; the drag then stops updating, it does not corrupt the shape.
+
+## 3D Rotate tool (`core/rotate3d.ts`, `ext-rotate3d-tool`)
+
+Done: the `rotate3d` live effect (X / Y / Z degrees and a perspective field of view, VectorCraft's 3D Rotate math without faces or shading), the tool (drag = Y / X, Alt = Z, Shift = 15°), presets, numbers and Reset on the options bar, groups on a shared frame. Remaining:
+- **No axis rings.** VectorCraft's gizmo (`crates/ui-egui/src/dialogs/revolve_gizmo.rs`) draws a ring per axis to drag along; here the drag is free on the canvas and Z needs Alt (so it is not reachable by dragging on touch; the Z field is).
+- **No shading or back-face culling.** A shape turned past 90° shows its mirrored back; Extrude, Revolve and lighting are not ported.
 
 ## Gradient tool (`core/gradient-edit.js`, `ext-gradient-tool`): follow-ups from T2.8
 

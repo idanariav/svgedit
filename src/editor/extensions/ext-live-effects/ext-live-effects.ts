@@ -154,7 +154,7 @@ export default defineFeature({
       const grid = document.createElement('div')
       grid.className = 'sidepanel_section_grid'
       const fields: Record<string, HTMLElement> = {}
-      for (const key of Object.keys(def.defaults)) {
+      for (const key of Object.keys(def.defaults).filter((k) => !def.hidden?.includes(k))) {
         fields[key] = buildField(def, key, working)
         grid.append(fields[key])
       }

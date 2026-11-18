@@ -4,7 +4,7 @@
  * EditorStartup.js, which keeps a thin `_addSelectedToShapeLibrary()` wrapper.
  */
 
-import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory } from './extensions/ext-shapes/userShapes.ts'
+import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory, getUserCategoryForLabel } from './extensions/ext-shapes/userShapes.ts'
 
 /**
  * Handle "Add to Shape Library" context menu action.
@@ -285,6 +285,12 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
         if (i < 0 || i >= shownLabels.length) return
         labelInput.value = shownLabels[i]
         closeLabelMenu()
+        // Reusing an existing name: follow it into the category it lives in.
+        const cat = getUserCategoryForLabel(shownLabels[i])
+        if (cat && Array.from(select.options).some(o => o.value === cat)) {
+          select.value = cat
+          newInput.style.display = 'none'
+        }
       }
 
       labelInput.addEventListener('input', renderLabelMenu)

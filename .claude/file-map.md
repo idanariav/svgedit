@@ -107,6 +107,7 @@
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.ts` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
+| `rotate3d.ts` | 3D Rotate live effect: the flat shape turned about its centre on the X, Y and Z axes and seen with an optional perspective, like a card tilted in front of a camera |
 | `sanitize.ts` | Tools for SVG sanitization |
 | `scratch-bake.ts` | Bake a finished gesture's transform on a throwaway copy, and hand back what changed (R1: the gesture is stated on the model, the measuring stays where the browser can do it) |
 | `se-namespace.ts` | Helpers for the editor's `se:` attribute namespace |
@@ -209,6 +210,7 @@
 | `EditorStartup.ts` | Async `init()` sequence: config → i18n → DOM → SvgCanvas → panels → extensions |
 | `favoriteActions.ts` | The catalog of favoritable actions and their execution |
 | `favorites.ts` | Persistence for the user's quick-action favorites |
+| `framedTarget.ts` | Framed effect targets: the shape or group a box-handled effect tool (Distort, 3D Rotate) edits, and how its effect entry is read and written |
 | `hostApi.check.ts` | Compile-time conformance check: fails `npm run typecheck` if `Editor` stops satisfying the declared host API |
 | `Hotkeys.ts` | Central keyboard-shortcut registry for the editor |
 | `locale.ts` | Localizing script for SVG-edit UI |
@@ -545,6 +547,12 @@
 | File | What it is |
 |---|---|
 | `ext-repeat.ts` | Radial / grid repeat (array) tool |
+
+### `src/editor/extensions/ext-rotate3d-tool/`
+
+| File | What it is |
+|---|---|
+| `ext-rotate3d-tool.ts` | 3D Rotate tool: turn the selected shape or group in 3D by dragging on the canvas, like a card under the pointer |
 
 ### `src/editor/extensions/ext-ruler-guides/`
 

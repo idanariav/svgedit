@@ -8,6 +8,11 @@
  * bottom right), in the order top left, top right, bottom right, bottom left, so the effect survives a
  * resize of the source and the defaults are the identity. The on-canvas editor is `ext-distort-tool`.
  *
+ * A *shared frame* (eight hidden params, `FRAME_KEYS`) lets one distortion span a group: every member carries the same
+ * corners plus the affine map from its own coordinates to the group's box, so the members bend as one piece whatever
+ * their transforms. Without it (all zero, the default) the box is the shape's own source box. `ext-rotate3d-tool`'s
+ * `rotate3d` effect uses the same frame.
+ *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/effects/src/distort.rs`
  * (`free_distort`) and `crates/geom/src/projective.rs` (`Homography`), MIT OR Apache-2.0. Divergence: the
  * projective map is built from the corners with Heckbert's square-to-quad formula, and a flat box (a straight
@@ -20,6 +25,8 @@
 import { mapNonlinear } from './anchor-path.ts'
 import type { Pt, SubPath } from './anchor-path.ts'
 import { registerLiveEffect } from './live-effects.ts'
+import { applyMatrix, invert } from './gradient-edit.ts'
+import type { Matrix } from './gradient-edit.ts'
 
 type Box = { x: number, y: number, width: number, height: number }
 type UnitMap = (u: number, v: number) => Pt
@@ -34,6 +41,53 @@ export const CORNER_KEYS = [
 export const IDENTITY_CORNERS = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }]
 
 export const DISTORT_EFFECTS = ['freeDistort', 'perspective']
+
+/**
+ * The shared frame's params: `frameA`…`frameF` the affine map from the element's coordinates to the box's (`0,0` its top
+ * left), `frameW` / `frameH` the box's size. All zero (the default) means no shared frame.
+ */
+export const FRAME_KEYS = ['frameA', 'frameB', 'frameC', 'frameD', 'frameE', 'frameF', 'frameW', 'frameH']
+
+/** A box the effect is computed in: `m` takes the element's coordinates to the box's, which run from `0,0` to `w,h`. */
+export interface Frame { m: Matrix, w: number, h: number }
+
+/** The shared frame in `params`, or null when there is none (or it is degenerate). */
+export const frameFromParams = (params: Record<string, unknown>): Frame | null => {
+  const [a, b, c, d, e, f, w, h] = FRAME_KEYS.map((k) => Number(params[k] ?? 0))
+  if (![a, b, c, d, e, f, w, h].every(Number.isFinite) || !(w > 1e-9) || !(h > 1e-9)) return null
+  const m = { a, b, c, d, e, f }
+  return invert(m) ? { m, w, h } : null
+}
+
+export const paramsFromFrame = (frame: Frame | null): Record<string, number> => {
+  const { m, w, h } = frame ?? { m: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 }, w: 0, h: 0 }
+  return { frameA: m.a, frameB: m.b, frameC: m.c, frameD: m.d, frameE: m.e, frameF: m.f, frameW: w, frameH: h }
+}
+
+/** The no-frame defaults (every frame param zero). */
+export const NO_FRAME = paramsFromFrame(null)
+
+/** The frame the effect is computed in: the shared one in `params`, else the source box (`distortFrame`). */
+export const effectFrame = (bbox: Box, params: Record<string, unknown>): Frame => {
+  const shared = frameFromParams(params)
+  if (shared) return shared
+  const { x, y, w, h } = distortFrame(bbox)
+  return { m: { a: 1, b: 0, c: 0, d: 1, e: -x, f: -y }, w, h }
+}
+
+/**
+ * Map anchor subpaths through `f`, a map of box coordinates (`0,0` to `w,h`) of the effect's frame. A point `f` sends to
+ * infinity (or NaN) stays where it was.
+ */
+export const mapInFrame = (subpaths: SubPath[], bbox: Box, params: Record<string, unknown>, f: (p: Pt, w: number, h: number) => Pt): SubPath[] => {
+  const { m, w, h } = effectFrame(bbox, params)
+  const back = invert(m) as Matrix
+  const g = (q: Pt): Pt => {
+    const out = f(applyMatrix(m, q), w, h)
+    return Number.isFinite(out.x) && Number.isFinite(out.y) ? applyMatrix(back, out) : q
+  }
+  return mapNonlinear(subpaths, Math.hypot(bbox.width, bbox.height) / 16, g)
+}
 
 /** @returns four corners */
 export const cornersFromParams = (params: Record<string, number>): Pt[] =>
@@ -139,24 +193,23 @@ export const distortMap = (name: string, corners: Pt[]): UnitMap => (name === 'p
  * Distort anchor subpaths inside `bbox`.
  */
 export const distortSubpaths = (name: string, subpaths: SubPath[], bbox: Box, params: Record<string, number>): SubPath[] => {
-  const { x, y, w, h } = distortFrame(bbox)
   const map = distortMap(name, cornersFromParams(params))
-  const f = (q: Pt): Pt => {
-    const out = map((q.x - x) / w, (q.y - y) / h)
-    return Number.isFinite(out.x) && Number.isFinite(out.y) ? { x: x + out.x * w, y: y + out.y * h } : q
-  }
-  return mapNonlinear(subpaths, Math.hypot(bbox.width, bbox.height) / 16, f)
+  return mapInFrame(subpaths, bbox, params, (p, w, h) => {
+    const out = map(p.x / w, p.y / h)
+    return { x: out.x * w, y: out.y * h }
+  })
 }
 
 /** Register `freeDistort` and `perspective` (idempotent). */
 export const registerDistortEffects = (): void => {
-  const defaults = paramsFromCorners(IDENTITY_CORNERS)
+  const defaults = { ...paramsFromCorners(IDENTITY_CORNERS), ...NO_FRAME }
   const ranges = Object.fromEntries(CORNER_KEYS.map((k) => [k, { min: -10, max: 10, step: 0.05 }]))
   for (const [name, label] of [['freeDistort', 'Free distort'], ['perspective', 'Perspective distort']]) {
     registerLiveEffect(name, {
       label,
       defaults: { ...defaults },
       ranges,
+      hidden: FRAME_KEYS,
       apply: (subpaths, bbox, params) => distortSubpaths(name, subpaths, bbox, params as Record<string, number>)
     })
   }

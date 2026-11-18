@@ -313,3 +313,12 @@ export function getAllUserShapeLabels (): string[] {
   }
   return [...labels]
 }
+
+/**
+ * The category an existing user shape label is saved in (the first, in
+ * category order, when the label is reused across categories), or null.
+ */
+export function getUserCategoryForLabel (label: string): string | null {
+  const store = loadUserShapes()
+  return store.categories.find(cat => label in (store.shapes[cat] || {})) ?? null
+}

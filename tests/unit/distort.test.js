@@ -1,9 +1,10 @@
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import {
   CORNER_KEYS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad,
-  bilinearMap, homographyMap, distortMap, distortSubpaths, registerDistortEffects
+  bilinearMap, homographyMap, distortMap, distortSubpaths, registerDistortEffects,
+  FRAME_KEYS, NO_FRAME, frameFromParams, paramsFromFrame, effectFrame
 } from '../../packages/svgcanvas/core/distort.ts'
-import { computeFxD, parseFxStack, getLiveEffectDef } from '../../packages/svgcanvas/core/live-effects.ts'
+import { computeFxD, parseFxStack, serializeFxStack, getLiveEffectDef } from '../../packages/svgcanvas/core/live-effects.ts'
 import { parseAnchors, anchorBBox } from '../../packages/svgcanvas/core/anchor-path.ts'
 
 registerDistortEffects()
@@ -22,8 +23,45 @@ describe('distort', function () {
     it('the defaults are the identity corners', function () {
       const def = getLiveEffectDef('freeDistort')
       assert.deepEqual(cornersFromParams(def.defaults), IDENTITY_CORNERS)
-      assert.deepEqual(Object.keys(def.defaults), CORNER_KEYS)
+      assert.deepEqual(Object.keys(def.defaults), [...CORNER_KEYS, ...FRAME_KEYS])
       assert.deepEqual(def.defaults, getLiveEffectDef('perspective').defaults)
+      assert.deepEqual(def.hidden, FRAME_KEYS)
+    })
+
+    it('the shared frame params are hidden and left out of se:fx at their defaults', function () {
+      const plain = serializeFxStack([{ name: 'freeDistort', params: paramsFromCorners(QUAD) }])
+      assert.doesNotMatch(plain, /frame/)
+      const framed = serializeFxStack([{ name: 'freeDistort', params: { ...paramsFromCorners(QUAD), ...paramsFromFrame({ m: { a: 1, b: 0, c: 0, d: 1, e: -5, f: -6 }, w: 40, h: 30 }) } }])
+      assert.match(framed, /frameE=-5,frameF=-6,frameW=40,frameH=30/)
+      assert.deepEqual(frameFromParams(parseFxStack(framed)[0].params), { m: { a: 1, b: 0, c: 0, d: 1, e: -5, f: -6 }, w: 40, h: 30 })
+    })
+  })
+
+  describe('shared frame', function () {
+    it('no frame (the default, a zero size or a singular map) is null', function () {
+      assert.strictEqual(frameFromParams(NO_FRAME), null)
+      assert.strictEqual(frameFromParams({ ...paramsFromFrame({ m: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }, w: 0, h: 10 }) }), null)
+      assert.strictEqual(frameFromParams({ ...paramsFromFrame({ m: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 }, w: 10, h: 10 }) }), null)
+    })
+
+    it('without one the frame is the source box', function () {
+      assert.deepEqual(effectFrame({ x: 5, y: 6, width: 10, height: 20 }, NO_FRAME), { m: { a: 1, b: 0, c: 0, d: 1, e: -5, f: -6 }, w: 10, h: 20 })
+    })
+
+    it('two halves distorted on a shared frame match the whole distorted alone', function () {
+      // The right half drawn in its own coordinates (shifted by -50 and turned 90°): x' = y, y' = -(x - 50).
+      const right = parseAnchors('M0,0 L50,0 L50,-50 L0,-50 Z')
+      const toGroup = { a: 0, b: 1, c: -1, d: 0, e: 50, f: 0 } // local → whole: x = 50 - y', y = x'
+      const params = { ...paramsFromCorners(QUAD), ...paramsFromFrame({ m: toGroup, w: 100, h: 50 }) }
+      const got = distortSubpaths('perspective', right, anchorBBox(right), params)
+      // Back in the whole's coordinates, every corner of the half is on the whole's result.
+      const back = got[0].anchors.map(({ p }) => ({ x: toGroup.a * p.x + toGroup.c * p.y + toGroup.e, y: toGroup.b * p.x + toGroup.d * p.y + toGroup.f }))
+      const target = distortMap('perspective', QUAD)
+      for (const [u, v] of [[0.5, 0], [1, 0], [1, 1], [0.5, 1]]) {
+        const q = target(u, v)
+        const p = { x: q.x * 100, y: q.y * 50 }
+        assert.ok(back.some((b) => Math.hypot(b.x - p.x, b.y - p.y) < 1e-6), `${u},${v}`)
+      }
     })
 
     it('corners <-> params round-trip', function () {

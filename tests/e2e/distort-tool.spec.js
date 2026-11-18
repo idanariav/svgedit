@@ -117,14 +117,6 @@ test.describe('Distort tool', () => {
     expect(await page.evaluate(() => document.getElementById('curve').getAttribute('d'))).not.toMatch(/NaN/)
   })
 
-  test('a group is left alone', async ({ page }) => {
-    await select(page, 'grp')
-    await tool(page)
-    const undo0 = await undoSize(page)
-    await drag(page, { x: 440, y: 140 }, { x: 480, y: 170 })
-    expect(await undoSize(page)).toBe(undo0)
-  })
-
   test('Escape mid-drag puts the shape back', async ({ page }) => {
     await select(page, 'box')
     await tool(page)
@@ -229,5 +221,118 @@ test.describe('Distort tool: a shape inside a transformed group', () => {
       })
     }, g.corner)
     expect(near).toBe(true)
+  })
+})
+
+// A group distorts as one piece: every shape in it gets the same corners on the group's box, plus its own map into that box.
+test.describe('Distort tool: a group', () => {
+  test.beforeEach(async ({ page }) => {
+    await visitAndApproveStorage(page)
+    await page.evaluate(() => {
+      window.svgEditor.setConfig({ gridSnapping: false })
+      window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false
+      window.svgEditor.configObj.pref('uiMode', 'desktop', true)
+      document.querySelector('.svg_editor')?.classList.remove('ui-tablet')
+    })
+    // The group's box is (100,100)-(300,200): a rect, and a second one placed by a transform, plus a text that is left alone.
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer">
+        <title>Layer 1</title>
+        <g id="grp">
+          <rect id="a" x="100" y="100" width="100" height="50" fill="#f00"/>
+          <rect id="b" x="0" y="0" width="50" height="100" fill="#00f" transform="translate(250 100)"/>
+          <text id="t" x="120" y="180" font-size="12">hi</text>
+        </g>
+      </g>
+    </svg>`)
+    await page.evaluate(() => window.svgEditor.svgCanvas.selectOnly([document.getElementById('grp')], true))
+    await page.evaluate(() => window.svgEditor.commands.run('tool_distort'))
+  })
+
+  const drag = (page, from, to) => page.evaluate(([a, b]) => window.svgEditor.automation.pointer([{ kind: 'drag', ...a, to: b, steps: 10 }]), [from, to])
+  const fx = (page, id) => page.evaluate((i) => document.getElementById(i)?.getAttribute('se:fx') ?? null, id)
+  const param = (s, key) => Number(new RegExp(`${key}=([-\\d.e]+)`).exec(s ?? '')?.[1])
+  const undoSize = (page) => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())
+  /** An element's box in document units (its transform counted). */
+  const docBox = (page, id) => page.evaluate((i) => {
+    const el = document.getElementById(i)
+    const m = document.querySelector('#svgcontent').getScreenCTM().inverse().multiply(el.getScreenCTM())
+    const b = el.getBBox()
+    const pts = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m))
+    return { x0: Math.min(...pts.map((p) => p.x)), y0: Math.min(...pts.map((p) => p.y)), x1: Math.max(...pts.map((p) => p.x)), y1: Math.max(...pts.map((p) => p.y)) }
+  }, id)
+
+  test('four grips on the group\'s box', async ({ page }) => {
+    await expect(page.locator('#toolOverlay rect')).toHaveCount(4)
+  })
+
+  test('dragging a corner distorts every shape in the group as one piece, in one undo step', async ({ page }) => {
+    const undo0 = await undoSize(page)
+    await drag(page, { x: 300, y: 200 }, { x: 340, y: 240 })
+    for (const id of ['a', 'b']) {
+      expect(await page.evaluate((i) => document.getElementById(i).tagName, id)).toBe('path')
+      const s = await fx(page, id)
+      expect(s).toMatch(/^freeDistort\(/)
+      expect(param(s, 'bottomRightX')).toBeCloseTo(1.2, 2) // (340 - 100) / 200
+      expect(param(s, 'bottomRightY')).toBeCloseTo(1.4, 2) // (240 - 100) / 100
+      expect(param(s, 'frameW')).toBeCloseTo(200, 3)
+      expect(param(s, 'frameH')).toBeCloseTo(100, 3)
+    }
+    // The far corner of the group is the far corner of `b`, through its transform: it lands under the pointer.
+    const b = await docBox(page, 'b')
+    expect(b.x1).toBeCloseTo(340, 0)
+    expect(b.y1).toBeCloseTo(240, 0)
+    // `a` touches the box's top left corner, which did not move.
+    const a = await docBox(page, 'a')
+    expect(a.x0).toBeCloseTo(100, 0)
+    expect(a.y0).toBeCloseTo(100, 0)
+    expect(await fx(page, 't')).toBeNull()
+    expect(await undoSize(page)).toBe(undo0 + 1)
+    await page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.undo())
+    expect(await page.evaluate(() => ['a', 'b'].map((i) => document.getElementById(i).tagName))).toEqual(['rect', 'rect'])
+  })
+
+  test('a second drag edits the same entries, on the same box', async ({ page }) => {
+    await drag(page, { x: 300, y: 200 }, { x: 340, y: 240 })
+    await drag(page, { x: 100, y: 100 }, { x: 80, y: 90 })
+    for (const id of ['a', 'b']) {
+      const s = await fx(page, id)
+      expect(s.split(';')).toHaveLength(1)
+      expect(param(s, 'topLeftX')).toBeCloseTo(-0.1, 2)
+      expect(param(s, 'bottomRightX')).toBeCloseTo(1.2, 2)
+      expect(param(s, 'frameW')).toBeCloseTo(200, 3)
+    }
+  })
+
+  test('changing the mode converts every member; Reset takes the distortion off, one undo step each', async ({ page }) => {
+    await drag(page, { x: 300, y: 200 }, { x: 330, y: 220 })
+    const undo0 = await undoSize(page)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('mode', 'perspective'))
+    for (const id of ['a', 'b']) expect(await fx(page, id)).toMatch(/^perspective\(/)
+    expect(await undoSize(page)).toBe(undo0 + 1)
+    await page.evaluate(() => window.svgEditor.svgCanvas.setToolOption('reset', true))
+    for (const id of ['a', 'b']) expect(await fx(page, id)).toBeNull()
+    expect(await undoSize(page)).toBe(undo0 + 2)
+    const b = await docBox(page, 'b')
+    expect(b.x1).toBeCloseTo(300, 0)
+  })
+
+  test('a shape distorted on its own keeps that distortion under the group\'s', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.setContext('grp')
+      c.selectOnly([document.getElementById('a')], true)
+    })
+    await drag(page, { x: 200, y: 150 }, { x: 210, y: 160 })
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.leaveContext()
+      c.selectOnly([document.getElementById('grp')], true)
+    })
+    await drag(page, { x: 300, y: 200 }, { x: 330, y: 220 })
+    const s = await fx(page, 'a')
+    expect(s.split(';')).toHaveLength(2)
+    expect(param(s.split(';')[0], 'frameW')).toBeNaN() // its own entry has no shared frame
+    expect(param(s.split(';')[1], 'frameW')).toBeCloseTo(200, 3)
   })
 })

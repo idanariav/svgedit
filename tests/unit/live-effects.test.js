@@ -253,6 +253,26 @@ describe('live-effects', function () {
       assert.equal(el.getAttribute(FX_SOURCE_ATTR), snapshot.src)
     })
 
+    it('removeLiveEffectsFrom works on any element inside the caller\'s transaction, without selecting it', function () {
+      select(addRect())
+      svgCanvas.applyLiveEffects([{ name: 'fxshift', params: { dx: 25 } }])
+      const el = byId('r1')
+      const src = el.getAttribute(FX_SOURCE_ATTR)
+      svgCanvas.clearSelection()
+      const before = svgCanvas.undoMgr.getUndoStackSize()
+      assert.equal(svgCanvas.transact('test', () => svgCanvas.removeLiveEffectsFrom(el)), true)
+      assert.equal(svgCanvas.undoMgr.getUndoStackSize(), before + 1)
+      assert.equal(el.getAttribute('d'), src)
+      assert.equal(el.hasAttribute(FX_ATTR), false)
+      assert.equal(svgCanvas.removeLiveEffectsFrom(el), false) // nothing left to remove
+    })
+
+    it('a hidden param is left out of se:fx at its default and kept otherwise', function () {
+      registerLiveEffect('fxhidden', { label: 'Hidden', defaults: { amount: 1, secret: 0 }, hidden: ['secret'], apply: (sps) => sps })
+      assert.equal(serializeFxStack([{ name: 'fxhidden', params: { amount: 2 } }]), 'fxhidden(amount=2)')
+      assert.equal(serializeFxStack([{ name: 'fxhidden', params: { amount: 2, secret: 3 } }]), 'fxhidden(amount=2,secret=3)')
+    })
+
     it('expand keeps the baked d, drops the attrs, and is one undo step', function () {
       select(addRect())
       svgCanvas.applyLiveEffects([{ name: 'fxshift', params: { dx: 25 } }])

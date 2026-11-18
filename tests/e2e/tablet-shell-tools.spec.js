@@ -27,7 +27,7 @@ test.describe('Tablet shell tools', () => {
 
   test('More tools lists every editing tool and arms the one tapped', async ({ page }) => {
     await bar(page, 'More tools').click()
-    expect(await popItems(page)).toEqual(['Shaper', 'Smooth', 'Width', 'Blend', 'Distort', 'Gradient', 'Corners', 'Measure', 'Magic Wand'])
+    expect(await popItems(page)).toEqual(['Shaper', 'Smooth', 'Width', 'Blend', 'Distort', '3D Rotate', 'Gradient', 'Corners', 'Measure', 'Magic Wand'])
     await page.locator('.ts-pop .menu-item', { hasText: 'Magic Wand' }).click()
     expect(await mode(page)).toBe('wand')
     await expect(page.locator('.ts-pop')).toHaveCount(0)
@@ -46,7 +46,7 @@ test.describe('Tablet shell tools', () => {
   })
 
   test('each tool of the flyout arms its own mode', async ({ page }) => {
-    const modes = { Shaper: 'shaper', Smooth: 'smooth', Width: 'width', Blend: 'blend', Distort: 'distort', Gradient: 'gradient', Corners: 'corners', Measure: 'measure', 'Magic Wand': 'wand' }
+    const modes = { Shaper: 'shaper', Smooth: 'smooth', Width: 'width', Blend: 'blend', Distort: 'distort', '3D Rotate': 'rotate3d', Gradient: 'gradient', Corners: 'corners', Measure: 'measure', 'Magic Wand': 'wand' }
     for (const [label, expected] of Object.entries(modes)) {
       await bar(page, 'More tools').click()
       await page.locator('.ts-pop .menu-item', { hasText: label }).click()

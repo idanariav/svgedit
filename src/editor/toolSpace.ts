@@ -44,3 +44,14 @@ export const toolSpace = (svgCanvas: Canvas): ToolSpace => {
     }
   }
 }
+
+/**
+ * An element of a tool's overlay (`ctx.addOverlay`): handles and outlines drawn in document units, never part of the
+ * drawing, so they are built here rather than stated on the model.
+ */
+export const overlayElement = (tag: string, attrs: Record<string, string | number>, children: Element[] = []): SVGElement => {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag)
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v))
+  el.append(...children)
+  return el
+}

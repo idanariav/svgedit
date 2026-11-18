@@ -501,6 +501,7 @@ interface ElementIdMap {
   tool_recolor: HTMLElementTagNameMap['se-button']
   tool_rect: HTMLElementTagNameMap['se-button']
   tool_redo: HTMLElementTagNameMap['se-button']
+  tool_rotate3d: HTMLElementTagNameMap['se-button']
   tool_save: HTMLElementTagNameMap['se-menu-item']
   tool_save_as: HTMLElementTagNameMap['se-menu-item']
   tool_select: HTMLElementTagNameMap['se-button']

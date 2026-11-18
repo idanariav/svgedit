@@ -105,6 +105,8 @@ export interface LiveEffectDef {
   choices?: Record<string, string[]>
   /** Suggested bounds for number params (UI hints only). */
   ranges?: Record<string, { min?: number, max?: number, step?: number }>
+  /** Params the Effects panel does not show (set by a tool); one at its default is left out of `se:fx`. */
+  hidden?: string[]
   /**
    * The effect returns an open *centerline* to be painted as a stroke whose width is `params[widthParam]`
    * (the element's fill becomes the stroke paint; see `se:fx-style`).
@@ -203,7 +205,9 @@ export const parseFxStack = (str: string | null | undefined): FxEntry[] => parse
  * unregistered effect are skipped; params are resolved against the defaults.
  */
 export const serializeFxStack = (stack: FxStackInput): string => sanitizeFxStack(stack).map(({ name, params }) => {
+  const def = registry.get(name) as LiveEffectDef
   const body = Object.entries(params)
+    .filter(([k, v]) => !def.hidden?.includes(k) || v !== def.defaults[k])
     .map(([k, v]) => `${k}=${typeof v === 'number' ? round6(v) : v}`)
     .join(',')
   return `${name}(${body})`
@@ -369,7 +373,7 @@ registerLiveStage({
 export interface LiveEffectsApi {
   // Live effects (se:fx stack)
   registerLiveEffect(name: string, def: object): void
-  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }>, strokeOutput?: { widthParam: string } }>
+  listLiveEffects(): Array<{ name: string, label: string, defaults: Record<string, number | boolean | string>, choices?: Record<string, string[]>, ranges?: Record<string, { min?: number, max?: number, step?: number }>, hidden?: string[], strokeOutput?: { widthParam: string } }>
   canApplyLiveEffect(elem: Element): boolean
   reconcileLiveEffects(elem: Element): boolean
   getLiveEffects(elem?: Element | null): Array<{ name: string, params: Record<string, number | boolean | string> }>
@@ -381,6 +385,8 @@ export interface LiveEffectsApi {
   /** The box the effects are computed against (the source geometry's), in the element's own coordinates. */
   getLiveEffectsBox(elem: Element): { x: number, y: number, width: number, height: number } | null
   removeLiveEffects(): Element | null
+  /** Like `removeLiveEffects` on `elem`, inside the caller's transaction: no undo step, no re-selection, no event. */
+  removeLiveEffectsFrom(elem: Element): boolean
   expandLiveEffects(): Element | null
 }
 
@@ -576,20 +582,22 @@ export const createLiveEffects = (canvas: SvgCanvas): LiveEffectsApi => {
    * Remove the effects from the selected element, restoring its source
    * geometry, as one undo step.
    */
+  const removeLiveEffectsFrom = (elem: Element): boolean => {
+    const src = elem.getAttribute(FX_SOURCE_ATTR)
+    if (!src) return false
+    const plan = planStack(elem, removalSet(elem, 'fx'), svgCanvas)
+    if (!plan) return false
+    restoreStyle(elem)
+    commitPlan(elem, plan)
+    if (plan.d == null) elem.setAttribute('d', src) // no stage left: the source geometry
+    return true
+  }
+
   const removeLiveEffects = (): Element | null => {
     endPreview()
     const elem = getSelected()
     if (!elem) return null
-    const src = elem.getAttribute(FX_SOURCE_ATTR)
-    if (!src) return null
-    const plan = planStack(elem, removalSet(elem, 'fx'), svgCanvas)
-    if (!plan) return null
-    svgCanvas.transact('Remove live effects', () => {
-      restoreStyle(elem)
-      commitPlan(elem, plan)
-      if (plan.d == null) elem.setAttribute('d', src) // no stage left: the source geometry
-    })
-    return finish(elem)
+    return svgCanvas.transact('Remove live effects', () => removeLiveEffectsFrom(elem)) ? finish(elem) : null
   }
 
   /**
@@ -619,6 +627,7 @@ export const createLiveEffects = (canvas: SvgCanvas): LiveEffectsApi => {
     applyLiveEffectsTo,
     getLiveEffectsBox,
     removeLiveEffects,
+    removeLiveEffectsFrom,
     expandLiveEffects
   }
 }

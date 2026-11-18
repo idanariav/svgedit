@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setUserDataAdapter } from '../../../../src/editor/userDataAdapter.ts'
 import {
-  addUserShape, getUserShapesForCategory, getAllUserShapeLabels
+  addUserShape, getUserShapesForCategory, getAllUserShapeLabels, getUserCategoryForLabel
 } from '../../../../src/editor/extensions/ext-shapes/userShapes.ts'
 
 describe('userShapes', () => {
@@ -44,6 +44,25 @@ describe('userShapes', () => {
 
       const labels = getAllUserShapeLabels()
       expect(labels.sort()).toEqual(['circle balloon', 'circle heart'])
+    })
+  })
+
+  describe('getUserCategoryForLabel', () => {
+    const bbox = { x: 0, y: 0, width: 1, height: 1 }
+
+    it('returns the category a label is saved in', () => {
+      addUserShape({ category: 'People', label: 'person', svgContent: '<rect/>', bbox })
+      expect(getUserCategoryForLabel('person')).toBe('people')
+    })
+
+    it('returns the first category when the label is reused', () => {
+      addUserShape({ category: 'people', label: 'person', svgContent: '<rect/>', bbox })
+      addUserShape({ category: 'icons', label: 'person', svgContent: '<rect/>', bbox })
+      expect(getUserCategoryForLabel('person')).toBe('people')
+    })
+
+    it('returns null for an unknown label', () => {
+      expect(getUserCategoryForLabel('nobody')).toBeNull()
     })
   })
 })

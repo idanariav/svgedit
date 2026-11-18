@@ -7,14 +7,15 @@
  * corners as numbers) and node editing or Expand bake it in like any other live effect. The maths is
  * `core/distort.js`; this file is the gesture, run as one undo step per drag.
  *
- * Works on the selected shape, or on the one pressed when it is not a handle of the selected one. A rect,
+ * Works on the selected shape or group, or on the one pressed when it is not a handle of the selected one. A rect,
  * ellipse, line, polyline or polygon becomes a path on the first drag. With another effect already on the shape
  * the corners edit the first distort entry of its stack (the unit box is always the shape's source box, so
- * they do not depend on the effects before it). The mode (Free / Perspective) is on the options bar; with a
- * distorted shape selected it converts that shape's effect.
+ * they do not depend on the effects before it). A group distorts as one piece: each shape in it gets the same
+ * corners on the group's box (`framedTarget.ts`); text and images in it stay as they are. The mode (Free /
+ * Perspective) is on the options bar; with a distorted shape or group selected it converts its effect. Reset takes
+ * the distortion off.
  *
- * Not in v1: groups (each child would need its own effect), snapping to other objects, a custom cursor, a reset
- * gesture (remove the effect from the Effects panel) — see `roadmap.md`.
+ * Not in v1: snapping to other objects — see `roadmap.md`.
  *
  * Ported from VectorCraft (https://github.com/storytold/vectorcraft), `crates/tools/src/xform/free.rs`
  * (the Free Distort and Perspective Distort modes), MIT OR Apache-2.0.
@@ -23,10 +24,11 @@
  */
 
 import {
-  DISTORT_EFFECTS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, distortFrame, isConvexQuad
+  DISTORT_EFFECTS, IDENTITY_CORNERS, cornersFromParams, paramsFromCorners, isConvexQuad
 } from '@svgedit/svgcanvas/core/distort.ts'
-import { invert } from '@svgedit/svgcanvas/core/gradient-edit.ts'
-import { toolSpace } from '../../toolSpace.ts'
+import { toolSpace, overlayElement as mk } from '../../toolSpace.ts'
+import { framedTargets, frameCorners } from '../../framedTarget.ts'
+import type { FramedTarget } from '../../framedTarget.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'distort-tool'
@@ -36,19 +38,12 @@ export const GRAB_PX = 10
 /** A drag shorter than this (screen px) is a click. */
 export const CLICK_PX = 3
 const INK = '#2b7fff'
-const SVG_NS = 'http://www.w3.org/2000/svg'
 
 export type Mat = { a: number, b: number, c: number, d: number, e: number, f: number }
 
 export type Pt = { x: number, y: number }
 
 const apply = (m: Mat, p: Pt) => ({ x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f })
-
-const mk = (tag: string, attrs: Record<string, string | number>) => {
-  const e = document.createElementNS(SVG_NS, tag)
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v))
-  return e
-}
 
 export default defineFeature({
   name,
@@ -58,23 +53,15 @@ export default defineFeature({
     addFeatureLocale(svgEditor, name, import.meta.glob('./locale/*.js', { eager: true }) as Record<string, { default: object }>)
     const tr = (key: string) => svgEditor.i18next.t(`${name}:${key}`)
 
-    interface Target {
-      el: Element
-      frame: { x: number, y: number, w: number, h: number }
-      stack: Array<{ name: string, params: Record<string, unknown> }>
-      index: number
+    /**
+     * The shape or group being distorted (`framedTarget.ts`: its members, the box the unit corners refer to and its
+     * matrix to document units), with the effect's name and the corners in unit coordinates.
+     */
+    interface Target extends FramedTarget {
       /** `freeDistort` or `perspective` */
       name: string
       corners: Array<{ x: number, y: number }>
-      /** local → document units */
-      matrix: { a: number, b: number, c: number, d: number, e: number, f: number }
-      inverse: { a: number, b: number, c: number, d: number, e: number, f: number }
     }
-    /**
-     * The shape being distorted: its element, the frame the unit corners refer to (its source box, local
-     * coordinates), its stack and where the distort entry is in it (-1 = none yet), the corners in unit
-     * coordinates and the element's transform to document units, through its groups.
-     */
 
     /** The mode new distortions start in (an existing one keeps its own). */
     let preferred = 'freeDistort'
@@ -86,24 +73,15 @@ export default defineFeature({
     /** Document units for the pointer and the shape alike, through every group above the shape (`toolSpace.ts`). */
     const space = toolSpace(svgCanvas)
 
+    const framed = framedTargets(svgCanvas, space)
+
     const targetFor = (el: Element | null | undefined): Target | null => {
-      if (!el || !svgCanvas.canApplyLiveEffect(el)) return null
-      const box = svgCanvas.getLiveEffectsBox(el)
-      if (!box) return null
-      const stack = svgCanvas.getLiveEffects(el)
-      const index = stack.findIndex((e) => DISTORT_EFFECTS.includes(e.name))
-      const m = space.localToDoc(el)
-      if (!m) return null
-      return {
-        el,
-        frame: distortFrame(box),
-        stack,
-        index,
-        name: index >= 0 ? stack[index].name : preferred,
-        corners: index >= 0 ? cornersFromParams((stack[index].params as Record<string, number>)) : IDENTITY_CORNERS.map((c) => ({ ...c })),
-        matrix: m,
-        inverse: invert(m) ?? { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
-      }
+      const t = framed.targetFor(el, DISTORT_EFFECTS)
+      if (!t) return null
+      return Object.assign(t, {
+        name: t.entry ? t.entry.name : preferred,
+        corners: t.entry ? cornersFromParams(t.entry.params as Record<string, number>) : IDENTITY_CORNERS.map((c) => ({ ...c }))
+      })
     }
 
     const selectedTarget = () => {
@@ -143,18 +121,11 @@ export default defineFeature({
       if (!t) return
       const s = 4.5 / ctx.zoom
       const pts = docCorners(t)
-      const g = mk('g', { 'pointer-events': 'none' })
-      const frame = [
-        { x: t.frame.x, y: t.frame.y }, { x: t.frame.x + t.frame.w, y: t.frame.y },
-        { x: t.frame.x + t.frame.w, y: t.frame.y + t.frame.h }, { x: t.frame.x, y: t.frame.y + t.frame.h }
-      ].map((p) => apply(t.matrix, p))
       const poly = (list: Pt[]) => list.map((p) => `${p.x},${p.y}`).join(' ')
-      g.append(
-        mk('polygon', { points: poly(frame), fill: 'none', stroke: '#8a8a8a', 'stroke-width': 1, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }),
-        mk('polygon', { points: poly(pts), fill: 'none', stroke: INK, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' })
-      )
-      pts.forEach((p: { x: number; y: number; }, i: number) => {
-        g.append(mk('rect', {
+      ctx.addOverlay(mk('g', { 'pointer-events': 'none' }, [
+        mk('polygon', { points: poly(frameCorners(t)), fill: 'none', stroke: '#8a8a8a', 'stroke-width': 1, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }),
+        mk('polygon', { points: poly(pts), fill: 'none', stroke: INK, 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }),
+        ...pts.map((p: Pt, i: number) => mk('rect', {
           x: p.x - s,
           y: p.y - s,
           width: 2 * s,
@@ -164,8 +135,7 @@ export default defineFeature({
           'stroke-width': 1,
           'vector-effect': 'non-scaling-stroke'
         }))
-      })
-      ctx.addOverlay(g)
+      ]))
     }
 
     const redrawIdle = () => {
@@ -177,32 +147,28 @@ export default defineFeature({
 
     // ---- editing ---------------------------------------------------------------
 
-    /** The target's stack with the distort entry set to `corners`. */
-    const stackWith = (t: Target, corners: Pt[]) => {
-      const entry = { name: t.name, params: paramsFromCorners(corners) }
-      const stack = t.stack.map((e) => ({ name: e.name, params: { ...e.params } }))
-      if (t.index >= 0) stack[t.index] = entry
-      else stack.push(entry)
-      return stack
-    }
-
-    /** Write `corners` into the shape (inside the gesture's transaction). Returns false when it cannot. */
+    /** Write `corners` into the shape or group (inside a transaction). Returns false when it cannot. */
     const write = (t: Target, corners: Pt[]) => {
       if (t.name === 'perspective' && !isConvexQuad(corners)) return false // the projective map folds over
-      const stack = stackWith(t, corners)
-      const el = svgCanvas.applyLiveEffectsTo(t.el, stack)
-      if (!el) return false
-      if (el !== t.el) svgCanvas.selectOnly([el], true) // a rect (or other primitive) became a path
-      t.el = el
-      t.stack = stack
-      t.index = t.index >= 0 ? t.index : stack.length - 1
+      const el = t.el
+      if (!framed.write(t, DISTORT_EFFECTS, t.name, paramsFromCorners(corners))) return false
+      if (t.el !== el) svgCanvas.selectOnly([t.el], true) // a rect (or other primitive) became a path
       t.corners = corners
       return true
     }
 
-    const finish = (el: Element | null | undefined) => {
-      if (el && svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
-      svgCanvas.call('changed', [el])
+    const finish = (t: Target) => {
+      if (svgCanvas.getSelectedElements().includes(t.el)) svgCanvas.selectorManager.requestSelector(t.el).resize()
+      svgCanvas.call('changed', t.members.map((m) => m.el))
+    }
+
+    /** Run `fn` on the selected target as one undo step. */
+    const editSelected = (fn: (t: Target) => void) => {
+      const t = selectedTarget()
+      if (!t) return
+      svgCanvas.transact('Distort', () => fn(t))
+      finish(t)
+      redrawIdle()
     }
 
     svgCanvas.registerTool({
@@ -283,7 +249,7 @@ export default defineFeature({
           draw(ctx)
           return undefined
         }
-        finish(target.el)
+        finish(target)
         target = targetFor(target.el)
         draw(ctx)
         return undefined
@@ -299,19 +265,31 @@ export default defineFeature({
         type: 'select',
         label: tr('mode'),
         title: tr('modeTitle'),
-        value: target && target.index >= 0 ? target.name : preferred,
+        value: target?.entry ? target.name : preferred,
         choices: [{ value: 'freeDistort', label: tr('modeFree') }, { value: 'perspective', label: tr('modePerspective') }]
+      }, {
+        id: 'reset',
+        type: 'button',
+        label: tr('reset'),
+        title: tr('resetTitle'),
+        value: false,
+        hidden: !target?.entry
       }],
 
       setOption (id, value) {
+        if (id === 'reset') {
+          editSelected((t) => framed.remove(t, DISTORT_EFFECTS))
+          return
+        }
         if (id !== 'mode') return
         preferred = value === 'perspective' ? 'perspective' : 'freeDistort'
+        // A distorted shape or group changes its effect: the same corners, the other map (one undo step).
         const t = selectedTarget()
-        if (!t || t.index < 0 || t.name === preferred) return
-        // A distorted shape changes its effect: the same corners, the other map (one undo step).
-        const stack = t.stack.map((e, i) => ({ name: i === t.index ? preferred : e.name, params: { ...e.params } }))
-        svgCanvas.applyLiveEffects(stack)
-        redrawIdle()
+        if (!t?.entry || t.name === preferred) return
+        editSelected((s) => {
+          s.name = preferred
+          write(s, s.corners)
+        })
       }
     })
 

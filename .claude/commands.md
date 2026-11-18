@@ -233,7 +233,7 @@
 | `tool_curvature` | Curvature | `y` |  |  |
 | `tool_cutter` | Cutter | `c` |  |  |
 | `tool_dash_fit` | Fit dashes to the stroke |  |  |  |
-| `tool_distort` | Distort tool: drag a corner of the selected shape |  |  |  |
+| `tool_distort` | Distort tool: drag a corner of the selected shape or group |  |  |  |
 | `tool_editor_prefs` | Editor Preferences |  |  | dialog |
 | `tool_ellipse` | Ellipse | `e` |  |  |
 | `tool_export` | Export |  |  | dialog |
@@ -264,6 +264,7 @@
 | `tool_puppet_warp` | Puppet Warp | `x` |  | dialog |
 | `tool_rect` | Rectangle Tool | `r` |  |  |
 | `tool_rectgrid` | Rectangular Grid Tool |  |  |  |
+| `tool_rotate3d` | 3D Rotate tool: drag to turn the selected shape or group in 3D |  |  |  |
 | `tool_save_as` | Save as SVG |  |  |  |
 | `tool_select` | Select Tool | `v` |  |  |
 | `tool_shape_builder` | Shape builder |  |  |  |
