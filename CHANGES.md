@@ -1,5 +1,11 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.19
+- UI: changing the fill or stroke opacity in the colour picker can be undone; a colour and opacity change together is one undo step.
+- UI: a finished Curvature path is selected and reported as an edit (hosts autosave it); finishing it by switching tools keeps the tool you picked.
+- UI: path edits that change nothing (Smooth on a node that is already smooth, pressing a grip without moving it) no longer add an undo step.
+- UI: the Art Brush and Blend panels refresh when the tool changes (they hide in path edit).
+
 ## 7.4.1-fork.18
 - UI: the Distort tool works on groups: the group bends as one piece (every shape in it gets the same corners on the group's box; text and images stay as they are). Reset on the options bar takes a distortion off.
 - UI: a 3D Rotate tool: drag to turn the selected shape or group in 3D (horizontal = Y, vertical = X, Alt = Z, Shift snaps to 15°), with position presets, X / Y / Z, Perspective and Reset on the options bar. It is a live effect (`rotate3d`), so it stays editable.
