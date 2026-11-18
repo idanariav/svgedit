@@ -239,7 +239,14 @@ export default defineFeature({
     // autosave). Mirrors the Escape-key behavior: finalize as an open path.
     document.addEventListener('modeChange', (evt) => {
       if ((evt as CustomEvent).detail.getMode() !== 'curvature' && isDrawing) {
-        finalize(false)
+        // Outside a gesture, so this finish records and announces the path itself. It
+        // stays in the tool the user switched to (no switch to Select).
+        const el = finalize(false)
+        if (el) {
+          svgCanvas.undoMgr.addCommandToHistory(new svgCanvas.history.InsertElementCommand(el))
+          svgCanvas.call('elementInserted', [el])
+          svgCanvas.call('changed', [el])
+        }
       }
     }, { signal: svgEditor.listenerAbort.signal })
 
@@ -318,20 +325,24 @@ export default defineFeature({
       dragMoved = false
     }
 
-    const finalize = (closed: boolean | undefined) => {
+    /**
+     * End the session, adding the finished path (none for fewer than two anchors).
+     * Records nothing and announces nothing: a gesture hands the path to the registry
+     * (`{ created }`), the mode-change finish does both itself.
+     */
+    const finalize = (closed: boolean | undefined): Element | null => {
       removeAnchorDots()
       resetDragState()
       if (points.length < 2) {
         removePreview()
         points = []
         isDrawing = false
-        return
+        return null
       }
 
       const finalD = buildPathD(points, null, closed)
       removePreview()
 
-      const { InsertElementCommand } = svgCanvas.history
       const el = svgCanvas.addSVGElementsFromJson({
         element: 'path',
         curStyles: true,
@@ -342,15 +353,9 @@ export default defineFeature({
         }
       })
 
-      if (el) {
-        svgCanvas.undoMgr.addCommandToHistory(new InsertElementCommand(el))
-      }
-
       points = []
       isDrawing = false
-
-      // Return to the select tool once a shape is finalized (mirrors pen/pencil).
-      svgEditor.leftPanel.clickSelect()
+      return el ?? null
     }
 
     // ── Anchor-point indicators (small circles drawn over the layer) ───────
@@ -481,10 +486,12 @@ export default defineFeature({
       },
 
       pointerUp () {
+        // A finished path goes to the registry, which records it, selects it, switches to
+        // Select and announces it, like every drawing tool.
         if (finalizeOnRelease) {
           finalizeOnRelease = false
-          finalize(false)
-          return
+          const el = finalize(false)
+          return el ? { created: el } : undefined
         }
         if (!isDrawing) return
 
@@ -497,8 +504,8 @@ export default defineFeature({
           resetDragState()
 
           if (!wasMoved && points.length >= 2) {
-            finalize(true)
-            return
+            const el = finalize(true)
+            return el ? { created: el } : undefined
           }
 
           // Either a genuine drag (points[0] already holds its live-updated

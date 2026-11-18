@@ -991,6 +991,8 @@ export const createPathMethod = (canvas: SvgCanvas): PathMethodApi => {
         ...detail
       })
       const after = this.elem.getAttribute('d')
+      // Nothing changed (Smooth on a smooth node, a grip press that did not move it): no undo step.
+      if (before !== null && before === after) return
       // The edit was made on the live path (the grips follow it); the model is handed the result as the step. The live path is put
       // back first so the step starts from the path as it was, and the renderer writes the new `d` again.
       if (this.elem.id && before !== null && after !== null && before !== after) {

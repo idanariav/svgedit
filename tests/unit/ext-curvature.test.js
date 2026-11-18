@@ -30,7 +30,8 @@ describe('ext-curvature', () => {
         return el
       }),
       history: { InsertElementCommand: class {} },
-      undoMgr: { addCommandToHistory: vi.fn() }
+      undoMgr: { addCommandToHistory: vi.fn() },
+      call: vi.fn()
     }
 
     svgEditor = {
@@ -81,7 +82,12 @@ describe('ext-curvature', () => {
 
     expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalledTimes(1)
     expect(svgCanvas.undoMgr.addCommandToHistory).toHaveBeenCalledTimes(1)
-    expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalledTimes(1)
+    // Outside a gesture nothing else announces the path: the host must hear of it (autosave).
+    const path = svgCanvas.addSVGElementsFromJson.mock.results[0].value
+    expect(svgCanvas.call).toHaveBeenCalledWith('changed', [path])
+    expect(svgCanvas.call).toHaveBeenCalledWith('elementInserted', [path])
+    // The user picked another tool: finishing must not override it with Select.
+    expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()
   })
 
   it('a mode change to curvature itself (e.g. re-selecting the tool) does not finalize an idle session', () => {
@@ -110,11 +116,22 @@ describe('ext-curvature', () => {
     click(50, 10)
     down(50, 10, { detail: 2 })
     expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
-    expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()
-    up(50, 10)
+    const result = up(50, 10)
     expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalledTimes(1)
-    expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalledTimes(1)
     expect(layer.querySelector('#curvature_preview')).toBeNull()
+    // The registry finishes the path (one undo step, select it, Select tool, 'changed'): the
+    // tool neither records nor announces it, nor switches tool itself.
+    expect(result).toEqual({ created: svgCanvas.addSVGElementsFromJson.mock.results[0].value })
+    expect(svgCanvas.undoMgr.addCommandToHistory).not.toHaveBeenCalled()
+    expect(svgCanvas.call).not.toHaveBeenCalled()
+    expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()
+  })
+
+  it('a double-click with a single anchor finishes nothing', () => {
+    click(10, 10)
+    down(10, 10, { detail: 2 })
+    expect(up(10, 10)).toBeUndefined()
+    expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
   })
 
   const dotFills = () => [...layer.querySelectorAll('circle')].map((c) => c.getAttribute('fill'))
@@ -156,8 +173,10 @@ describe('ext-curvature', () => {
     click(10, 10)
     click(60, 10)
     click(60, 60)
-    click(10, 10) // back on the first anchor, no drag
+    down(10, 10) // back on the first anchor, no drag
+    const result = up(10, 10)
     const path = [...layer.querySelectorAll('path')].find((p) => p.id !== 'curvature_preview')
     expect(path.getAttribute('d')).toMatch(/Z\s*$/i)
+    expect(result).toEqual({ created: path })
   })
 })

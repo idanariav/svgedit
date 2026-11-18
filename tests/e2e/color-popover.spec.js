@@ -104,6 +104,36 @@ test.describe('colour popover', () => {
     expect(await fill(page)).toBe('#445566') // Cancel reverts
   })
 
+  test('an opacity-only change is one undo step, and undo puts the opacity back', async ({ page }) => {
+    await setup(page)
+    const state = () => page.evaluate(() => ({
+      fill: document.querySelector('#r1').getAttribute('fill'),
+      opacity: document.querySelector('#r1').getAttribute('fill-opacity'),
+      undo: window.svgEditor.svgCanvas.undoMgr.getUndoStackSize()
+    }))
+    const before = await state()
+    await open(page)
+    // The dialog's own apply event: same colour, half opacity.
+    await page.evaluate(() => document.querySelector('se-color-dialog').dispatchEvent(new CustomEvent('change', {
+      detail: { paint: { type: 'solidColor', solidColor: 'ff0000', alpha: 50 } }
+    })))
+    expect(await state()).toEqual({ fill: '#ff0000', opacity: '0.5', undo: before.undo + 1 })
+
+    await page.evaluate(() => window.svgEditor.commands.run('tool_undo'))
+    expect(await state()).toEqual(before)
+  })
+
+  test('a colour and opacity change together are one undo step', async ({ page }) => {
+    await setup(page)
+    const undo = () => page.evaluate(() => window.svgEditor.svgCanvas.undoMgr.getUndoStackSize())
+    const start = await undo()
+    await page.evaluate(() => window.svgEditor.svgCanvas.setPaint('fill', { solidColor: '00ff00', alpha: 40 }))
+    expect(await undo()).toBe(start + 1)
+    await page.evaluate(() => window.svgEditor.commands.run('tool_undo'))
+    expect(await fill(page)).toBe('#ff0000')
+    expect(await page.evaluate(() => document.querySelector('#r1').getAttribute('fill-opacity'))).not.toBe('0.4')
+  })
+
   test('the touch shell keeps the centred modal', async ({ page }) => {
     await setup(page)
     await page.evaluate(() => { document.querySelector('.svg_editor').classList.add('ui-tablet') })

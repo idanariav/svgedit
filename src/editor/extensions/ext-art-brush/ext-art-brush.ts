@@ -101,6 +101,9 @@ export default defineFeature({
       refresh()
     })
 
+    // The panel hides in path edit. (There is no `modeChange` extension hook: it is a document event.)
+    document.addEventListener('modeChange', refresh, { signal: svgEditor.listenerAbort.signal })
+
     svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: (Element | null)[] }) => {
       // The art follows its path (also after an undo of a path edit).
       let changed = false
@@ -214,9 +217,6 @@ export default defineFeature({
         })
         reg('brush_expand', 'expand', { enabled: needBrushed, run: () => { svgCanvas.expandArtBrush(); refresh() } })
         reg('brush_release', 'release', { enabled: needBrushed, run: () => { svgCanvas.releaseArtBrush(); refresh() } })
-      },
-      modeChange () {
-        refresh()
       },
     }
   }

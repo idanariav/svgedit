@@ -208,6 +208,9 @@ export default defineFeature({
       refresh()
     })
 
+    // The panel hides in path edit. (There is no `modeChange` extension hook: it is a document event.)
+    document.addEventListener('modeChange', refresh, { signal: svgEditor.listenerAbort.signal })
+
     svgCanvas.bind('elementChanged', (_win: Window, opts: ElementsPayload) => {
       // The steps follow their keys; an undo or redo brings the steps back with the keys.
       if (opts.restored) { refresh(); return }
@@ -295,9 +298,6 @@ export default defineFeature({
           run: () => { svgCanvas.alignBlendToPath(!svgCanvas.getBlendAlign(blendedSelection())); refresh() }
         })
         reg('blend_detach_spine', 'detachSpine', { enabled: needSpine, run: () => { svgCanvas.detachBlendSpine(); refresh() } })
-      },
-      modeChange () {
-        refresh()
       },
     }
   }

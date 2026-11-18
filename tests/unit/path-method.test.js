@@ -272,6 +272,38 @@ describe('path-method Path#endChanges', () => {
     })
   })
 
+  it('records no undo step when the path did not change (Smooth on a smooth node, an unmoved grip press)', () => {
+    const svg = createSvgElement('svg')
+    const selectorParentGroup = createSvgElement('g')
+    selectorParentGroup.setAttribute('id', 'selectorParentGroup')
+    svg.append(selectorParentGroup)
+
+    const svgCanvas = {
+      getSvgRoot () { return svg },
+      getZoom () { return 1 },
+      getElement (id) { return svg.querySelector(`#${id}`) },
+      addPtsToSelection () {},
+      endChanges: vi.fn(),
+      setElementAttributes: vi.fn(() => false)
+    }
+    attachUnits(svgCanvas)
+    Object.assign(svgCanvas, pathInit(svgCanvas))
+    const pathEl = createSvgElement('path')
+    pathEl.setAttribute('id', 'path1')
+    pathEl.setAttribute('d', 'M0,0 L10,10')
+
+    const path = new svgCanvas.PathClass(pathEl)
+    path.storeD()
+    path.endChanges('Smooth path node(s)')
+
+    expect(svgCanvas.endChanges).not.toHaveBeenCalled()
+    expect(svgCanvas.setElementAttributes).not.toHaveBeenCalled()
+
+    pathEl.setAttribute('d', 'M0,0 L20,20') // a real edit still records its step
+    path.endChanges('Move path point(s)')
+    expect(svgCanvas.endChanges).toHaveBeenCalledTimes(1)
+  })
+
   it('does not throw when the host has not set up a debug event sink', () => {
     const svg = createSvgElement('svg')
     const selectorParentGroup = createSvgElement('g')

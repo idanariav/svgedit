@@ -542,20 +542,23 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
   const setPaintMethod = (type: 'fill' | 'stroke', paint: ConstructorParameters<typeof Paint>[0]): void => {
   // make a copy
     const p = new Paint(paint)
-    svgCanvas.setPaintOpacity(type, p.alpha / 100, true)
+    // Colour and opacity are one undo step (an opacity-only change is one too).
+    svgCanvas.transact(`Change ${type}`, () => {
+      svgCanvas.setPaintOpacity(type, p.alpha / 100, false)
 
-    // now set the current paint object
-    svgCanvas.setCurProperties(`${type}_paint`, p)
-    switch (p.type) {
-      case 'solidColor':
-        svgCanvas.setColor(type, p.solidColor !== 'none' ? `#${p.solidColor}` : 'none')
-        break
-      case 'linearGradient':
-      case 'radialGradient':
-        svgCanvas.setCanvas(type + 'Grad', p[p.type])
-        svgCanvas.setGradient(type)
-        break
-    }
+      // now set the current paint object
+      svgCanvas.setCurProperties(`${type}_paint`, p)
+      switch (p.type) {
+        case 'solidColor':
+          svgCanvas.setColor(type, p.solidColor !== 'none' ? `#${p.solidColor}` : 'none')
+          break
+        case 'linearGradient':
+        case 'radialGradient':
+          svgCanvas.setCanvas(type + 'Grad', p[p.type])
+          svgCanvas.setGradient(type)
+          break
+      }
+    })
   }
 
   /**

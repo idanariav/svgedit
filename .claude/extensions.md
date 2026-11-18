@@ -167,6 +167,8 @@ User-facing behaviour (what a control does, its keys) is in [`tools.md`](tools.m
 
 > **Status (2026-10-10):** shape-family, brush, panning, eyedropper, cutter, polystar, shapes, curvature and shape-builder are on `registerTool`. Puppet-warp (a session across many gestures) and connector (augments the built-in line/select modes) intentionally keep the legacy hooks; see `techdebt.md`. A tool that finishes by switching to Select (`clickSelect()`) must do it in `pointerUp` (the gesture is closed there), never in `pointerDown`/`pointerMove` (`setMode` cancels an open gesture). Persistent previews belong in `data-se-ephemeral` nodes (or `ctx.addOverlay` for one gesture).
 
+> **Only the hooks in `core/extension-hooks.ts` are dispatched.** A method on the extension object with any other name never runs. For example, there is no `modeChange` hook: listen for the document `modeChange` event with `{ signal: svgEditor.listenerAbort.signal }`. The canvas warns at load, and `tests/e2e/extension-hooks.spec.js` fails on that warning.
+
 Register the tool from `init()`; its `id` is the mode name `setMode(id)` switches to
 (the toolbar button keeps calling `setMode`, and stays a command — see below).
 

@@ -260,6 +260,23 @@ describe('elem-get-set', () => {
     expect(canvas.call).toHaveBeenCalledWith('changed', [text])
   })
 
+  it('setPaint() records the opacity with the colour, as one undo step', () => {
+    let open = false
+    const inside = []
+    canvas.transact = vi.fn((label, fn) => { open = true; try { return fn() } finally { open = false } })
+    canvas.setPaintOpacity = vi.fn(() => inside.push(['opacity', open]))
+    canvas.setColor = vi.fn(() => inside.push(['color', open]))
+    canvas.setCurProperties = vi.fn()
+
+    canvas.setPaint('fill', { solidColor: '00ff00', alpha: 40 })
+
+    expect(canvas.transact).toHaveBeenCalledWith('Change fill', expect.any(Function))
+    // undoable (not preventUndo), and both inside the one transaction
+    expect(canvas.setPaintOpacity).toHaveBeenCalledWith('fill', 0.4, false)
+    expect(canvas.setColor).toHaveBeenCalledWith('fill', '#00ff00')
+    expect(inside).toEqual([['opacity', true], ['color', true]])
+  })
+
   it('setColor() leaves opacity untouched', () => {
     const rect = createSvgElement('rect')
     rect.setAttribute('fill', '#0000ff')
