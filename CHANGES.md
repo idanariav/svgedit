@@ -1,5 +1,11 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.18
+- UI: the Distort tool works on groups: the group bends as one piece (every shape in it gets the same corners on the group's box; text and images stay as they are). Reset on the options bar takes a distortion off.
+- UI: a 3D Rotate tool: drag to turn the selected shape or group in 3D (horizontal = Y, vertical = X, Alt = Z, Shift snaps to 15°), with position presets, X / Y / Z, Perspective and Reset on the options bar. It is a live effect (`rotate3d`), so it stays editable.
+- UI: Add to Shape Library: picking an existing name from the suggestions selects the category that name is saved in.
+- API: live effects can declare `hidden` params; `removeLiveEffectsFrom(elem)` removes an element's effects inside the caller's transaction.
+
 ## 7.4.1-fork.17
 - UI: Escape returns every tool to Select (Smooth, Shaper, Blend, Brush, Pencil, Width… were left out). Pressing a tool's key twice locks it, like a double-click on its button.
 - UI: Shape builder, Blend and Shaper show a hint pill at the top of the canvas while active (how to use the tool, a live count, Done). Blend marks the picked shape and the one a click would pick; Shape builder's picked regions are drawn bolder.
