@@ -423,6 +423,36 @@ describe('model-first commands', () => {
       expect(r.getAttribute('transform')).toBe('rotate(30 30 35)')
       expect(r.getAttribute('x')).toBe('10')
     })
+
+    it('moves a turned group by its transform: the move stays after the rotation, the children are not rewritten', () => {
+      const g = canvas.addSVGElementsFromJson({ element: 'g', attr: { id: 'grp', transform: 'rotate(-15 30 35)' } })
+      g.append(els[0])
+      els[0].setAttribute('x', '10'); els[0].setAttribute('y', '20'); els[0].setAttribute('width', '40'); els[0].setAttribute('height', '30')
+      canvas.undoMgr.snapshots.baseline()
+      const plan = canvas.dragPlan([g], true)
+      expect(plan).not.toBeNull()
+      canvas.previewDrag(plan, 5, 7)
+      // (dropping the translation would only turn the group about a moved centre: it would barely move)
+      expect(g.getAttribute('transform')).toBe('rotate(-15 35 42) matrix(1 0 0 1 5 7)')
+      expect(els[0].getAttribute('x')).toBe('10')
+      expect(canvas.snapshotHistory.endPreview('position')).toBe(true)
+      // a second drag reads the translation back and adds to it
+      const again = canvas.dragPlan([g], true)
+      expect(again).not.toBeNull()
+      canvas.previewDrag(again, 1, 2)
+      expect(g.getAttribute('transform')).toBe('rotate(-15 36 44) matrix(1 0 0 1 6 9)')
+      expect(canvas.snapshotHistory.endPreview('position')).toBe(true)
+      canvas.undoMgr.undo()
+      canvas.undoMgr.undo()
+      expect(g.getAttribute('transform')).toBe('rotate(-15 30 35)')
+    })
+
+    it('a shape keeps nothing after its rotation: a trailing term is not read as its position', () => {
+      const r = els[0]
+      r.setAttribute('transform', 'rotate(30 5 5) translate(3 4)')
+      const plan = canvas.dragPlan([r], true)
+      expect(plan?.get(r)?.rot).toBeUndefined()
+    })
   })
 
   describe('a resize of a turned shape shown through the model', () => {

@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures.js'
-import { setSvgSource, visitAndApproveStorage } from './helpers.js'
+import { dragInDocument, setSvgSource, visitAndApproveStorage } from './helpers.js'
 
 // The group's *effective* transform, independent of how it is serialized
 // (`translate(..) translate(..)`, `rotate(..)` or one consolidated
@@ -163,6 +163,32 @@ test.describe('Group transform preservation', () => {
     expect(angleOf(m)).toBeCloseTo(45, 2)
     expect(m.e).toBeCloseTo(205, 2)
     expect(m.f).toBeCloseTo(139.645, 2)
+  })
+
+  test('a mouse drag moves a rotated group the whole way and keeps its rotation', async ({ page }) => {
+    // Regression: the drag preview moved only the centre of the group's rotate(), so the group
+    // turned about a shifted pivot and barely moved (and the scar stayed in the saved file).
+    await setSvgSource(page, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">
+      <g id="turnedGroup" transform="rotate(-15 150 150)">
+        <rect id="turnedRect" x="100" y="100" width="100" height="100" fill="red"/>
+      </g>
+    </svg>`)
+    await page.evaluate(() => { window.svgEditor.svgCanvas.getCurConfig().smartSnapping = false })
+    const before = await groupMatrix(page, '#turnedGroup')
+    // grab the rect's middle (where the rotation leaves it: the rotation is about it)
+    await dragInDocument(page, { x: 150, y: 150 }, { x: 350, y: 250 })
+
+    // the rotation stays a rotate() about the content's middle, so the angle field and a later rotation read it
+    // (read before groupMatrix: consolidate() folds the live transform list into one matrix)
+    const state = await page.evaluate(() => ({
+      angle: window.svgEditor.svgCanvas.getRotationAngle(document.getElementById('turnedGroup')),
+      x: document.getElementById('turnedRect').getAttribute('x')
+    }))
+    expect(state).toEqual({ angle: -15, x: '100' })
+    const m = await groupMatrix(page, '#turnedGroup')
+    expect(angleOf(m)).toBeCloseTo(-15, 2)
+    expect(m.e - before.e).toBeCloseTo(200, 1)
+    expect(m.f - before.f).toBeCloseTo(100, 1)
   })
 
   test('multiple movements preserve group structure without flattening', async ({ page }) => {

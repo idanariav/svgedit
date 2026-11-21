@@ -111,7 +111,10 @@ export type { Matrix6 }
  * numbers: no browser matrix, so it runs the same in Node.
  */
 export interface Affine { a: number, d: number, e: number, f: number }
-/** What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and that rotation. */
+/**
+ * What a drag knows of an element: its transform as an `Affine`, or, for one turned by `rotate(angle cx cy)`, the identity and
+ * that rotation (for a group, `rotate(angle cx cy)` followed by the translation or scale it keeps for its position, which is the `Affine`).
+ */
 export type DragEntry = Affine & { rot?: { angle: number, cx: number, cy: number }, matrix?: Matrix6, scratch?: boolean, stroke?: Record<string, string> }
 
 const IDENTITY: Affine = { a: 1, d: 1, e: 0, f: 0 }
@@ -562,7 +565,18 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
-  const ROTATE = /^rotate\(\s*(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)\s*\)$/
+  const ROTATE = /^rotate\(\s*(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)[\s,]+(-?[\d.eE+-]+)\s*\)\s*(.*)$/
+  const isGroup = (el: Element): boolean => el.localName === 'g' || el.localName === 'a'
+  /**
+   * A drag entry for an element turned by `rotate(angle cx cy)` first, or null. A shape has nothing after the rotation (its
+   * position is its geometry); a group may keep its position as a translation or scale after it (its children are not rewritten).
+   */
+  const turnedEntry = (el: Element): DragEntry | null => {
+    const turned = ROTATE.exec((el.getAttribute('transform') ?? '').trim())
+    if (!turned) return null
+    const rest = turned[4] ? (isGroup(el) ? parseAffine(turned[4]) : null) : IDENTITY
+    return rest && { ...rest, rot: { angle: Number(turned[1]), cx: Number(turned[2]), cy: Number(turned[3]) } }
+  }
   const dragPlan = (elems: Element[], allowRotated = false): Map<Element, DragEntry> | null => {
     if (svgCanvas.getGridSnapping?.() || !elems.length) return null
     const plan = new Map<Element, DragEntry>()
@@ -575,10 +589,8 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         plan.set(el, { ...IDENTITY, matrix: own6 })
         continue
       }
-      const turned = allowRotated ? ROTATE.exec((el.getAttribute('transform') ?? '').trim()) : null
-      const entry: DragEntry | null = turned
-        ? { ...IDENTITY, rot: { angle: Number(turned[1]), cx: Number(turned[2]), cy: Number(turned[3]) } }
-        : parseAffine(el.getAttribute('transform'))
+      const turned = allowRotated ? turnedEntry(el) : null
+      const entry: DragEntry | null = turned ?? parseAffine(el.getAttribute('transform'))
       // a turned element is judged by its geometry alone (the rotation travels with the move)
       if (!entry || !affineEdit(el, turned ? { ...IDENTITY, e: 0, f: 0 } : entry)) {
         // another transform (a skew, a rotation among other terms): the move is put in front of it as a matrix, geometry untouched
@@ -627,7 +639,11 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
         const set = node && affineEdit(node, compose({ a: 1, d: 1, e: dx, f: dy }, own))
         if (!set) continue
         // a turned element: the geometry moves by the drag and the rotation turns about the moved centre
-        if (own.rot) set.transform = `rotate(${own.rot.angle} ${Number((own.rot.cx + dx).toFixed(6))} ${Number((own.rot.cy + dy).toFixed(6))})`
+        // (a group's move is its transform, not its geometry: it stays after the rotation)
+        if (own.rot) {
+          const turn = `rotate(${own.rot.angle} ${Number((own.rot.cx + dx).toFixed(6))} ${Number((own.rot.cy + dy).toFixed(6))})`
+          set.transform = isGroup(el) && set.transform ? `${turn} ${set.transform}` : turn
+        }
         out = setAttrsById(out, el.id, { ...set, ...own.stroke })
       }
       return out
