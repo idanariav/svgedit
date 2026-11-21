@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.20
+- UI: dragging a rotated group moves it the whole way (it used to barely move, turning about a shifted pivot), and its rotation stays editable.
+
 ## 7.4.1-fork.19
 - UI: changing the fill or stroke opacity in the colour picker can be undone; a colour and opacity change together is one undo step.
 - UI: a finished Curvature path is selected and reported as an edit (hosts autosave it); finishing it by switching tools keeps the tool you picked.
