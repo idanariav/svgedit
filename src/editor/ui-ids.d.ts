@@ -3,6 +3,7 @@
  * (`packages/svgcanvas/core/dom-utils.ts`) so `$id` / `$req` return it.
  */
 interface ElementIdMap {
+  _asl_aliases: HTMLInputElement
   _asl_cancel: HTMLButtonElement
   _asl_cat_new: HTMLInputElement
   _asl_cat_select: HTMLSelectElement

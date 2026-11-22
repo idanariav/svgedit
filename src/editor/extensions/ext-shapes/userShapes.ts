@@ -13,7 +13,8 @@
  *       [category]: {
  *         // `linkedFile` is optional — a provenance link an embedding host can
  *         // stamp onto every inserted element (see ext-shapes.js).
- *         [label]: { svgContent: string, bbox: { x, y, width, height }, linkedFile?: string }
+ *         // `aliases` is optional — extra names the library search matches.
+ *         [label]: { svgContent: string, bbox: { x, y, width, height }, linkedFile?: string, aliases?: string[] }
  *       }
  *     },
  *     // Non-destructive overrides layered on top of the (read-only) bundled
@@ -33,6 +34,34 @@ export interface UserShape {
   bbox: { x: number, y: number, width: number, height: number }
   /** provenance link an embedding host can stamp onto the inserted element */
   linkedFile?: string
+  /** extra names the library search matches ("rock", "boulder" for "stone") */
+  aliases?: string[]
+}
+
+/**
+ * Clean a list of aliases: trimmed, non-empty, de-duplicated case-insensitively
+ * (first spelling wins), never the shape's own label.
+ */
+function cleanAliases (aliases: unknown, label: string): string[] {
+  if (!Array.isArray(aliases)) return []
+  const seen = new Set([label.trim().toLowerCase()])
+  const out: string[] = []
+  for (const a of aliases) {
+    if (typeof a !== 'string') continue
+    const alias = a.trim()
+    const key = alias.toLowerCase()
+    if (!alias || seen.has(key)) continue
+    seen.add(key)
+    out.push(alias)
+  }
+  return out
+}
+
+/** Set (or, when empty, drop) an entry's aliases in place. */
+function applyAliases (entry: UserShape, aliases: unknown, label: string) {
+  const clean = cleanAliases(aliases, label)
+  if (clean.length) entry.aliases = clean
+  else delete entry.aliases
 }
 
 /** the saved shapes (the schema above) */
@@ -76,6 +105,7 @@ function normalizeStore (raw: unknown): UserShapeStore {
           typeof entry.bbox.width === 'number' &&
           typeof entry.bbox.height === 'number'
         ) {
+          if ('aliases' in entry) applyAliases(entry, entry.aliases, label)
           shapes[cat][label] = entry
         }
       }
@@ -133,7 +163,7 @@ export function saveUserShapes (store: UserShapeStore) {
 }
 
 /** Add (or overwrite) a shape. Creates the category if it doesn't exist. */
-export function addUserShape ({ category, label, svgContent, bbox, linkedFile }: { category: string, label: string, svgContent: string, bbox: UserShape['bbox'], linkedFile?: (string | null) }) {
+export function addUserShape ({ category, label, svgContent, bbox, linkedFile, aliases }: { category: string, label: string, svgContent: string, bbox: UserShape['bbox'], linkedFile?: (string | null), aliases?: string[] }) {
   const store = loadUserShapes()
 
   // Normalize: trim whitespace and lowercase so "Animals" and "animals" merge
@@ -148,6 +178,7 @@ export function addUserShape ({ category, label, svgContent, bbox, linkedFile }:
 
   const entry: UserShape = { svgContent, bbox }
   if (linkedFile) entry.linkedFile = linkedFile
+  applyAliases(entry, aliases, label)
   store.shapes[category][label] = entry
   saveUserShapes(store)
 }
@@ -186,6 +217,15 @@ export function renameUserShape ({ category, oldLabel, newLabel }: { category: s
   store.shapes[category] = Object.fromEntries(
     Object.entries(catData).map(([k, v]) => [k === oldLabel ? newLabel : k, v])
   )
+  saveUserShapes(store)
+}
+
+/** Replace a shape's aliases (an empty list removes them). No-op if the shape is missing. */
+export function setUserShapeAliases ({ category, label, aliases }: { category: string, label: string, aliases: string[] }) {
+  const store = loadUserShapes()
+  const entry = store.shapes[category]?.[label]
+  if (!entry) return
+  applyAliases(entry, aliases, label)
   saveUserShapes(store)
 }
 
@@ -312,6 +352,21 @@ export function getAllUserShapeLabels (): string[] {
     for (const label of Object.keys(store.shapes[cat] || {})) labels.add(label)
   }
   return [...labels]
+}
+
+/**
+ * Every user shape label mapped to its aliases (merged across categories when
+ * the label is reused), for matching typed text against existing shapes.
+ */
+export function getAllUserShapeAliases (): Record<string, string[]> {
+  const store = loadUserShapes()
+  const out: Record<string, string[]> = {}
+  for (const cat of store.categories) {
+    for (const [label, entry] of Object.entries(store.shapes[cat] || {})) {
+      out[label] = cleanAliases([...(out[label] || []), ...(entry.aliases || [])], label)
+    }
+  }
+  return out
 }
 
 /**

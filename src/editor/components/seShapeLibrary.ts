@@ -17,7 +17,7 @@
 import { fetchSvgEl } from './svgIconLoader.ts'
 import { closestRoot, ownerEditor } from '../domScope.ts'
 import {
-  loadUserShapes, removeUserShape, renameUserShape, moveUserShape,
+  loadUserShapes, removeUserShape, renameUserShape, moveUserShape, setUserShapeAliases,
   deleteUserCategory, renameUserCategory, setCategoryLabel, hideCategory, unhideCategory
 } from '../extensions/ext-shapes/userShapes.ts'
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
@@ -54,6 +54,10 @@ export type DropdownItem = { label: string, cls?: string, keepOpen?: boolean, on
 export type Dropdown = HTMLDivElement & { _reposition?: () => void }
 
 const isUserShape = (data: ShapeData | null | undefined): data is UserShape => data !== null && typeof data === 'object' && 'svgContent' in data
+
+/** Tooltip for a tile: the label, plus a user shape's aliases. */
+const tileTitle = (label: string, data: ShapeData | null) =>
+  isUserShape(data) && data.aliases?.length ? `${label} (also: ${data.aliases.join(', ')})` : label
 
 // ── Component class ──────────────────────────────────────────────────────────
 export class SeShapeLibrary extends HTMLElement {
@@ -721,7 +725,7 @@ export class SeShapeLibrary extends HTMLElement {
     const all = this._popEntries()
     const q = this._popQuery.toLowerCase()
     const shapes = q
-      ? all.filter(([id]) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q))
+      ? all.filter(([id, data]) => this._matchesQuery(id, data, q))
       : all.slice(0, 24)
 
     return shapes.map(([id, shapeData, cat, catId]) => {
@@ -732,7 +736,7 @@ export class SeShapeLibrary extends HTMLElement {
       const label = isUser ? id : this._fmtName(id)
       return `
           <button class="sl-chip${id === this._selectedId ? ' is-selected' : ''}"
-                  data-id="${this._escAttr(id)}" data-cat="${this._escAttr(catId)}" title="${this._escAttr(label)}">
+                  data-id="${this._escAttr(id)}" data-cat="${this._escAttr(catId)}" title="${this._escAttr(tileTitle(label, shapeData))}">
             ${thumb}
           </button>`
     }).join('')
@@ -840,8 +844,7 @@ export class SeShapeLibrary extends HTMLElement {
 
   _buildSearchResults () {
     const q = this._query.toLowerCase()
-    const match = (id: string) => id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q)
-    const groups = this._collectGroups(match)
+    const groups = this._collectGroups((id, data) => this._matchesQuery(id, data, q))
     if (!groups.length) return `<div class="sl-empty">No shapes found for &ldquo;${this._esc(this._query)}&rdquo;</div>`
     return this._renderGroups(groups)
   }
@@ -851,7 +854,7 @@ export class SeShapeLibrary extends HTMLElement {
    * cat metadata (so thumbnails size correctly even when a merged group spans
    * categories with different `size`/`fill`).
    */
-  _collectGroups (shapeFilter: (shapeId:string) => boolean): { label: string, hits: ShapeTuple[] }[] {
+  _collectGroups (shapeFilter: (shapeId: string, data: ShapeData) => boolean): { label: string, hits: ShapeTuple[] }[] {
     /** repId -> { label, hits: [] } */
     const map: Map<string, { label: string, hits: ShapeTuple[] }> = new Map()
     for (const catId of this._allCategoryIds || []) {
@@ -861,7 +864,7 @@ export class SeShapeLibrary extends HTMLElement {
       let g = map.get(rep)
       if (!g) { g = { label: this._catLabel(rep), hits: [] }; map.set(rep, g) }
       for (const [id, p] of Object.entries(cat.data)) {
-        if (shapeFilter(id)) g.hits.push([id, p, cat, catId])
+        if (shapeFilter(id, p)) g.hits.push([id, p, cat, catId])
       }
     }
     return [...map.values()].filter(g => g.hits.length)
@@ -906,7 +909,7 @@ export class SeShapeLibrary extends HTMLElement {
       <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
         <button class="sl-tile${sel ? ' is-selected' : ''}"
                 data-id="${this._escAttr(id)}" data-cat="${catId}"
-                title="${this._escAttr(label)}">
+                title="${this._escAttr(tileTitle(label, shapeData))}">
           <span class="sl-tile-icon">${thumb}</span>
           <span class="sl-tile-name">${this._esc(label)}</span>
         </button>
@@ -928,7 +931,8 @@ export class SeShapeLibrary extends HTMLElement {
     return `
       <div class="sl-tile-wrap${isUser ? ' sl-tile-user' : ''}">
         <button class="sl-row${sel ? ' is-selected' : ''}"
-                data-id="${this._escAttr(id)}" data-cat="${catId}">
+                data-id="${this._escAttr(id)}" data-cat="${catId}"
+                title="${this._escAttr(tileTitle(label, shapeData))}">
           <span class="sl-row-icon">${thumb}</span>
           <span class="sl-row-name">${this._esc(label)}</span>
           <span class="sl-row-id">${this._esc(catId)} / ${this._esc(id)}</span>
@@ -1060,13 +1064,15 @@ export class SeShapeLibrary extends HTMLElement {
       })
     })
 
-    // Three-dot menu for user shapes: Rename, Move to…, Remove
+    // Three-dot menu for user shapes: Rename, Edit aliases…, Move to…, Remove
     ;(area.querySelectorAll('.sl-shape-menu') as NodeListOf<HTMLElement>).forEach(menuBtn => {
       menuBtn.addEventListener('click', e => {
         e.stopPropagation()
         const wrap = menuBtn.closest('.sl-tile-wrap') as HTMLElement
         const rawCat = String(menuBtn.dataset.cat).replace(/^user:/, '')
         const label = String(menuBtn.dataset.id)
+        const shapeData = this._catalog[String(menuBtn.dataset.cat)]?.data?.[label]
+        const aliases = isUserShape(shapeData) ? shapeData.aliases || [] : []
         this._openDropdown(wrap, [
           {
             label: 'Rename',
@@ -1075,6 +1081,14 @@ export class SeShapeLibrary extends HTMLElement {
               renameUserShape({ category: rawCat, oldLabel: label, newLabel })
               this._reloadUserShapes()
             })
+          },
+          {
+            label: 'Edit aliases…',
+            keepOpen: true,
+            onClick: (dropdown: HTMLElement) => this._renderRenameInput(dropdown, aliases.join(', '), value => {
+              setUserShapeAliases({ category: rawCat, label, aliases: value.split(',') })
+              this._reloadUserShapes()
+            }, { allowEmpty: true, placeholder: 'Aliases, comma-separated' })
           },
           {
             label: 'Move to…',
@@ -1185,14 +1199,17 @@ export class SeShapeLibrary extends HTMLElement {
    * Turn an open dropdown into a rename text-input popover. The input lives in
    * the dropdown (a sibling of the tile/category button) — never *inside* a
    * <button>, where selection and typing break. Commits on Enter/blur, cancels
-   * on Escape; `onCommit(newValue)` runs only when the value actually changed.
+   * on Escape; `onCommit(newValue)` runs only when the value actually changed
+   * (and is non-empty, unless `allowEmpty`, so a list can be cleared).
    */
-  _renderRenameInput (dropdown: HTMLElement, current: string, onCommit: (v:string) => void) {
+  _renderRenameInput (dropdown: HTMLElement, current: string, onCommit: (v:string) => void,
+    { allowEmpty = false, placeholder = '' }: { allowEmpty?: boolean, placeholder?: string } = {}) {
     dropdown.replaceChildren()
     dropdown.classList.add('sl-rename-pop')
     const input = document.createElement('input')
     input.className = 'sl-inline-edit'
     input.value = current
+    if (placeholder) input.placeholder = placeholder
     dropdown.appendChild(input)
     input.focus()
     input.select()
@@ -1203,7 +1220,7 @@ export class SeShapeLibrary extends HTMLElement {
       done = true
       const val = input.value.trim()
       dropdown.remove()
-      if (commit && val && val !== current) onCommit(val)
+      if (commit && (val || allowEmpty) && val !== current) onCommit(val)
     }
     input.addEventListener('click', ev => ev.stopPropagation())
     input.addEventListener('keydown', ev => {
@@ -1379,6 +1396,12 @@ export class SeShapeLibrary extends HTMLElement {
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────
+  /** Does a shape match the (lowercased) search text — by id, display name or alias? */
+  _matchesQuery (id: string, data: ShapeData | null, q: string) {
+    return id.toLowerCase().includes(q) || this._fmtName(id).toLowerCase().includes(q) ||
+      (isUserShape(data) && !!data.aliases?.some(a => a.toLowerCase().includes(q)))
+  }
+
   _fmtName (id: string) {
     return id.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
   }

@@ -94,4 +94,51 @@ test.describe('Shapes and images', () => {
       expect(ratio).toBeCloseTo(2, 1)
     })
   })
+
+  test('a shape saved with aliases is found in the library by an alias', async ({ page }) => {
+    await page.evaluate(() => localStorage.removeItem('svg-edit-user-shapes'))
+    await setSvgSource(page, `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+      <g class="layer"><title>Layer 1</title>
+        <rect id="svg_1" x="50" y="50" width="80" height="80" fill="#888888" />
+      </g>
+    </svg>`)
+    await page.evaluate(() => {
+      const canv = window.svgEditor.svgCanvas
+      canv.selectOnly([canv.getElement('svg_1')])
+      window.svgEditor.commands.run('add_to_shape_library')
+    })
+
+    const dialog = page.locator('dialog:has(#_asl_label)')
+    await dialog.locator('#_asl_label').fill('stone')
+    await dialog.locator('#_asl_aliases').fill('rock,  Boulder , rock')
+    await dialog.locator('#_asl_cat_select').selectOption('__new__')
+    await dialog.locator('#_asl_cat_new').fill('Nature')
+    await dialog.locator('#_asl_ok').click()
+    await expect(dialog).toHaveCount(0)
+
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('svg-edit-user-shapes')).shapes.nature.stone.aliases)
+    expect(saved).toEqual(['rock', 'Boulder'])
+
+    // Saving again: typing the alias suggests the existing name, and picking it
+    // pre-fills that shape's aliases so an overwrite keeps them.
+    await page.evaluate(() => window.svgEditor.commands.run('add_to_shape_library'))
+    await dialog.locator('#_asl_label').fill('boul')
+    const suggestion = dialog.locator('#_asl_label_menu li').first()
+    await expect(suggestion).toHaveText(/^stone\s*· Boulder$/)
+    await suggestion.dispatchEvent('mousedown')
+    await expect(dialog.locator('#_asl_label')).toHaveValue('stone')
+    await expect(dialog.locator('#_asl_aliases')).toHaveValue('rock, Boulder')
+    await dialog.locator('#_asl_cancel').click()
+
+    const found = await page.evaluate(async () => {
+      const lib = document.getElementById('tool_shapelib')
+      await lib._openModal()
+      const input = lib.shadowRoot.querySelector('.sl-modal .sl-search input')
+      input.value = 'boulder'
+      input.dispatchEvent(new Event('input'))
+      await new Promise(resolve => setTimeout(resolve, 300))
+      return [...lib.shadowRoot.querySelectorAll('#sl-shapes-area .sl-tile')].map(t => t.dataset.id)
+    })
+    expect(found).toEqual(['stone'])
+  })
 })

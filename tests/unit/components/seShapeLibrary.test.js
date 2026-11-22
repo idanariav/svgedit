@@ -9,6 +9,7 @@ vi.mock('../../../src/editor/extensions/ext-shapes/userShapes.ts', () => ({
   removeUserShape: vi.fn(),
   renameUserShape: vi.fn(),
   moveUserShape: vi.fn(),
+  setUserShapeAliases: vi.fn(),
   deleteUserCategory: vi.fn(),
   renameUserCategory: vi.fn(),
   setCategoryLabel: vi.fn(),
@@ -530,6 +531,83 @@ describe('se-shape-library', () => {
       expect(dropdown).toBeTruthy()
       expect(dropdown.parentElement).toBe(el.shadowRoot.querySelector('.sl-modal'))
       expect(dropdown.closest('.sl-tile-wrap')).toBeNull()
+    })
+
+    function withAliasedShape () {
+      userShapes.loadUserShapes.mockReturnValue({
+        categories: ['nature'],
+        shapes: { nature: { stone: { svgContent: '<path d="M0 0"/>', bbox: { x: 0, y: 0, width: 10, height: 10 }, aliases: ['rock', 'boulder'] } } },
+        categoryLabels: {},
+        hidden: []
+      })
+    }
+
+    async function searchModal (el, text) {
+      const input = el.shadowRoot.querySelector('.sl-modal .sl-search input')
+      input.value = text
+      input.dispatchEvent(new Event('input'))
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+
+    it('finds a user shape in the modal search by one of its aliases, case-insensitively', async () => {
+      withAliasedShape()
+      const el = mountElement('se-shape-library')
+      el.setAttribute('lib', 'shapelib/')
+      await flush()
+      await el._openModal()
+      await flush()
+
+      await searchModal(el, 'BOULD')
+      const tile = el.shadowRoot.querySelector('#sl-shapes-area .sl-tile[data-id="stone"]')
+      expect(tile).toBeTruthy()
+      expect(tile.title).toBe('stone (also: rock, boulder)')
+
+      await searchModal(el, 'pebble')
+      expect(el.shadowRoot.querySelector('#sl-shapes-area .sl-tile[data-id="stone"]')).toBeNull()
+    })
+
+    it('finds a user shape in the popover filter by one of its aliases', async () => {
+      withAliasedShape()
+      const el = mountElement('se-shape-library')
+      el.setAttribute('lib', 'shapelib/')
+      await flush()
+      el.shadowRoot.querySelector('.sl-tool').click()
+      await flush()
+
+      const input = el.shadowRoot.querySelector('.sl-pop-search-box input')
+      input.value = 'rock'
+      input.dispatchEvent(new Event('input'))
+      await new Promise(resolve => setTimeout(resolve, 250))
+      expect(el.shadowRoot.querySelector('.sl-pop-grid .sl-chip[data-id="stone"]')).toBeTruthy()
+    })
+
+    it('edits aliases via the shape menu "Edit aliases…" action, and can clear them', async () => {
+      withAliasedShape()
+      const el = mountElement('se-shape-library')
+      el.setAttribute('lib', 'shapelib/')
+      await flush()
+      await el._openModal()
+      await flush()
+      el.shadowRoot.querySelector('.sl-cat[data-cat="user:nature"]').click()
+      await flush()
+
+      const openEditor = () => {
+        el.shadowRoot.querySelector('.sl-shape-menu[data-id="stone"]').click()
+        ;[...el.shadowRoot.querySelectorAll('.sl-shape-dropdown button')].find(b => b.textContent === 'Edit aliases…').click()
+        return el.shadowRoot.querySelector('.sl-shape-dropdown input.sl-inline-edit')
+      }
+      const commit = (input, value) => {
+        input.value = value
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+      }
+
+      const input = openEditor()
+      expect(input.value).toBe('rock, boulder')
+      commit(input, 'rock, pebble')
+      expect(userShapes.setUserShapeAliases).toHaveBeenCalledWith({ category: 'nature', label: 'stone', aliases: ['rock', ' pebble'] })
+
+      commit(openEditor(), '')
+      expect(userShapes.setUserShapeAliases).toHaveBeenLastCalledWith({ category: 'nature', label: 'stone', aliases: [''] })
     })
 
     it('re-reads user shapes and re-renders when a user-shapes-updated event is dispatched', async () => {

@@ -4,7 +4,7 @@
  * EditorStartup.js, which keeps a thin `_addSelectedToShapeLibrary()` wrapper.
  */
 
-import { addUserShape, getUserCategories, getAllUserShapeLabels, getUserShapesForCategory, getUserCategoryForLabel } from './extensions/ext-shapes/userShapes.ts'
+import { addUserShape, getUserCategories, getAllUserShapeLabels, getAllUserShapeAliases, getUserShapesForCategory, getUserCategoryForLabel } from './extensions/ext-shapes/userShapes.ts'
 
 /**
  * Handle "Add to Shape Library" context menu action.
@@ -48,7 +48,7 @@ export const addSelectedToShapeLibrary = async (editor: EditorInstance): Promise
   const result = await showAddToLibraryDialog(editor)
   if (!result) return
 
-  const { label, category, linkedFile } = result
+  const { label, category, linkedFile, aliases } = result
   if (!label || !category) return
 
   // Bundle the referenced paint servers (gradients, filters, markers, …) into
@@ -66,7 +66,8 @@ export const addSelectedToShapeLibrary = async (editor: EditorInstance): Promise
     label,
     svgContent,
     bbox: { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height },
-    linkedFile
+    linkedFile,
+    aliases
   })
 
   // Notify the shape library component to refresh
@@ -118,11 +119,14 @@ const stripBackdropRects = (editor: EditorInstance, elems: Element[]): Element[]
   return (kept.length && kept.length < elems.length) ? kept : elems
 }
 
+/** What the dialog returns on Save. */
+interface AddToLibraryResult { label: string, category: string, linkedFile: (string | null), aliases: string[] }
+
 /**
- * Show a native <dialog> prompting for a shape label and category.
+ * Show a native <dialog> prompting for a shape label, aliases and category.
  * @param editor The owning Editor instance
  */
-const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: string, category: string, linkedFile: (string | null) } | null> => {
+const showAddToLibraryDialog = async (editor: EditorInstance): Promise<AddToLibraryResult | null> => {
   // An embedding host can expose the linkable files up front so the dialog can
   // offer them inline (a native <datalist>) rather than delegating to a host
   // picker. Delegating opened a second modal that rendered *behind* this
@@ -210,6 +214,11 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
               box-shadow:0 6px 20px rgba(0,0,0,.15);display:none"></ul>
         </div>
       </label>
+      <label style="display:block;margin-bottom:12px;font-size:13px;color:var(--fg,#1B1F24)">
+        Aliases <span style="color:var(--muted,#6B7280)">(optional, comma-separated)</span>
+        <input id="_asl_aliases" type="text" placeholder="e.g. rock, boulder" autocomplete="off"
+               style="${inputStyle}"/>
+      </label>
       <label style="display:block;margin-bottom:20px;font-size:13px;color:var(--fg,#1B1F24)">
         Category
         <select id="_asl_cat_select" style="${inputStyle}">${catOptions}</select>
@@ -251,13 +260,20 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
       if (isOther) newInput.focus()
     })
 
+    const aliasInput = dlg.querySelector('#_asl_aliases') as HTMLInputElement
+    // Aliases the user typed themselves are never replaced by a prefill.
+    let aliasesTouched = false
+    aliasInput.addEventListener('input', () => { aliasesTouched = true })
+
     // Existing-name suggestions: as the user types a label, list already-saved
-    // shape names that contain the typed text so they can reuse a consistent
-    // naming scheme (or notice a near-duplicate before saving).
+    // shape names that contain the typed text (or that have a matching alias,
+    // so "rock" finds "stone") so they can reuse a consistent naming scheme or
+    // notice a near-duplicate before saving.
     {
       const labelInput = dlg.querySelector('#_asl_label') as HTMLInputElement
       const labelMenu = dlg.querySelector('#_asl_label_menu') as HTMLUListElement
       const allLabels = getAllUserShapeLabels()
+      const aliasesByLabel = getAllUserShapeAliases()
       const escText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
       const optStyle = 'padding:6px 10px;cursor:pointer;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;font-size:13px'
@@ -271,12 +287,24 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
           li.style.color = i === labelActiveIdx ? '#FFF' : 'var(--fg,#1B1F24)'
         })
       }
+      const matchedAlias = (l: string, q: string) =>
+        (aliasesByLabel[l] || []).find(a => a.toLowerCase().includes(q))
+      // Overwriting an existing shape: show its aliases so saving keeps them.
+      const syncAliases = () => {
+        if (aliasesTouched) return
+        aliasInput.value = (aliasesByLabel[labelInput.value.trim()] || []).join(', ')
+      }
       const renderLabelMenu = () => {
+        syncAliases()
         const q = labelInput.value.trim().toLowerCase()
-        shownLabels = q ? allLabels.filter(l => l.toLowerCase().includes(q)) : []
+        shownLabels = q ? allLabels.filter(l => l.toLowerCase().includes(q) || matchedAlias(l, q)) : []
         if (!shownLabels.length) { closeLabelMenu(); return }
         labelMenu.innerHTML = shownLabels
-          .map((l, i) => `<li data-idx="${i}" style="${optStyle}">${escText(l)}</li>`)
+          .map((l, i) => {
+            const alias = l.toLowerCase().includes(q) ? undefined : matchedAlias(l, q)
+            const hint = alias ? ` <span style="opacity:.65">· ${escText(alias)}</span>` : ''
+            return `<li data-idx="${i}" style="${optStyle}">${escText(l)}${hint}</li>`
+          })
           .join('')
         labelActiveIdx = -1
         labelMenu.style.display = 'block'
@@ -285,6 +313,7 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
         if (i < 0 || i >= shownLabels.length) return
         labelInput.value = shownLabels[i]
         closeLabelMenu()
+        syncAliases()
         // Reusing an existing name: follow it into the category it lives in.
         const cat = getUserCategoryForLabel(shownLabels[i])
         if (cat && Array.from(select.options).some(o => o.value === cat)) {
@@ -391,7 +420,7 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
       linkInput.addEventListener('blur', () => setTimeout(closeMenu, 120))
     }
 
-    const cleanup = (value: { label: string; category: string; linkedFile: string | null; } | PromiseLike<{ label: string; category: string; linkedFile: string | null; } | null> | null) => {
+    const cleanup = (value: AddToLibraryResult | null) => {
       dlg.close()
       document.body.removeChild(dlg)
       resolve(value)
@@ -407,7 +436,7 @@ const showAddToLibraryDialog = async (editor: EditorInstance): Promise<{ label: 
       if (label in existing && !window.confirm(`A shape named "${label}" already exists in "${category}". Overwrite it?`)) {
         return
       }
-      cleanup({ label, category, linkedFile: getLinkedFile() })
+      cleanup({ label, category, linkedFile: getLinkedFile(), aliases: aliasInput.value.split(',') })
     })
 
     // Escape key
