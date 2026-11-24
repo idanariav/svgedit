@@ -47,9 +47,9 @@ describe('ext-connector', () => {
   })
 
   it('re-routes connectors for every changed element, not just the first', async () => {
-    // Regression guard: elementChanged only ever looked at opts.elems[0].
-    // After a multi-shape drag commit or multi-delete fires 'changed' with
-    // several elements at once, every shape *after* the first silently kept
+    // Regression guard: the handler once only looked at opts.elems[0].
+    // After a step that changed several shapes at once (a multi-shape drag
+    // commit, a multi-delete), every shape *after* the first silently kept
     // its bound connector line wherever it last was -- a real "object left
     // misplaced" bug for a diagram with several connected boxes.
     const seNs = 'http://svg-edit.googlecode.com'
@@ -80,7 +80,7 @@ describe('ext-connector', () => {
     })
 
     await extConnector.init(svgEditor)
-    svgCanvas.call('elementChanged', { elems: [boxA, boxB] })
+    svgCanvas.call('documentChanged', { cause: 'step', elems: [boxA, boxB] })
 
     expect(lineA.getAttribute('x1')).toBeTruthy()
     expect(lineB.getAttribute('x1')).toBeTruthy()

@@ -34,10 +34,10 @@ export interface HostCanvas {
    * Attach a handler to a canvas event. Handlers stack (the canvas is a native
    * `EventTarget`); nothing is returned and a bound handler is never replaced.
    *
-   * `documentChanged` (detail `{ cause: 'step' | 'history' | 'edit' }`) fires once
-   * per real change to the drawing (a step, an undo / redo, an edit outside the
-   * history), never for one that changed nothing nor for loading: mark the
-   * drawing dirty on it. `changed` fires for UI refreshes and may repeat or fire
+   * `documentChanged` (detail `{ cause: 'step' | 'history' | 'edit', elems }`, `elems`
+   * the elements that differ) fires once per real change to the drawing (a step,
+   * an undo / redo, an edit outside the history), never for one that changed
+   * nothing nor for loading: mark the drawing dirty on it. `changed` fires for UI refreshes and may repeat or fire
    * for changes that went nowhere.
    */
   bind(event: string, cb: CanvasEventHandler): void

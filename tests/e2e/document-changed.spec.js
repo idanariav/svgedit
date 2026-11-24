@@ -15,7 +15,8 @@ test.describe('documentChanged', () => {
         </g>
       </svg>`, { noAlert: true })
       window.__changes = []
-      window.svgEditor.svgCanvas.bind('documentChanged', (win, detail) => { window.__changes.push(detail.cause) })
+      window.__elems = []
+      window.svgEditor.svgCanvas.bind('documentChanged', (win, detail) => { window.__changes.push(detail.cause); window.__elems.push(detail.elems.map((el) => el.id || el.localName)) })
     })
   })
 
@@ -35,6 +36,19 @@ test.describe('documentChanged', () => {
       c.moveSelectedElements(5, 0)
     })
     expect(causes).toEqual(['step'])
+  })
+
+  test('it names the elements that differ', async ({ page }) => {
+    await announced(page, () => {
+      const c = window.svgEditor.svgCanvas
+      c.transact('Two edits', () => {
+        c.getElement('r').setAttribute('width', '90')
+        const e = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
+        e.id = 'e'
+        c.getCurrentDrawing().getCurrentLayer().append(e)
+      })
+    })
+    expect(await page.evaluate(() => window.__elems.at(-1))).toEqual(['r', 'e'])
   })
 
   test('a step whose code never calls `changed` is still announced', async ({ page }) => {

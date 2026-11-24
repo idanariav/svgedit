@@ -20,7 +20,8 @@ import { EPHEMERAL_ATTR } from './history.js'
 import { TextMetricsCache, resolveTextStyle, textsIn } from './model/text-metrics.ts'
 import type { TextBounds } from './model/text-metrics.ts'
 import { measureTexts } from './text-measure.ts'
-import type { ModelElement, ModelNode } from './model/node.ts'
+import type { ModelElement, ModelNode, NodePath } from './model/node.ts'
+import { changedPaths } from './model/diff.ts'
 
 /** Content-root attributes that follow the view (scroll, zoom), not the drawing. */
 const VIEW_ATTRS = new Set(['x', 'y', 'width', 'height'])
@@ -282,6 +283,31 @@ export class SnapshotHistory {
   revision (): ModelElement | undefined {
     this.baseline()
     return this.states[this.at]
+  }
+
+  /**
+   * The elements of the drawing being shown that differ from `prev` (an earlier model of it): changed, added, or that lost a
+   * child, outermost first (`model/diff.ts`). `shown` is the model of what the DOM shows (`revision()`).
+   */
+  changedSince (prev: ModelElement, shown: ModelElement): Element[] {
+    const content = this.target.content()
+    return changedPaths(prev, shown).map((path) => this.elementAt(content, path)).filter((el): el is Element => el !== null)
+  }
+
+  /** The element at a model path under `content` (ephemeral overlays are not in the model, so they are not counted). */
+  private elementAt (content: Element, path: NodePath): Element | null {
+    let node: Node = content
+    for (const index of path) {
+      let i = -1
+      let found: Node | null = null
+      for (const child of Array.from(node.childNodes)) {
+        if (child.nodeType === 1 && (child as Element).hasAttribute(EPHEMERAL_ATTR)) continue
+        if (++i === index) { found = child; break }
+      }
+      if (!found) return null
+      node = found
+    }
+    return node.nodeType === 1 ? node as Element : null
   }
 
   /** The drawing as the DOM shows it now, sharing what it has in common with the state being shown; nothing is recorded. */

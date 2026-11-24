@@ -18,6 +18,7 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 const name = 'art-brush'
 const P = 'ext-art-brush'
@@ -104,11 +105,14 @@ export default defineFeature({
     // The panel hides in path edit. (There is no `modeChange` extension hook: it is a document event.)
     document.addEventListener('modeChange', refresh, { signal: svgEditor.listenerAbort.signal })
 
-    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: (Element | null)[] }) => {
-      // The art follows its path (also after an undo of a path edit).
+    svgCanvas.bind('elementChanged', () => {
+      if (brushedSelection()) refresh()
+    })
+    // The art follows its path (also after an undo of a path edit).
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
       let changed = false
-      for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshArtBrush((el as Element)) || changed
-      if (changed || brushedSelection()) refresh()
+      for (const el of opts.elems) changed = svgCanvas.refreshArtBrush(el) || changed
+      if (changed) refresh()
     })
 
     return {

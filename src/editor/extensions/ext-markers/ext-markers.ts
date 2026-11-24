@@ -1,6 +1,7 @@
 // ext-markers.ts — Arrow/marker decorators
 import { error as logError } from '@svgedit/svgcanvas/common/logger.ts'
 import { defineFeature } from '../defineFeature.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 /**
  * @file ext-markers.ts
  *
@@ -315,20 +316,24 @@ export default defineFeature({
       })
     })
 
+    const hasMarkers = (elem: Element): boolean => Boolean(
+      elem.getAttribute('marker-start') || elem.getAttribute('marker-mid') || elem.getAttribute('marker-end'))
+
+    // Derived from each element that differs: the trimmed geometry follows the stroke width, the markers or the source; a
+    // marker's colour follows the stroke.
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
+      for (const elem of opts.elems) {
+        if (elem.hasAttribute('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
+          svgCanvas.selectorManager.requestSelector(elem).resize()
+        }
+        if (hasMarkers(elem)) colorChanged(elem)
+      }
+    })
+
+    // A structural fix-up with an undo step of its own, so it stays on the edit's own `changed` call.
     svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
       const elem = opts.elems[0]
-      // Stroke width, markers or the source changed: the trimmed geometry follows.
-      if (elem?.hasAttribute?.('se:arrow-align') && svgCanvas.syncArrowAlign(elem)) {
-        svgCanvas.selectorManager.requestSelector(elem).resize()
-      }
-      if (elem && (
-        elem.getAttribute('marker-start') ||
-          elem.getAttribute('marker-mid') ||
-          elem.getAttribute('marker-end')
-      )) {
-        colorChanged(elem)
-        updateReferences(elem)
-      }
+      if (elem && hasMarkers(elem)) updateReferences(elem)
     })
 
     return {

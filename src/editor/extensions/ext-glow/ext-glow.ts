@@ -20,6 +20,7 @@
 
 import { createFxComposer } from '../fx-filter.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 const name = 'glow'
 
@@ -144,13 +145,6 @@ export default defineFeature({
       ;(panel.querySelector('[data-glow="feather"]') as Element).toggleAttribute('data-off', !feather)
     }
 
-    // The effect filter region is an absolute box (see fx-filter setRegion), so it is re-derived after a move: a move bakes the
-    // drag transform into the geometry without firing 'changed', and 'gestureEnded' comes after that bake.
-    // elementChanged (below) covers attribute edits and (re)load.
-    svgCanvas.bind('gestureEnded', () => {
-      svgCanvas.getSelectedElements().filter(Boolean).forEach(el => fx.refreshRegion(el))
-    })
-
     svgCanvas.bind('selectedChanged', (_win: Window, opts: { selectedElement: Element | null, multiselected: boolean }) => {
       if (opts.selectedElement) fx.refreshRegion(opts.selectedElement)
       if (!opts.selectedElement || opts.multiselected) {
@@ -165,8 +159,10 @@ export default defineFeature({
       showPanel(true, opts.selectedElement)
     })
 
-    svgCanvas.bind('elementChanged', (_win: Window, opts: { elems: Element[] }) => {
-      ;(opts.elems || []).filter(Boolean).forEach(el => fx.refreshRegion(el))
+    // The effect filter region is an absolute box (see fx-filter setRegion), re-derived from the shape whenever the drawing
+    // changes: an attribute edit, or a move that baked the drag into the geometry.
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
+      opts.elems.forEach(el => fx.refreshRegion(el))
     })
 
     return {

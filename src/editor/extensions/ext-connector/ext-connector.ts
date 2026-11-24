@@ -23,6 +23,7 @@
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 import type { ElementsPayload, GestureStartedPayload, GestureMovedPayload, GestureReleasedPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 const name = 'connector'
 
@@ -654,11 +655,6 @@ export default defineFeature({
     const handleOneChangedElement = (elem: Element) => {
       const dataStorage = svgCanvas.getDataStorage()
 
-      // Reinitialize on document (re)load.
-      if (elem.tagName === 'svg' && elem.id === 'svgcontent') {
-        reset()
-      }
-
       // If the changed element is itself a connector, re-route it (e.g. a new
       // marker changed its endpoint offset). Otherwise re-route lines bound to it.
       const ids = getBindIds(elem)
@@ -696,18 +692,15 @@ export default defineFeature({
       updateConnectors((selElems.filter(Boolean) as Element[]))
     })
 
+    // Reinitialize on document (re)load (a load is the new reference, not a documentChanged).
     svgCanvas.bind('elementChanged', (_win: Window, opts: { elems?: (Element | null)[] }) => {
-      // 'changed' can carry several elements at once (a multi-element
-      // drag commit's `svgCanvas.call('changed', selectedElements)`, a
-      // multi-delete's `svgCanvas.call('changed', selectedCopy)`, …), not
-      // just the single-element case this hook was originally shaped for.
-      // Previously only opts.elems[0] was ever processed, so any *other*
-      // shape's bound connector silently never got re-routed after such a
-      // bulk operation -- e.g. drag two connected boxes together and
-      // release: only the first box's line ends up back where it should.
-      for (const elem of opts.elems?.filter(Boolean) || []) {
-        handleOneChangedElement((elem as Element))
-      }
+      if (opts.elems?.some((elem) => elem?.tagName === 'svg' && elem.id === 'svgcontent')) reset()
+    })
+
+    // Every element that differs is re-checked (a step can change several: a multi-element drag, a multi-delete), whatever
+    // path the change took, including an edit whose code never called 'changed'.
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
+      for (const elem of opts.elems) handleOneChangedElement(elem)
     })
 
     // Fires on every mousemove while elements are being dragged/resized.

@@ -6,11 +6,11 @@ import { createDocumentChanges } from '../../packages/svgcanvas/core/document-ch
 const setup = () => {
   const calls = []
   const state = { model: { v: 0 }, held: false, started: false }
-  const history = { previewing: false, revision: () => state.model }
+  const history = { previewing: false, revision: () => state.model, changedSince: (prev, shown) => [`${prev.v}->${shown.v}`] }
   const target = {
     inTransaction: () => state.held,
     getStarted: () => state.started,
-    call: (ev, detail) => calls.push([ev, detail.cause])
+    call: (ev, detail) => { calls.push([ev, detail.cause]); state.elems = detail.elems; state.onCall?.() }
   }
   const changes = createDocumentChanges(target, history)
   changes.reset()
@@ -83,15 +83,32 @@ describe('document changes announcer', () => {
     const model = { v: 1 }
     const changes = createDocumentChanges(
       { inTransaction: () => false, getStarted: () => false, call: (ev, d) => calls.push(d.cause) },
-      { previewing: false, revision: () => model }
+      { previewing: false, revision: () => model, changedSince: () => ['x'] }
     )
     changes.check('edit')
     expect(calls).toEqual([])
     const other = createDocumentChanges(
       { inTransaction: () => false, getStarted: () => false, call: (ev, d) => calls.push(d.cause) },
-      { previewing: false, revision: () => model }
+      { previewing: false, revision: () => model, changedSince: () => ['x'] }
     )
     other.check('step')
     expect(calls).toEqual(['step'])
+  })
+
+  it('names what differs from the drawing last announced', () => {
+    const { state, changes, change } = setup()
+    change()
+    change()
+    changes.check('step')
+    expect(state.elems).toEqual(['0->2'])
+  })
+
+  it('takes what its handlers wrote as part of the change it announced', () => {
+    const { calls, state, changes, change } = setup()
+    state.onCall = () => { state.onCall = null; change() } // a feature re-deriving its data
+    change()
+    changes.check('step')
+    changes.check('edit')
+    expect(calls).toEqual([['documentChanged', 'step']])
   })
 })

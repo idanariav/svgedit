@@ -35,6 +35,7 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 const name = 'mirror'
 
@@ -306,7 +307,10 @@ export default defineFeature({
       // Canvas resize fires elementChanged with the <svg> element — the
       // axis position depends on the resolution.
       if (opts.elems.some((el: { tagName: string; }) => el?.tagName === 'svg')) drawAxis()
-      handleLinkedElems((opts.elems as Element[]), false)
+    })
+    // A source that differs re-syncs its twin, whatever path the change took.
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
+      handleLinkedElems(opts.elems, false)
     })
 
     svgCanvas.bind('elementTransition', (_win: Window, opts: { elems: Element[]; }) => {

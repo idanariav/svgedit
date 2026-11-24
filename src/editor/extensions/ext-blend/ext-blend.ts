@@ -24,9 +24,9 @@
  */
 
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
-import type { ElementsPayload } from '@svgedit/svgcanvas/core/extension-hooks.ts'
 import type { ToolContext } from '@svgedit/svgcanvas'
 import { createToolHint } from '../../toolHint.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 const name = 'blend'
 const P = 'ext-blend'
@@ -211,12 +211,15 @@ export default defineFeature({
     // The panel hides in path edit. (There is no `modeChange` extension hook: it is a document event.)
     document.addEventListener('modeChange', refresh, { signal: svgEditor.listenerAbort.signal })
 
-    svgCanvas.bind('elementChanged', (_win: Window, opts: ElementsPayload) => {
-      // The steps follow their keys; an undo or redo brings the steps back with the keys.
-      if (opts.restored) { refresh(); return }
+    svgCanvas.bind('elementChanged', () => {
+      if (blendedSelection()) refresh()
+    })
+    // The steps follow their keys; an undo or redo brings the steps back with the keys.
+    svgCanvas.bind('documentChanged', (_win: Window, opts: DocumentChangedDetail) => {
+      if (opts.cause === 'history') { refresh(); return }
       let changed = false
-      for (const el of opts.elems.filter(Boolean)) changed = svgCanvas.refreshBlend(el) || changed
-      if (changed || blendedSelection()) refresh()
+      for (const el of opts.elems) changed = svgCanvas.refreshBlend(el) || changed
+      if (changed) refresh()
     })
 
     return {

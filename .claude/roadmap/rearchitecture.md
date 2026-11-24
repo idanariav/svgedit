@@ -383,13 +383,17 @@ leading `pointer-events` declaration as the serializer does (`withoutEditorState
 change — the 2026-11-24 log's "svg-changed after a drag that went nowhere". Step (2) has started: the unsaved-work warning
 (`showSaveWarning`) is armed by `documentChanged` and cleared by `loadSvgString`.
 
-The derived-data extensions are **not** moved yet, and should not be moved as they are: they need what `documentChanged`
-does not carry. `elementChanged` hands them the elements (`{ elems, restored }`), runs synchronously inside the edit (a
-re-derive lands in the same step, rule (1) of the snapshot history), and `restored` tells them an undo brought their data
-back. The way through: `documentChanged` carries the changed set, computed from the two models it already compares (`share`
-keeps identity per subtree, so the diff walks only the changed paths) and `restored` becomes `cause === 'history'`; then each
-extension moves over and its re-derive is checked against the command sweep. Step (3) waits on that, because removing a
-`changed` call today also silences the re-derive behind it.
+**Status (2026-11-24, later).** `documentChanged` names what changed: `elems`, the elements that differ from the drawing last
+announced (`core/model/diff.ts` pairs children as `reconcile` does and stops at shared subtrees; `snapshotHistory.changedSince`
+resolves the paths), and what its handlers write lands in the change they were told about (the announcer re-reads the
+revision after them). The features that derive data moved onto it: connector, mirror, blend, art brush, the effect filter
+regions (glow, shadow, outline: their `gestureEnded` workaround for a move "without a `changed`" is gone) and the markers'
+colour and arrow trim. Each keeps its old undo behaviour (only blend skips `cause: 'history'`). Left on `elementChanged`, on
+purpose: panel and overlay refreshes, the connector's reset on a load (a load is not a change), and the markers' "give a
+shared marker its own copy", which records an undo step of its own (moving it would nest a step inside an announcement).
+
+Step (3) is next: with the derived data no longer hanging on `changed`, the `call('changed')` sites that only exist to say
+"something changed" can go; the ones that refresh a panel stay. Then `restored` on `elementChanged` has no reader left.
 
 ### R9. A gesture owns its state
 

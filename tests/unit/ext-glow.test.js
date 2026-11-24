@@ -106,15 +106,13 @@ describe('ext-glow', function () {
     assert.equal(fx.readEffects(rect).glow.outer.blur, 8)
   })
 
-  it("re-derives the filter region when a gesture ends (a move bakes into the geometry without a 'changed')", function () {
+  it("re-derives the filter region when the drawing changes, even by an edit that never called 'changed' (a move baked into the geometry)", function () {
     const rect = addRect()
     select(rect)
     field('glow_outer_blur', 8)
     const filterOf = () => document.getElementById(rect.getAttribute('filter').match(/url\(#([^)]+)\)/)[1])
     const xBefore = Number(filterOf().getAttribute('x'))
-    rect.setAttribute('x', '110') // moved by 100 without the editor being told
-    assert.equal(Number(filterOf().getAttribute('x')), xBefore)
-    svgCanvas.call('gestureEnded', { mode: 'select', event: new MouseEvent('mouseup') })
+    svgCanvas.transact('Move', () => rect.setAttribute('x', '110')) // moved by 100, the step is all the editor is told
     assert.equal(Number(filterOf().getAttribute('x')), xBefore + 100)
   })
 
