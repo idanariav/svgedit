@@ -472,6 +472,16 @@ only supplying the system clipboard's content. One pointer-intent classifier (cl
 screen px) that every press consults. Shared geometric tolerance constants. The target overrides as one ranked resolver
 with its rules tested together. Size: M.
 
+**Plan (2026-11-24).** [`.claude/plans/r10-one-entry-per-intent.md`](../plans/r10-one-entry-per-intent.md):
+- paste, copy and cut run their commands from every source (the native event supplying the system clipboard's text), with
+  one placement rule;
+- `core/pointer-intent.ts` (`DRAG_PX`, sticky straight-line distance) for the eleven click-versus-drag sites, and
+  `ToolEvent.dragging`;
+- `CLOSE_TOL` for the 25 `parseAnchors` callers;
+- `core/press-target.ts`, the ranked resolver with injected probes and a combination table;
+- Curvature finishing through `deactivate`.
+The extension hook that was never dispatched is already gone.
+
 ### R11. The editor's own state stays out of the drawing
 
 **Today.** Group dimming (`opacity="0.33"`, `pointer-events: none`) leaked into undo snapshots and saved files (5a3d78d6);
