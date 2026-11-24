@@ -142,6 +142,14 @@ describe('CommandRegistry', () => {
       expect(lines.some(([level, m]) => level === 'error' && m.includes('"a"'))).toBe(true)
     })
 
+    it('enabled() sees the params of the run it gates (none when a menu asks)', () => {
+      const enabled = vi.fn((_editor, params) => (params?.ok ? true : 'not ok'))
+      reg.register({ id: 'a', label: 'A', params: { ok: { type: 'boolean' } }, enabled, run () {} })
+      expect(reg.isEnabled('a')).toBe('not ok')
+      expect(reg.tryRun('a', { ok: true })).toBe(true)
+      expect(enabled).toHaveBeenLastCalledWith(editor, { ok: true })
+    })
+
     it('a throwing enabled() counts as disabled, not as a crash', () => {
       reg.register({ id: 'a', label: 'A', enabled () { throw new Error('x') }, run () {} })
       expect(reg.isEnabled('a')).toBe('unavailable')

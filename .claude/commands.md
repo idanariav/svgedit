@@ -75,7 +75,7 @@
 | `object_lock_selection` | Lock Selection | `meta+2` |  |  |
 | `object_show_all` | Show All | `alt+meta+3` |  |  |
 | `object_unlock_all` | Unlock All | `alt+meta+2` |  |  |
-| `paste` | Paste |  |  |  |
+| `paste` | Paste |  | `text: string`<br>`at: "center" \| "pointer" = "center"` |  |
 | `paste_in_place` | Paste in Place |  |  |  |
 | `tool_clone` | Duplicate Element(s) | `d` |  |  |
 | `tool_clone_multi` | Duplicate Element(s) |  |  | hidden |

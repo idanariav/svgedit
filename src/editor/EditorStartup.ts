@@ -683,15 +683,11 @@ class EditorStartup {
       // old internal-only behavior (the same sessionStorage clipboard the
       // right-click "Paste" menu item uses).
       this.pasteFallbackArmer = createPasteFallbackArmer(async () => {
-        try {
-          const text = await navigator.clipboard.readText()
-          if (this.applyClipboardText(text)) {
-            this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'fallback', kind: classifyClipboardText(text)?.type })
-            return
-          }
-        } catch { /* clipboard read blocked by host/permissions */ }
-        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'fallback', kind: 'stored' })
-        this.svgCanvas.pasteElements()
+        let text: string | undefined
+        try { text = await navigator.clipboard.readText() } catch { /* clipboard read blocked by host/permissions */ }
+        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'fallback', kind: classifyClipboardText(text)?.type ?? 'stored' })
+        // the paste command, as every paste source runs it (roadmap R10): the system clipboard's text, else the stored copy
+        this.commands.tryRun('paste', { text }, 'keyboard')
       })
     }
     this.pasteHandler = (e) => {
@@ -703,22 +699,15 @@ class EditorStartup {
       // Let editable fields (inputs, text areas) keep their native paste.
       const t = e.target as HTMLElement | null
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
-      const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain')
-      if (this.applyClipboardText(text)) {
-        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: classifyClipboardText(text)?.type })
-        e.preventDefault()
-        return
-      }
-      // The system clipboard holds nothing a drawing can take (it lost the shapes' JSON to a host's own copy, or was never
-      // written: a rejected `writeText`). Paste what this editor copied, as the menu's Paste and the keydown fallback do;
-      // before, Cmd/Ctrl+V did nothing here while Paste in the menu worked.
-      if (this.viewOnly || !this.hasStoredClipboard()) {
-        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: 'none', types: Array.from(e.clipboardData?.types ?? []) })
-        return
-      }
-      this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: 'stored', types: Array.from(e.clipboardData?.types ?? []) })
+      const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain') || undefined
+      // The system clipboard's text when the drawing can take it, else what this editor copied (a host's own copy can have
+      // taken the shapes' JSON off the clipboard, or `writeText` was rejected): the paste command decides, as for every
+      // paste source (roadmap R10). Nothing to paste leaves the event to the browser.
+      const kind = classifyClipboardText(text)?.type ?? (!this.viewOnly && this.hasStoredClipboard() ? 'stored' : 'none')
+      this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind, types: Array.from(e.clipboardData?.types ?? []) })
+      if (kind === 'none') return
       e.preventDefault()
-      this.pasteInCenter()
+      this.commands.tryRun('paste', { text }, 'keyboard')
     }
     document.addEventListener('paste', this.pasteHandler)
 
@@ -737,7 +726,7 @@ class EditorStartup {
       const hasSelection = this.svgCanvas.getSelectedElements().some(Boolean)
       if (e.type === 'copy') {
         if (!hasSelection) return // nothing selected: leave the browser's copy alone
-        if (!fromKey) this.svgCanvas.copySelectedElements() // a host's menu Copy, not our hotkey
+        if (!fromKey) this.commands.tryRun('copy', {}, 'native-copy') // a host's menu Copy, not our hotkey
       } else if (!fromKey) {
         return // a menu Cut without our hotkey: the drawing was not cut, so there is nothing new to put on the clipboard
       }
@@ -897,20 +886,22 @@ class EditorStartup {
     $req('se-cmenu_canvas').addEventListener('change', (e) => {
       const action = (e as CustomEvent)?.detail?.trigger
       switch (action) {
+        // the clipboard and delete run their commands, as the keys and the menus do (roadmap R10); Paste lands where the menu
+        // was opened
         case 'delete':
-          this.svgCanvas.deleteSelectedElements()
+          this.commands.tryRun('delete_selected', {}, 'context-menu')
           break
         case 'cut':
-          this.cutSelected()
+          this.commands.tryRun('cut', {}, 'context-menu')
           break
         case 'copy':
-          this.copySelected()
+          this.commands.tryRun('copy', {}, 'context-menu')
           break
         case 'paste':
-          this.svgCanvas.pasteElements()
+          this.commands.tryRun('paste', { at: 'pointer' }, 'context-menu')
           break
         case 'paste_in_place':
-          this.svgCanvas.pasteElements('in_place')
+          this.commands.tryRun('paste_in_place', {}, 'context-menu')
           break
         case 'group':
         case 'group_elements':

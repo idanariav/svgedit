@@ -894,6 +894,24 @@ host restore) leave this false to avoid polluting history.
   }
 
   /**
+   * Paste, from any source (roadmap R10: the `paste` / `paste_in_place` commands run this; the native `paste` event, the
+   * keydown fallback, the context menu and the menu run the commands). `text` is the system clipboard's content when the
+   * source has it: the editor's own shapes or an external SVG are pasted from it; anything else, or no text, pastes what this
+   * editor copied. It lands in the centre of the view, at the context menu's point (`at: 'pointer'`), or where it was copied
+   * (`inPlace`).
+   * @returns whether something was pasted
+   */
+  paste ({ text, at = 'center', inPlace = false }: { text?: string, at?: 'center' | 'pointer', inPlace?: boolean } = {}): boolean {
+    if (this.viewOnly) return false
+    if (!inPlace && text && this.applyClipboardText(text)) return true
+    if (!this.hasStoredClipboard()) return false
+    if (inPlace) this.svgCanvas.pasteElements('in_place')
+    else if (at === 'pointer') this.svgCanvas.pasteElements() // the last right-click point
+    else this.pasteInCenter()
+    return true
+  }
+
+  /**
  * @param data Already-parsed clipboard
 contents to paste, bypassing the sessionStorage snapshot (see
 `pasteElements`'s `data` param).

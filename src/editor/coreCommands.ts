@@ -112,16 +112,27 @@ export const registerCoreCommands = (commands: import('./commands.ts').CommandRe
     label: 'tools.paste',
     group: 'Edit',
     icon: 'paste.svg',
+    // No key: Cmd/Ctrl+V is the OS's. The browser delivers the clipboard on the native `paste` event, which runs this
+    // command with the text (EditorStartup), as the keydown fallback does when a host swallows that event.
+    params: {
+      /** the system clipboard's content, from a source that has it (the native event, the keydown fallback) */
+      text: { type: 'string' },
+      /** the centre of the view, or the point the context menu was opened at */
+      at: { type: 'enum', values: ['center', 'pointer'], default: 'center' }
+    },
+    // an external SVG lands as several edits (import, ungroup, centre): one undo step
+    atomic: true,
     enabled: canPaste,
-    run: (editor) => editor.svgCanvas.pasteElements()
+    run: (editor, { text, at }: { text?: string, at?: 'center' | 'pointer' }) => { editor.paste({ text, at }) }
   })
   commands.register({
     id: 'paste_in_place',
     label: 'tools.paste_in_place',
     group: 'Edit',
     icon: 'paste_in_place.svg',
+    atomic: true,
     enabled: canPaste,
-    run: (editor) => editor.svgCanvas.pasteElements('in_place')
+    run: (editor) => { editor.paste({ inPlace: true }) }
   })
   commands.register({
     id: 'zoom_fit',

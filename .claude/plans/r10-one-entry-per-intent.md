@@ -1,6 +1,6 @@
 # R10 plan: one entry point per user intent
 
-Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **step 0 done** (2026-11-24); step 1 (clipboard) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–1 done** (2026-11-24); step 2 (pointer intent) next.
 
 ## The problem, measured (2026-11-24)
 
@@ -90,7 +90,8 @@ Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Statu
   - **the context menu:** `commands.run('paste', { at: 'pointer' })`;
   - **the menu and the palette:** `commands.run('paste')`.
 - **Cmd+V stays the OS's key, not a registry hotkey.** The browser must deliver the clipboard on the native event, and
-  rebinding it would mean nothing. The command lists it (`displayKey`), so `commands.md` and the shortcuts panel show it.
+  rebinding it would mean nothing. (Listing it as a display-only key was left out: the registry has no such notion, and the
+  shortcuts panel would offer to rebind it.)
 - **Copy, cut and delete in the context menu** run their commands. A host's menu Copy runs `commands.run('copy')`.
 
 ### 2. One pointer-intent classifier
@@ -161,6 +162,14 @@ Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Statu
      width with the padding).
 1. **Clipboard** (target 1). Unit tests for the paste classification and placement; the plugin's clipboard double (R13) later
    covers the host quirks.
+   **Done (2026-11-24).**
+   - **`Editor.paste({ text, at, inPlace })`** behind atomic `paste` / `paste_in_place`. The native event, the fallback,
+     the context menu (`at: 'pointer'`), the menu and the palette all run the command. Cut, copy and delete in the context
+     menu, and a host's menu Copy, run theirs.
+   - **The registry** passes the run's params to `enabled` (`isEnabled(id, params)`), so `canPaste` takes a source's
+     text when the drawing can take it.
+   - **Fixed:** the menu's Paste no longer lands at the last right-click point, and an external SVG paste is one undo step
+     (it was import, ungroup and two aligns).
 2. **Pointer intent** (target 2): core sites first, then the registry's `dragging`, then the extensions and the panels.
 3. **Tolerances** (target 3), with the literal guard.
 4. **Press target resolver** (target 4).

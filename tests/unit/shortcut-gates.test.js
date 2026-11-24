@@ -109,4 +109,11 @@ describe('editor shortcut gates', () => {
     expect(canPaste(editor)).toBe(true)
     sessionStorage.removeItem('clip')
   })
+
+  it('Paste also takes the system clipboard\'s text a paste source brings, when a drawing can take it', () => {
+    sessionStorage.removeItem('clip')
+    expect(canPaste(editor, { text: '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>' })).toBe(true)
+    expect(canPaste(editor, { text: '[{"element":"rect"}]' })).toBe(true)
+    expect(canPaste(editor, { text: 'a note' })).toBe('Nothing to paste') // nothing a drawing can take, nothing copied
+  })
 })

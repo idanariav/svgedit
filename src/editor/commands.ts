@@ -48,8 +48,8 @@ export interface CommandSpec {
   /** images/ filename for menus without a button */
   icon?: string
   params?: Record<string, ParamSpec>
-  /** `true`, or a human-readable reason it is unavailable */
-  enabled?: (editor: EditorInstance) => true | string
+  /** `true`, or a human-readable reason it is unavailable; `params` are the run's (absent when a menu asks whether to enable its item) */
+  enabled?: (editor: EditorInstance, params?: Record<string, unknown>) => true | string
   run: (editor: EditorInstance, params: never) => unknown
   /** opens a dialog / file picker / prompt (excluded from sweeps and automation) */
   interactive?: boolean
@@ -244,13 +244,13 @@ export class CommandRegistry {
   }
 
   /** `true`, or the reason the command can't run right now. */
-  isEnabled (id: string): true | string {
+  isEnabled (id: string, params?: Record<string, unknown>): true | string {
     const rec = this.table.get(id)
     if (!rec) return 'unknown command'
     if (this.editor?.viewOnly && !VIEW_ONLY_COMMANDS.has(id)) return 'view only'
     if (!rec.enabled) return true
     try {
-      const r = rec.enabled(this.editor)
+      const r = rec.enabled(this.editor, params)
       return r === true ? true : (typeof r === 'string' && r) || 'unavailable'
     } catch (err) {
       logError(`enabled() of command "${id}" threw`, err, 'commands')
@@ -355,7 +355,7 @@ export class CommandRegistry {
   runCommand (id: string, params: Record<string, unknown>): unknown {
     const rec = this.table.get(id)
     if (!rec) throw new CommandError('unknown', id, `Unknown command "${id}"`)
-    const state = this.isEnabled(id)
+    const state = this.isEnabled(id, params)
     if (state !== true) throw new CommandError('disabled', id, state)
     const args = this.validate(rec, params)
     // the drawing as it is now is where this command starts from (a command run by a command is part of the outer one)

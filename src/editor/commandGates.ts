@@ -7,8 +7,9 @@
  * so the registry, the buttons and the command sweep agree with what actually happens.
  * @module commandGates
  */
+import { classifyClipboardText } from './pasteClipboardText.ts'
 
-export type Gate = (editor: EditorInstance) => true | string
+export type Gate = (editor: EditorInstance, params?: Record<string, unknown>) => true | string
 
 /** @returns the selected elements (never holes) */
 export const selectedOf = (editor: EditorInstance): Element[] => editor.svgCanvas.getSelectedElements().filter(Boolean)
@@ -67,7 +68,9 @@ export const hasObjects: Gate = (editor) => {
 }
 
 /** Paste needs what a copy / cut left on the clipboard */
-export const canPaste: Gate = (editor) => {
+/** Something to paste: the system clipboard's text a paste source brought (`params.text`) that a drawing can take, or the editor's own copy. */
+export const canPaste: Gate = (editor, params) => {
+  if (typeof params?.text === 'string' && classifyClipboardText(params.text)) return true
   try {
     return sessionStorage.getItem(editor.svgCanvas.getClipboardID()) ? true : 'Nothing to paste'
   } catch {

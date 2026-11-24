@@ -65,7 +65,6 @@ test.describe('one entry point per intent (R10)', () => {
 
   test.describe('paste', () => {
     test('the Paste command pastes in the centre of the view, not where a context menu was last opened', async ({ page }) => {
-      test.fail(true, 'R10 step 1: the command pastes at the last right-click point')
       await rightClickAt(page, 560, 420) // long ago, somewhere else
       await copySrc(page)
       const before = await undoSize(page)
@@ -108,8 +107,20 @@ test.describe('one entry point per intent (R10)', () => {
       })
     }
 
+    test('a native paste of an external SVG is one undo step (import, ungroup and centring together)', async ({ page }) => {
+      const before = await undoSize(page)
+      await page.evaluate(() => {
+        const e = window.svgEditor
+        e.$container.focus()
+        const clipboardData = new DataTransfer()
+        clipboardData.setData('text/plain', '<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="20" fill="#00f"/></svg>')
+        e.$container.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }))
+      })
+      expect(await page.evaluate(() => document.querySelectorAll('#svgcontent circle[fill="#00f"]').length)).toBe(1)
+      expect(await undoSize(page)).toBe(before + 1)
+    })
+
     test('every paste goes through the paste command (the debug log names it)', async ({ page }) => {
-      test.fail(true, 'R10 step 1: a native paste does not run the command')
       await copySrc(page)
       const actions = await page.evaluate(() => {
         const e = window.svgEditor
