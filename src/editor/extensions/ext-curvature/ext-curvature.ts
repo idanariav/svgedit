@@ -237,17 +237,15 @@ export default defineFeature({
     // preview / anchor dots behind in the layer (they'd otherwise be real
     // content, serialized by getSvgString() and persisted by a host
     // autosave). Mirrors the Escape-key behavior: finalize as an open path.
-    document.addEventListener('modeChange', (evt) => {
-      if ((evt as CustomEvent).detail.getMode() !== 'curvature' && isDrawing) {
-        // Outside a gesture, so this finish records and announces the path itself. It
-        // stays in the tool the user switched to (no switch to Select).
-        const el = finalize(false)
-        if (el) {
-          svgCanvas.undoMgr.addCommandToHistory(new svgCanvas.history.InsertElementCommand(el))
-          svgCanvas.call('elementInserted', [el])
-        }
-      }
-    }, { signal: svgEditor.listenerAbort.signal })
+    // The registry calls this when its canvas leaves the tool (roadmap R10: one finish; before, a document-wide `modeChange`
+    // listener, which another editor on the page fired too). Outside a gesture, so the finish is its own undo step; it
+    // stays in the tool the user switched to (no switch to Select).
+    const finishOnLeave = (): void => {
+      if (!isDrawing) return
+      let el: Element | null = null
+      svgCanvas.transact('Draw curvature path', () => { el = finalize(false) })
+      if (el) svgCanvas.call('elementInserted', [el])
+    }
 
     // ── Session state ──────────────────────────────────────────────────────
     let points: Array<{ x: number, y: number, corner: boolean, end: boolean }> = []
@@ -406,6 +404,7 @@ export default defineFeature({
     svgCanvas.registerTool({
       id: 'curvature',
       undoLabel: 'Draw curvature path',
+      deactivate: finishOnLeave,
       wantsHover: true, // the tentative segment follows the pointer between clicks
       snap: true, // anchors, the tentative segment and dragged anchors snap to other objects
 

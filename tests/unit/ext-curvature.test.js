@@ -32,6 +32,7 @@ describe('ext-curvature', () => {
       }),
       history: { InsertElementCommand: class {} },
       undoMgr: { addCommandToHistory: vi.fn() },
+      transact: vi.fn((_label, fn) => fn()),
       call: vi.fn()
     }
 
@@ -70,8 +71,8 @@ describe('ext-curvature', () => {
     // Regression guard: switching tools used to leave the dashed preview path
     // and anchor-dot circles behind as real layer content -- getSvgString()
     // would then serialize them and a host autosave would persist them into
-    // the drawing.
-    document.dispatchEvent(new CustomEvent('modeChange', { detail: { getMode: () => 'select' } }))
+    // the drawing. The registry calls deactivate when its canvas leaves the tool.
+    tool.deactivate(ctx)
 
     expect(layer.querySelector('#curvature_preview')).toBeNull()
     expect(layer.querySelectorAll('circle').length).toBe(0)
@@ -81,10 +82,13 @@ describe('ext-curvature', () => {
     click(10, 10)
     click(50, 10)
 
-    document.dispatchEvent(new CustomEvent('modeChange', { detail: { getMode: () => 'select' } }))
+    tool.deactivate(ctx)
 
     expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalledTimes(1)
-    expect(svgCanvas.undoMgr.addCommandToHistory).toHaveBeenCalledTimes(1)
+    // one undo step, the session's own (a transaction: not a hand-added command)
+    expect(svgCanvas.transact).toHaveBeenCalledTimes(1)
+    expect(svgCanvas.transact.mock.calls[0][0]).toBe('Draw curvature path')
+    expect(svgCanvas.undoMgr.addCommandToHistory).not.toHaveBeenCalled()
     // Its undo step is what tells the host (documentChanged, so autosave sees it); the path is reported as inserted too.
     const path = svgCanvas.addSVGElementsFromJson.mock.results[0].value
     expect(svgCanvas.call).toHaveBeenCalledWith('elementInserted', [path])
@@ -92,10 +96,20 @@ describe('ext-curvature', () => {
     expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()
   })
 
-  it('a mode change to curvature itself (e.g. re-selecting the tool) does not finalize an idle session', () => {
-    document.dispatchEvent(new CustomEvent('modeChange', { detail: { getMode: () => 'curvature' } }))
+  it('leaving an idle session finishes nothing', () => {
+    tool.deactivate(ctx)
 
     expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
+    expect(svgCanvas.transact).not.toHaveBeenCalled()
+  })
+
+  it('another editor\'s tool switch (a document-wide modeChange) does not finish this one\'s session', () => {
+    click(10, 10)
+    click(50, 10)
+    document.dispatchEvent(new CustomEvent('modeChange', { detail: { getMode: () => 'select' } }))
+
+    expect(svgCanvas.addSVGElementsFromJson).not.toHaveBeenCalled()
+    expect(layer.querySelector('#curvature_preview')).not.toBeNull()
   })
 
   it('hovers: the tentative segment follows the pointer between clicks', () => {
