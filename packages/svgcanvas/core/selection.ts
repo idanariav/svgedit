@@ -505,7 +505,6 @@ export const createSelection = (canvas: SvgCanvas): SelectionApi => {
         newTransform as string,
         selectedElements
       )
-      svgCanvas.call('changed', selectedElements)
     }
     // const pointGripContainer = svgCanvas.getElement('pathpointgrip_container');
     // if (elem.nodeName === 'path' && pointGripContainer) {
@@ -537,7 +536,6 @@ export const createSelection = (canvas: SvgCanvas): SelectionApi => {
 
     if (!batchCmd.isEmpty()) {
       svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', selectedElements)
     }
   }
 

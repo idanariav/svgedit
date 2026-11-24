@@ -998,7 +998,6 @@ export const createPathMethod = (canvas: SvgCanvas): PathMethodApi => {
       if (this.elem.id && before !== null && after !== null && before !== after) {
         restoreAttr(this.elem, 'd', before)
         if (svgCanvas.setElementAttributes(text ?? 'Edit path', this.elem, { d: after })) {
-          svgCanvas.call('changed', [this.elem])
           return
         }
         restoreAttr(this.elem, 'd', after)

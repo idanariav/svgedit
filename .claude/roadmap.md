@@ -18,6 +18,11 @@ short: details belong in the area files.
 - **Drawing tools use `svgCanvas.registerTool`** (document-space events, one undo step per gesture, `options()` for an
   options bar). No new legacy mouse hooks.
 - **Undo goes through `svgCanvas.transact(label, fn)`.** Never construct a `ChangeElementCommand` before its mutation.
+- **A change to the drawing needs no `call('changed')`** ([R8](roadmap/rearchitecture.md#r8-a-change-to-the-drawing-is-announced-from-the-history-not-by-every-call-site)):
+  the step it lands is announced (`documentChanged`, with the elements that differ), and the panels, derived data and the
+  host follow from that. Call `changed` only to refresh the UI for something that is not a change of the drawing (a load,
+  the layers panel after a layer operation, a replacement element that should become the selection). A command that changes the
+  drawing unannounced fails the command sweep (`documentChanges.pending()`).
 - **Typing ([R3](roadmap/rearchitecture.md#r3-typescript)):** a new module in `packages/svgcanvas` is a `.ts` file (erasable
   syntax only: no enums, namespaces or parameter properties; no `any`, use `unknown` and narrow) and is listed in
   `tsconfig.strict.json`. Import a `.ts` module with its `.ts` extension (`./x.ts`): plain Node runs the headless engine and

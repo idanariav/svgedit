@@ -343,10 +343,6 @@ export default defineFeature({
       else setRadial(t.grad, p1, r, focal)
     }
 
-    const finish = (el: Element) => {
-      svgCanvas.call('changed', [el])
-    }
-
     // ---- gestures ------------------------------------------------------------------------
 
     const moveGesture = (ctx: import('@svgedit/svgcanvas').ToolContext, ev: import('@svgedit/svgcanvas').ToolEvent, d: Drag) => {
@@ -428,7 +424,6 @@ export default defineFeature({
           setStopColor(node, `#${paint.solidColor}`, paint.alpha / 100)
           selectedStop = node
         })
-        finish(t.el)
         redrawIdle()
       })
       ;(('body' in root ? root.body : null) ?? root).appendChild(dialog)
@@ -571,7 +566,6 @@ export default defineFeature({
             svgCanvas.selectOnly([p.el], true)
             target = fresh
             selectedStop = null
-            finish(p.el)
           }
           draw(ctx)
           return undefined
@@ -589,7 +583,6 @@ export default defineFeature({
           if (d.part.kind === 'bar' && own(t)) {
             selectedStop = addStop(t.grad, (d.part.t as number))
             reread(t)
-            finish(t.el)
           } else if (d.part.kind === 'stop' && ev.event.detail >= 2) {
             const node = d.node as Element
             setTimeout(() => editStopColor(node), 0)
@@ -602,7 +595,6 @@ export default defineFeature({
           selectedStop = null
           reread(t)
         }
-        finish(t.el)
         draw(ctx)
         return undefined
       },
@@ -618,7 +610,6 @@ export default defineFeature({
         })
         selectedStop = null
         reread(t)
-        finish(t.el)
         draw(ctx)
         return true
       },

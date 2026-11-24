@@ -47,7 +47,6 @@ export default defineFeature({
      */
     const setAttr = (attr: string, val: string | number): void => {
       svgCanvas.changeSelectedAttribute(attr, val)
-      svgCanvas.call('changed', selElems)
     }
 
     /**

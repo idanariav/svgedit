@@ -341,7 +341,6 @@ export const init = (canvas: SvgCanvas): {
       // an area text's box drag: its transaction is the undo step
       svgCanvas.gesture.areaResize.tx.commit()
       svgCanvas.gesture.areaResize = null
-      svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
     // an Alt-drag stretch: its transaction is the undo step, nothing is left to bake below
     const stretched = mode === 'resize' && svgCanvas.stretch.isActive()
@@ -415,7 +414,6 @@ export const init = (canvas: SvgCanvas): {
         const before = new Map<Element, string>()
         for (const elem of selectedElements) if (elem) before.set(elem, svgCanvas.gesture.dragStartTransforms?.get(elem) ?? '')
         const bakedByModel = before.size > 0 && svgCanvas.bakeDrag(before, restoreTransformAttr)
-        if (bakedByModel) svgCanvas.call('changed', selectedElements.filter(Boolean))
 
         selectedElements.forEach((elem) => {
           if (bakedByModel) return
@@ -530,7 +528,6 @@ export const init = (canvas: SvgCanvas): {
           // (x/y, width/height, font-size, …) via recalculateDimensions.
           // Fire 'changed' so the context panel reflects those new values
           // instead of the pre-drag ones.
-          svgCanvas.call('changed', selectedElements.filter(Boolean))
         }
 
         // Clear the stored transforms AND reset the flag together

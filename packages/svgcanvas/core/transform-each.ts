@@ -239,6 +239,5 @@ export const transformEach = (
     }
     applyAffines(svgCanvas, 'Transform each', entries)
   })
-  svgCanvas.call('changed', done)
   return done
 }

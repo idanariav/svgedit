@@ -277,7 +277,8 @@ Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
 (`tests/e2e/fixtures.js`) and fails on structural corruption; opt out with
 `test.info().annotations.push({ type: 'allow-corrupt-drawing', description })`.
 `tests/e2e/command-sweep.spec.js` runs every non-interactive command against
-every round-trip fixture (`SWEEP=full` for the larger matrix).
+every round-trip fixture (`SWEEP=full` for the larger matrix), and fails a command that changes the drawing
+without announcing it (`documentChanges.pending()`: a host would never mark the drawing dirty).
 
 When adding or changing editor-layer behavior (not just canvas-core logic),
 prefer extending this suite over `tests/unit/` hand-mocked fixtures where

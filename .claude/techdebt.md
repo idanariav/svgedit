@@ -210,3 +210,12 @@ Each member of a distorted / turned group carries its map into the group's box i
 field rather than moving rigidly as drawn; the next drag of the group recomputes every member's frame from where it is.
 Moving the whole group is unaffected (its own transform). The proper fix is a geometry-remap hook that composes the
 frame with the remap's inverse when the remap is affine (`registerGeometryRemap`).
+
+## The effect filter region is computed in two places (2026-11-24)
+
+`fx-filter.ts` `setRegion` (editor) pads an effect filter's absolute region for outline, glows, feather and shadow; the
+load-time realignment in the core (`convertDropShadowFilters`, `core/svg-defs.ts`) has its own copy that knows only drop
+shadows and outlines, so a loaded glow came back clipped. The composer now re-derives every region it owns on
+`sourcechanged`, which makes the result right when the effect extensions are loaded; the core copy is left as the
+fallback (and for its legacy `objectBoundingBox` migration). The proper fix is one pure region function in the core that
+reads the filter's primitives (by `result` name, as `readEffects` does) and both callers use.

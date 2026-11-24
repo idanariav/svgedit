@@ -1111,7 +1111,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
    */
   endChanges ({ cmd, elem }: { cmd: import('./core/history.js').ChangeElementCommand; elem: SVGPathElement }): void {
     this.addCommandToHistory(cmd)
-    this.call('changed', [elem])
   }
 
   getCurrentMode () {

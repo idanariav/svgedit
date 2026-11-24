@@ -541,7 +541,6 @@ export const createCornerRadius = (canvas: SvgCanvas): CornerRadiusApi => {
     batchCmd.addSubCommand(new ChangeElementCommand(elem, oldValues))
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.call('changed', [elem])
     return elem
   }
 

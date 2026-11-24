@@ -158,11 +158,9 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
       if (undoable) {
         svgCanvas.addCommandToHistory(batchCmd)
       }
-      svgCanvas.call('changed', selectedElements)
       return batchCmd
     }
     if (shifts.length) {
-      svgCanvas.call('changed', selectedElements)
       return batchCmd
     }
     return undefined
@@ -336,7 +334,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     }
     if (!batchCmd.isEmpty()) {
       svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', targets)
     }
   }
   /**
@@ -662,7 +659,6 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     for (const { el } of flips) el.id ||= svgCanvas.getNextId()
     if (svgCanvas.setElementsAttributes('Flip Elements', flips)) {
       for (const { el } of flips) svgCanvas.selectorManager.requestSelector(el).resize()
-      svgCanvas.call('changed', selectedElements.filter(Boolean))
     }
   }
 

@@ -242,7 +242,6 @@ export const createStretch = (svgCanvas: Host): Stretch => {
       svgCanvas.snapshotHistory.cancelPreview()
       svgCanvas.transact('Stretch', () => applyAffines(svgCanvas, 'Stretch', parts.map(({ el, m }) => ({ el, m }))))
       refreshSelectors(selected)
-      svgCanvas.call('changed', selected)
     },
 
     cancel () {
@@ -272,7 +271,6 @@ export const createStretch = (svgCanvas: Host): Stretch => {
         }))
       })
       refreshSelectors(selected)
-      svgCanvas.call('changed', selected)
     }
   }
   return stretch

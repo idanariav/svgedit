@@ -82,9 +82,8 @@ describe('ext-curvature', () => {
 
     expect(svgCanvas.addSVGElementsFromJson).toHaveBeenCalledTimes(1)
     expect(svgCanvas.undoMgr.addCommandToHistory).toHaveBeenCalledTimes(1)
-    // Outside a gesture nothing else announces the path: the host must hear of it (autosave).
+    // Its undo step is what tells the host (documentChanged, so autosave sees it); the path is reported as inserted too.
     const path = svgCanvas.addSVGElementsFromJson.mock.results[0].value
-    expect(svgCanvas.call).toHaveBeenCalledWith('changed', [path])
     expect(svgCanvas.call).toHaveBeenCalledWith('elementInserted', [path])
     // The user picked another tool: finishing must not override it with Select.
     expect(svgEditor.leftPanel.clickSelect).not.toHaveBeenCalled()

@@ -22,6 +22,7 @@ import { refreshToolOptions } from './panels/toolOptionsBar.ts'
 import svgeditCss from './svgedit.css?inline'
 import { error as logError, warn as logWarn } from '@svgedit/svgcanvas/common/logger.ts'
 import type { IdLookup, IdRequire } from '@svgedit/svgcanvas/core/dom-utils.ts'
+import type { DocumentChangedDetail } from '@svgedit/svgcanvas/core/document-changes.ts'
 
 /** @fires module:svgcanvas.SvgCanvas#event:svgEditorReady */
 const readySignal = (): void => {
@@ -378,7 +379,11 @@ class EditorStartup {
     this.svgCanvas.bind('changed', this.elementChanged.bind(this))
     // Unsaved work is a change to the drawing, announced once from the history (core/document-changes.ts), not every
     // `changed` call: a click or a drag that went nowhere leaves nothing to warn about.
-    this.svgCanvas.bind('documentChanged', () => { this.showSaveWarning = true })
+    this.svgCanvas.bind('documentChanged', (_win, detail: DocumentChangedDetail) => {
+      this.showSaveWarning = true
+      // the panels follow the drawing whatever path the change took, an edit that never called `changed` included
+      this.elementChanged(window, detail.elems, { announced: true, restored: detail.cause === 'history' })
+    })
     this.svgCanvas.bind('elementInserted', this.elementInserted.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))
@@ -1015,6 +1020,7 @@ class EditorStartup {
     this.updateCanvas(true)
     // Load extensions
     this.extAndLocaleFunc()
+    this.settleStartingDrawing()
     // run callbacks stored by this.ready
     await this.runCallbacks()
     // Signal readiness to same-document listeners (tests/debugging hooks)
@@ -1072,6 +1078,7 @@ class EditorStartup {
           const topPanel = this.$id('tools_top')
           if (topPanel) this.topShortcutBadges ??= initToolShortcutBadges(topPanel, this.hotkeys)
           this.updateCanvas(true)
+          this.settleStartingDrawing()
 
           this.messageQueue.forEach(
             /** @fires module:svgcanvas.SvgCanvas#event:message */
@@ -1086,6 +1093,17 @@ class EditorStartup {
       // Todo: Report errors through the UI
       logError('Failed to finish loading extensions', err, 'EditorStartup')
     }
+  }
+
+  /**
+   * The drawing the editor starts with, as its startup bookkeeping left it (the viewBox, the first layer's id, what the
+   * extensions add), is the reference for `documentChanged` and has nothing unsaved: that bookkeeping is no edit
+   * (core/document-changes.ts). Only while nothing has been done: once a step is on the stack the drawing is the user's.
+   */
+  settleStartingDrawing (): void {
+    if (this.svgCanvas.undoMgr.getUndoStackSize() !== 0) return
+    this.svgCanvas.documentChanges?.reset()
+    this.showSaveWarning = false
   }
 
   /** What this editor's copy put on its own clipboard (the shapes' JSON the menu's Paste reads), or null. */

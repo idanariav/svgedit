@@ -245,7 +245,6 @@ export default defineFeature({
         if (el) {
           svgCanvas.undoMgr.addCommandToHistory(new svgCanvas.history.InsertElementCommand(el))
           svgCanvas.call('elementInserted', [el])
-          svgCanvas.call('changed', [el])
         }
       }
     }, { signal: svgEditor.listenerAbort.signal })

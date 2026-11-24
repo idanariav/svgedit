@@ -317,7 +317,6 @@ export const createImageCrop = (svgCanvas: Host): ImageCrop => {
       batchCmd.addSubCommand(new ChangeElementCommand(imageElem, oldValues as unknown as Record<string, string | null>))
       svgCanvas.addCommandToHistory(batchCmd)
     }
-    svgCanvas.call('changed', [imageElem])
 
     removeOverlay()
     session = null

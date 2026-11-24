@@ -24,8 +24,8 @@ describe('changedPaths', () => {
   })
 
   it('pairs children by id, so a reorder is a change of the parent and not of the children', () => {
-    expect(diff('<rect id="a"/><rect id="b"/>', '<rect id="b"/><rect id="a"/>')).toEqual([])
-    expect(diff('<rect id="a"/><rect id="b" x="1"/>', '<rect id="b" x="2"/><rect id="a"/>')).toEqual([[0, 0]])
+    expect(diff('<rect id="a"/><rect id="b"/>', '<rect id="b"/><rect id="a"/>')).toEqual([[0]])
+    expect(diff('<rect id="a"/><rect id="b" x="1"/>', '<rect id="b" x="2"/><rect id="a"/>')).toEqual([[0], [0, 0]])
   })
 
   it('names the element holding changed text, and a child without an id by position', () => {
@@ -37,5 +37,11 @@ describe('changedPaths', () => {
     const prev = parseSvg('<svg><g id="l"/></svg>').root
     const next = share(prev, parseSvg('<svg><g id="l"/><g id="m"/></svg>').root)
     expect(changedPaths(prev, next)).toEqual([[1]])
+  })
+
+  it('does not count a change of attribute order (it means nothing in SVG)', () => {
+    expect(diff('<rect id="a" x="1" y="2"/>', '<rect id="a" y="2" x="1"/>')).toEqual([])
+    const prev = root('<rect id="a" x="1" y="2"/>')
+    expect(share(prev, root('<rect id="a" y="2" x="1"/>'))).toBe(prev)
   })
 })

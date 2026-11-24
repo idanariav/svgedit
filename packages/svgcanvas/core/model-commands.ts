@@ -318,15 +318,12 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
   const selectedWithIds = (): Array<{ el: Element, id: string }> =>
     svgCanvas.getSelectedElements().filter((el): el is Element => Boolean(el) && Boolean(el?.id)).map((el) => ({ el, id: el.id }))
 
-  /** Run a reorder of the selected elements as one step; announce `changed` for the ones that ended up somewhere else. */
+  /** Run a reorder of the selected elements as one step (announced as `documentChanged`, which names the parents that changed). */
   const reorder = (label: string, edit: (ids: string[]) => (root: import('./model/node.ts').ModelElement) => import('./model/node.ts').ModelElement): void => {
     const selected = selectedWithIds()
     if (!selected.length) return
-    const was = new Map(selected.map(({ el }) => [el, el.nextSibling]))
     const ids = selected.sort((a, b) => byDocumentOrder(a.el, b.el)).map(({ id }) => id)
-    if (!svgCanvas.snapshotHistory.edit(label, edit(ids))) return
-    const moved = selected.map(({ el }) => el).filter((el) => was.get(el) !== el.nextSibling)
-    if (moved.length) svgCanvas.call('changed', moved)
+    svgCanvas.snapshotHistory.edit(label, edit(ids))
   }
 
   const moveToTopSelectedElement = (): void => reorder('Move to Top', (ids) => (root) => moveToEnd(root, ids))
@@ -336,16 +333,14 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
    * Moves one selected element up or down the stack by a single step, past the nearest element it visibly overlaps.
    * Looking (the intersection list) reads the drawing; the move is an edit of the model.
    */
-  const moveOne = (selected: Element, dir: 'Up' | 'Down'): boolean => {
+  const moveOne = (selected: Element, dir: 'Up' | 'Down'): void => {
     svgCanvas.setCurBBoxes([])
     const list = svgCanvas.getIntersectionList(svgCanvas.getStrokedBBoxDefaultVisible([selected])) as Element[]
     if (dir === 'Down') list.reverse()
     const here = list.indexOf(selected)
     const closest = here < 0 ? undefined : list[here + 1]
-    if (!closest?.id || !selected.id) return false
-    const was = selected.nextSibling
+    if (!closest?.id || !selected.id) return
     svgCanvas.snapshotHistory.edit(`Move ${dir}`, (root) => moveNextTo(root, selected.id, closest.id, dir === 'Down' ? 'before' : 'after'))
-    return was !== selected.nextSibling
   }
 
   const moveUpDownSelected = (dir: 'Up' | 'Down'): void => {
@@ -355,11 +350,9 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     // elements that are not selected instead of blocking itself.
     const ascending = [...selected].sort(byDocumentOrder)
     const ordered = dir === 'Down' ? ascending : ascending.reverse()
-    const moved: Element[] = []
     svgCanvas.transact(`Move ${dir}`, () => {
-      for (const el of ordered) if (moveOne(el, dir)) moved.push(el)
+      for (const el of ordered) moveOne(el, dir)
     })
-    if (moved.length) svgCanvas.call('changed', moved)
   }
 
   const switchSelectedZorder = (): void => {
@@ -367,9 +360,7 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     if (selected.length !== 2) return
     const [a, b] = selected
     if (a.el.parentNode !== b.el.parentNode) return
-    if (svgCanvas.snapshotHistory.edit('Switch Layers', (root) => swapSiblings(root, a.id, b.id))) {
-      svgCanvas.call('changed', [a.el, b.el])
-    }
+    svgCanvas.snapshotHistory.edit('Switch Layers', (root) => swapSiblings(root, a.id, b.id))
   }
 
   const deleteSelectedElements = (): void => {

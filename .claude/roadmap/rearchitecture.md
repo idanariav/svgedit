@@ -392,8 +392,26 @@ colour and arrow trim. Each keeps its old undo behaviour (only blend skips `caus
 purpose: panel and overlay refreshes, the connector's reset on a load (a load is not a change), and the markers' "give a
 shared marker its own copy", which records an undo step of its own (moving it would nest a step inside an announcement).
 
-Step (3) is next: with the derived data no longer hanging on `changed`, the `call('changed')` sites that only exist to say
-"something changed" can go; the ones that refresh a panel stay. Then `restored` on `elementChanged` has no reader left.
+**Status (2026-11-24, step 3).** The editor's panel refresh also runs on `documentChanged` (without the layers panel, the
+canvas size and the selection adoption, which follow the edits that name them), and 53 of the 90 `call('changed')` sites
+are gone: the ones that named the same connected elements a step had just changed. The others stay on purpose: loads and
+imports (not announced), layer operations (the layers panel), sites that name a new or replacement element (the selection
+adopts it), deletions that name the removed elements, the undo / cancel path (`patched`: a cancelled transaction is not
+announced, yet the panels must drop what they showed mid-transaction) and the markers' shared-marker fix-up. A guard came
+with it: `documentChanges.pending()` (the drawing differs from the last announcement and no check is coming), asserted
+after every command of the sweep. In the sweep it found two older bugs a selection exposed: a live-effect path saved with
+relative commands drifted by rounding (the first click dropped its effect; `convertPath` no longer lets the rounding pile
+up, checkDrawing's `fx-rounding-drift` and a repair entry cover saved drawings), and the load-time filter realignment
+clipped glows (the effect composer now re-derives every region on `sourcechanged`). Tried after every e2e test first, it found one real case (the source dialog's load left
+its bookkeeping, layer ids and viewBox, outside the step: one transaction now) and then mostly flagged tests that build their
+drawing with `addSVGElementsFromJson`, which records no step; a suite-wide guard needs test setup that goes through steps
+or loads. The editor's starting drawing is now the first reference (`settleStartingDrawing`), which is also why the
+unsaved-work warning is no longer on after startup.
+
+What is left of R8: the `restored` flag on `elementChanged` (undo's own `changed` call still sets it; the announced refresh
+passes `cause === 'history'`); the remaining `changed` sites could each move to a narrower event (`layersChanged`,
+`selectionReplaced`) so that `changed` disappears; and `elems` does not name removed elements (a feature that must react
+to a deletion still needs the deleting code's call).
 
 ### R9. A gesture owns its state
 

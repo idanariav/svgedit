@@ -24,7 +24,8 @@ test.describe('Node-editing a path inside a group', () => {
     await page.evaluate(() => {
       const canv = window.svgEditor.svgCanvas
       window.__serialized = []
-      canv.bind('changed', () => { window.__serialized.push(canv.getSvgString()) })
+      // a host saves when the drawing changes (the plugin's autosave binds documentChanged)
+      canv.bind('documentChanged', () => { window.__serialized.push(canv.getSvgString()) })
       canv.setMode('select')
       canv.setContext(document.querySelector('#svgcontent #grp'))
       const path = document.querySelector('#svgcontent #p1')

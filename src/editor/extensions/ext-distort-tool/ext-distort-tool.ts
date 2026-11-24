@@ -159,7 +159,6 @@ export default defineFeature({
 
     const finish = (t: Target) => {
       if (svgCanvas.getSelectedElements().includes(t.el)) svgCanvas.selectorManager.requestSelector(t.el).resize()
-      svgCanvas.call('changed', t.members.map((m) => m.el))
     }
 
     /** Run `fn` on the selected target as one undo step. */

@@ -148,6 +148,10 @@ for (const file of fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.svg')).so
           c.cancelToolGesture?.()
           if (outcome !== 'ran') continue
           ran.add(id)
+          // Every change to the drawing is announced (a step, or `changed` outside one): left unannounced, a host never marks
+          // the drawing dirty (core/document-changes.ts). The coalesced check after `changed` runs in a microtask.
+          await Promise.resolve()
+          if (c.documentChanges.pending()) problems.push(`${label}: ${id} changed the drawing and nothing announced it`)
           c.setMode('select')
 
           const findings = c.checkDrawing()

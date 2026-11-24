@@ -21,7 +21,7 @@ import { TextMetricsCache, resolveTextStyle, textsIn } from './model/text-metric
 import type { TextBounds } from './model/text-metrics.ts'
 import { measureTexts } from './text-measure.ts'
 import type { ModelElement, ModelNode, NodePath } from './model/node.ts'
-import { changedPaths } from './model/diff.ts'
+import { changedPaths, sameAttrs } from './model/diff.ts'
 
 /** Content-root attributes that follow the view (scroll, zoom), not the drawing. */
 const VIEW_ATTRS = new Set(['x', 'y', 'width', 'height'])
@@ -76,9 +76,9 @@ export const share = (prev: ModelNode | undefined, next: ModelNode): ModelNode =
     const id = c.kind === 'element' ? c.attrs.find((a) => a.name === 'id')?.value : undefined
     return share(id !== undefined ? byId.get(id) : p.children[i], c)
   })
-  const sameAttrs = p.attrs.length === next.attrs.length && p.attrs.every((a, i) => a.name === next.attrs[i].name && a.value === next.attrs[i].value)
-  if (sameAttrs && children.length === p.children.length && children.every((c, i) => c === p.children[i])) return p
-  return { kind: 'element', name: next.name, attrs: sameAttrs ? p.attrs : next.attrs, children }
+  const same = sameAttrs(p, next as ModelElement)
+  if (same && children.length === p.children.length && children.every((c, i) => c === p.children[i])) return p
+  return { kind: 'element', name: next.name, attrs: same ? p.attrs : next.attrs, children }
 }
 
 export interface SnapshotTarget {

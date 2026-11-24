@@ -291,7 +291,6 @@ export default defineFeature({
       }
       if (!batchCmd.isEmpty()) {
         origAddCommand(batchCmd)
-        svgCanvas.call('changed', selected)
       }
     }
 

@@ -656,12 +656,13 @@ host restore) leave this false to avoid polluting history.
     ])
   }
 
-  // called when any element has changed
+  // called when any element has changed: an edit said so (`changed`), or the drawing differs (`documentChanged`, which also
+  // covers an edit whose code never said so)
   /**
    * @listens module:svgcanvas.SvgCanvas#event:changed
    * @fires module:svgcanvas.SvgCanvas#event:ext_elementChanged
    */
-  elementChanged (win: Window, elems: Element[]): void {
+  elementChanged (win: Window, elems: Element[], { announced = false, restored = this.svgCanvas.restoring }: { announced?: boolean, restored?: boolean } = {}): void {
     const mode = this.svgCanvas.getMode()
 
     // Each step is isolated: a throw in one must not abort the others (see
@@ -671,6 +672,9 @@ host restore) leave this false to avoid polluting history.
         if (mode === 'select') this.leftPanel.clickSelect()
       }],
       ['perElementUpdates', () => {
+        // The layers panel and the canvas size follow the layer operations and resolution changes that name them (`changed`):
+        // an announcement names a layer whenever one of its children came or went, and rebuilding the panel writes layer state.
+        if (announced) return
         elems.forEach((elem) => {
           const isSvgElem = elem?.tagName === 'svg'
           if (isSvgElem || this.svgCanvas.isLayer((elem as Element))) {
@@ -704,7 +708,7 @@ host restore) leave this false to avoid polluting history.
         'elementChanged',
         {
           elems,
-          ...(this.svgCanvas.restoring ? { restored: true } : {})
+          ...(restored ? { restored: true } : {})
         }
       )]
     ])
@@ -976,7 +980,14 @@ contents to paste, bypassing the sessionStorage snapshot (see
       this.rightPanel.populateLayers()
     }
 
-    if (!this.svgCanvas.setSvgString(e.detail.value)) {
+    // One step for the source and what the editor does to it once it is shown (layer ids, the viewBox): left outside the step,
+    // that bookkeeping changed the drawing after its change was announced, and no host heard of it (core/document-changes.ts)
+    let loaded = false
+    this.svgCanvas.transact('Change Source', () => {
+      loaded = Boolean(this.svgCanvas.setSvgString(e.detail.value))
+      if (loaded) saveChanges()
+    })
+    if (!loaded) {
       const ok = await seConfirm(
         this.i18next.t('notification.QerrorsRevertToSource')
       )
@@ -986,7 +997,6 @@ contents to paste, bypassing the sessionStorage snapshot (see
       saveChanges()
       return
     }
-    saveChanges()
     this.leftPanel.clickSelect()
   }
 

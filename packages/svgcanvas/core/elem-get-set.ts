@@ -408,7 +408,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       svgCanvas.changeSelectedAttributeNoUndo(type, val, elems)
     } else {
       svgCanvas.changeSelectedAttribute(type, val, elems)
-      svgCanvas.call('changed', elems)
     }
   }
 
@@ -596,7 +595,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       // Paint the stroke beneath the fill so it grows outward rather than
       // shrinking the visible fill (matters most for outlined text).
       svgCanvas.changeSelectedAttribute('paint-order', 'stroke', elems)
-      svgCanvas.call('changed', selectedElements)
     }
   }
 
@@ -623,7 +621,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
     }
     if (elems.length > 0) {
       svgCanvas.changeSelectedAttribute(attr, val, elems)
-      svgCanvas.call('changed', selectedElements)
     }
   }
 
@@ -667,7 +664,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       finalized = true
       if (batchCmd.isEmpty()) { return }
       svgCanvas.addCommandToHistory(batchCmd)
-      svgCanvas.call('changed', [elem])
     }
 
     const img = new Image()
@@ -755,7 +751,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
       selected.setAttribute('ry', String(radius))
       svgCanvas.addCommandToHistory(new ChangeElementCommand(selected, { rx: oldRx, ry: oldRy }, 'Radius'))
     }
-    svgCanvas.call('changed', [selected])
   }
 
   /**
@@ -1003,7 +998,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
           new ChangeElementCommand(selected, { 'data-arc': oldArc, d: oldD }, 'Arc')
         )
       }
-      svgCanvas.call('changed', [selected])
     }
   }
 
@@ -1050,7 +1044,6 @@ export const createElemGetSet = (canvas: SvgCanvas): ElemGetSetApi => {
         new ChangeElementCommand(selected, { ...oldVals, d: oldD }, attr)
       )
     }
-    svgCanvas.call('changed', [selected])
   }
 
   return {

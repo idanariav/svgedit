@@ -126,7 +126,6 @@ export default defineFeature({
 
     const finish = (t: FramedTarget) => {
       if (svgCanvas.getSelectedElements().includes(t.el)) svgCanvas.selectorManager.requestSelector(t.el).resize()
-      svgCanvas.call('changed', t.members.map((m) => m.el))
     }
 
     /** Write the angles (inside a transaction); a primitive that became a path is selected again. */

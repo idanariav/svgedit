@@ -253,7 +253,6 @@ export default defineFeature({
       }
       svgCanvas.insertLooseElements(clones, 'Repeat')
       tx.commit()
-      svgCanvas.call('changed', sources)
     }
 
     svgCanvas.repeatSelection = repeatSelection as typeof svgCanvas.repeatSelection

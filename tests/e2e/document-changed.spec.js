@@ -130,4 +130,18 @@ test.describe('documentChanged', () => {
     })
     expect(await warn()).toBe(true)
   })
+
+  test('the panels follow an edit whose code never calls `changed`', async ({ page }) => {
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.selectOnly([c.getElement('r')], true)
+    })
+    const width = () => page.evaluate(() => document.querySelector('#rect_width')?.value)
+    await expect.poll(width).toBe('80')
+    await page.evaluate(() => {
+      const c = window.svgEditor.svgCanvas
+      c.transact('Quiet edit', () => c.getElement('r').setAttribute('width', '120'))
+    })
+    await expect.poll(width).toBe('120')
+  })
 })

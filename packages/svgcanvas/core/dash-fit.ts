@@ -319,7 +319,6 @@ export const createDashFit = (canvas: SvgCanvas): DashFitApi => {
           }
         }
       })
-      svgCanvas.call('changed', list)
       return changed
     },
     setDashPattern: (value) => {
@@ -336,7 +335,6 @@ export const createDashFit = (canvas: SvgCanvas): DashFitApi => {
           }
         }
       })
-      svgCanvas.call('changed', list)
       return true
     }
   }

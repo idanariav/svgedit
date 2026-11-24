@@ -149,7 +149,7 @@
 | File | What it is |
 |---|---|
 | `bounds.ts` | Shape geometry for the document model: the box a shape covers (what `getBBox` answers) and the box its stroke paints, worked out from the element's attributes with no browser, in the element's own coordinate system (a… |
-| `diff.ts` | Which elements differ between two models of a drawing: the paths, in `next`, of every element whose attributes or text changed, that was added, or that lost a child (roadmap R8: `documentChanged` says what changed, not… |
+| `diff.ts` | Which elements differ between two models of a drawing: the paths, in `next`, of every element whose attributes or text changed, that was added, or that lost or reordered a child (roadmap R8: `documentChanged` says what… |
 | `drawing.ts` | Document model, layer 2: a typed, read-only view of a drawing over the tree in `node.ts` |
 | `edit.ts` | Document model, layer 4: edits |
 | `features.ts` | Document model, layer 2b: the `se:*` features of one element as typed fields |

@@ -251,7 +251,6 @@ export default defineFeature({
         if (pos !== 'mid' && val !== 'nomarker' && !svgCanvas.getArrowAlign(el)) svgCanvas.setArrowAlign(el, 'tip')
         svgCanvas.syncArrowAlign(el)
       })
-      svgCanvas.call('changed', svgCanvas.getSelectedElements().filter(Boolean))
     }
 
     /**
@@ -383,7 +382,6 @@ export default defineFeature({
           if (!el || svgCanvas.getArrowAlign(el) === mode) return
           svgCanvas.transact('Head position', () => svgCanvas.setArrowAlign(el, mode))
           svgCanvas.selectorManager.requestSelector(el).resize()
-          svgCanvas.call('changed', [el])
         })
         // don't display the panels on start
         showPanel(false)

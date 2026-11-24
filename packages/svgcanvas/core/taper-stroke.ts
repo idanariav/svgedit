@@ -345,7 +345,6 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
     // A path that was one all along is edited on the model; the line / polyline swapped for a path above goes in the batch
     if (batchCmd.isEmpty() && svgCanvas.setElementAttributes('Taper stroke', elem, tapered)) {
       svgCanvas.selectOnly([elem], true)
-      svgCanvas.call('changed', [elem])
       return elem
     }
     for (const [name, value] of Object.entries(tapered)) {
@@ -356,7 +355,6 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
 
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.call('changed', [elem])
     return elem
   }
 
@@ -396,7 +394,6 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
     }
     if (svgCanvas.setElementAttributes('Remove taper', elem, restored)) {
       svgCanvas.selectOnly([elem], true)
-      svgCanvas.call('changed', [elem])
       return elem
     }
     for (const [name, value] of Object.entries(restored)) {
@@ -407,7 +404,6 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
 
     svgCanvas.addCommandToHistory(batchCmd)
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.call('changed', [elem])
     return elem
   }
 
@@ -503,7 +499,6 @@ export const createTaperStroke = (canvas: SvgCanvas): TaperStrokeApi => {
     })
     if (done.length) {
       svgCanvas.selectOnly(done, true)
-      svgCanvas.call('changed', done)
     }
     return done
   }

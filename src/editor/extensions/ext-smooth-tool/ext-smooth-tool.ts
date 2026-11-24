@@ -159,7 +159,6 @@ export default defineFeature({
         for (const { el } of touched) {
           if (selected.includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
         }
-        svgCanvas.call('changed', touched.map((t) => t.el))
         return undefined
       },
 

@@ -152,7 +152,6 @@ export const init = (canvas: SvgCanvas): {
       } else {
         svgCanvas.recalculateAllSelectedDimensions()
       }
-      svgCanvas.call('changed', selectedElements)
       return { element: null, keep: true as const }
     }
     svgCanvas.gesture.rotationPlan = null
@@ -177,7 +176,6 @@ export const init = (canvas: SvgCanvas): {
       // perform recalculation to weed out any stray identity transforms that might get stuck
       svgCanvas.recalculateAllSelectedDimensions()
     }
-    svgCanvas.call('changed', selectedElements)
     return { element: null, keep: true as const }
   }
 

@@ -127,6 +127,7 @@ export const createPathSimplify = (canvas: SvgCanvas): PathSimplifyApi => {
 
   const refreshSelector = (elem: Element): void => {
     svgCanvas.selectorManager.requestSelector(elem).resize()
+    // a preview is not a change of the drawing (nothing announces it), so the panels are told here
     svgCanvas.call('changed', [elem])
   }
 

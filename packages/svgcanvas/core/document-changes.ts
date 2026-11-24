@@ -50,6 +50,11 @@ export interface DocumentChanges {
   schedule(): void
   /** A new drawing was loaded (the undo stack was reset): it is the new reference, and nothing is announced. */
   reset(): void
+  /**
+   * The drawing differs from the one last announced, with no check coming (nothing busy, nothing scheduled): an edit went
+   * neither through a step nor through `changed`, so no host was told. A test asserts it is false (`tests/e2e/fixtures.js`).
+   */
+  pending(): boolean
 }
 
 export const createDocumentChanges = (target: DocumentChangesTarget, history: DocumentChangesHistory): DocumentChanges => {
@@ -87,6 +92,10 @@ export const createDocumentChanges = (target: DocumentChangesTarget, history: Do
     },
     reset () {
       announced = history.revision()
+    },
+    pending () {
+      if (busy() || scheduled || !announced) return false
+      return history.revision() !== announced
     }
   }
 }

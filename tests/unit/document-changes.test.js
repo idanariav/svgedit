@@ -111,4 +111,18 @@ describe('document changes announcer', () => {
     changes.check('edit')
     expect(calls).toEqual([['documentChanged', 'step']])
   })
+
+  it('is pending when the drawing differs from what was last announced and no check is coming', () => {
+    const { state, changes, change } = setup()
+    expect(changes.pending()).toBe(false)
+    change() // an edit outside any step, without `changed`
+    expect(changes.pending()).toBe(true)
+    changes.schedule() // a `changed` call: the check is coming
+    expect(changes.pending()).toBe(false)
+    state.started = true // a press is down: not a change yet
+    expect(changes.pending()).toBe(false)
+    state.started = false
+    changes.check('edit')
+    expect(changes.pending()).toBe(false)
+  })
 })

@@ -553,7 +553,6 @@ export const createBlend = (canvas: SvgCanvas): BlendApi => {
         regenerate(g)
       }
     })
-    svgCanvas.call('changed', groups)
     return groups
   }
 
@@ -699,7 +698,6 @@ export const createBlend = (canvas: SvgCanvas): BlendApi => {
       regenerate(plan.group)
     })
     svgCanvas.selectOnly([plan.group], true)
-    svgCanvas.call('changed', [plan.group])
     return plan.group
   }
 
@@ -720,7 +718,6 @@ export const createBlend = (canvas: SvgCanvas): BlendApi => {
         regenerate(g)
       }
     })
-    svgCanvas.call('changed', groups)
     return groups
   }
 
@@ -748,7 +745,6 @@ export const createBlend = (canvas: SvgCanvas): BlendApi => {
       regenerate(group)
     })
     svgCanvas.selectOnly([path], true)
-    svgCanvas.call('changed', [group])
     return path
   }
 
@@ -778,7 +774,6 @@ export const createBlend = (canvas: SvgCanvas): BlendApi => {
         regenerate(g)
       }
     })
-    svgCanvas.call('changed', groups)
     return groups
   }
 

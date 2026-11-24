@@ -233,7 +233,6 @@ export default defineFeature({
       for (const el of changed) {
         if (svgCanvas.getSelectedElements().includes(el)) svgCanvas.selectorManager.requestSelector(el).resize()
       }
-      svgCanvas.call('changed', changed)
     }
 
     svgCanvas.registerTool({
