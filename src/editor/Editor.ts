@@ -662,7 +662,7 @@ host restore) leave this false to avoid polluting history.
    * @listens module:svgcanvas.SvgCanvas#event:changed
    * @fires module:svgcanvas.SvgCanvas#event:ext_elementChanged
    */
-  elementChanged (win: Window, elems: Element[], { announced = false, restored = this.svgCanvas.restoring }: { announced?: boolean, restored?: boolean } = {}): void {
+  elementChanged (win: Window, elems: Element[], { announced = false }: { announced?: boolean } = {}): void {
     const mode = this.svgCanvas.getMode()
 
     // Each step is isolated: a throw in one must not abort the others (see
@@ -704,13 +704,7 @@ host restore) leave this false to avoid polluting history.
         if (this.selectedElement && mode === 'select') this.bottomPanel.updateColorpickers()
       }],
       ['updateCanvasWatermark', () => this.updateCanvasWatermark()],
-      ['emit:elementChanged', () => this.svgCanvas.call(
-        'elementChanged',
-        {
-          elems,
-          ...(restored ? { restored: true } : {})
-        }
-      )]
+      ['emit:elementChanged', () => this.svgCanvas.call('elementChanged', { elems })]
     ])
   }
 

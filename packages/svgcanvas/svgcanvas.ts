@@ -454,8 +454,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare snapshotHistory: import('./core/snapshot-history.ts').SnapshotHistory
   /** Announces `documentChanged` once per real change to the drawing (core/document-changes.ts, roadmap R8). */
   declare documentChanges: import('./core/document-changes.ts').DocumentChanges
-  /** An undo / redo is restoring a snapshot (set while it announces `changed`, see core/snapshot-history.ts). */
-  restoring = false
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
   declare checkDrawing: () => Array<{ code: string, message: string, id?: string }>
   // Canvas properties

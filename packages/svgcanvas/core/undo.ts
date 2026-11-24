@@ -290,10 +290,8 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
         if (layerSignature(content).join('\n') !== layersBefore) svgCanvas.identifyLayers()
         for (const el of touched) if (el.tagName === 'use') svgCanvas.setUseData(el)
         svgCanvas.logDebugEvent?.('history-apply', { direction: 'snapshot', elemIds: touched.map((el) => el.id || null), mode: svgCanvas.getCurrentMode() })
-        if (touched.length) {
-          svgCanvas.restoring = true
-          try { svgCanvas.call('changed', touched) } finally { svgCanvas.restoring = false }
-        }
+        // the panels drop what they showed (a cancelled transaction is not announced: nothing changed since the last one)
+        if (touched.length) svgCanvas.call('changed', touched)
         svgCanvas.documentChanges?.check('history')
       }
     })

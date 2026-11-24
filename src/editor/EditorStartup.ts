@@ -382,7 +382,7 @@ class EditorStartup {
     this.svgCanvas.bind('documentChanged', (_win, detail: DocumentChangedDetail) => {
       this.showSaveWarning = true
       // the panels follow the drawing whatever path the change took, an edit that never called `changed` included
-      this.elementChanged(window, detail.elems, { announced: true, restored: detail.cause === 'history' })
+      this.elementChanged(window, detail.elems, { announced: true })
     })
     this.svgCanvas.bind('elementInserted', this.elementInserted.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))

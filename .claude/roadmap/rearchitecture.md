@@ -408,10 +408,10 @@ drawing with `addSVGElementsFromJson`, which records no step; a suite-wide guard
 or loads. The editor's starting drawing is now the first reference (`settleStartingDrawing`), which is also why the
 unsaved-work warning is no longer on after startup.
 
-What is left of R8: the `restored` flag on `elementChanged` (undo's own `changed` call still sets it; the announced refresh
-passes `cause === 'history'`); the remaining `changed` sites could each move to a narrower event (`layersChanged`,
-`selectionReplaced`) so that `changed` disappears; and `elems` does not name removed elements (a feature that must react
-to a deletion still needs the deleting code's call).
+What is left of R8 (optional): the remaining `changed` sites could each move to a narrower event (`layersChanged`,
+`selectionReplaced`) so that `changed` disappears, and `elems` does not name removed elements (a feature that must react
+to a deletion still needs the deleting code's call). The `restored` flag on `elementChanged` is gone: an undo / redo is
+`cause: 'history'`.
 
 ### R9. A gesture owns its state
 
