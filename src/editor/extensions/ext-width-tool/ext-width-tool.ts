@@ -31,8 +31,6 @@ const name = 'width-tool'
 export const GRAB_PX = 9
 /** How close (screen px) to the stroke's edge a press must be to add a width point there. */
 export const NEAR_PX = 14
-/** A drag shorter than this (screen px) is a click. */
-export const CLICK_PX = 3
 const INK = '#2b7fff'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -297,7 +295,7 @@ export default defineFeature({
           return
         }
         if (!target) return
-        if (!drag.moved && Math.hypot(ev.screenX - drag.press.x, ev.screenY - drag.press.y) < CLICK_PX) return
+        if (!drag.moved && !ev.dragging) return
         drag.moved = true
         const points = profileFor(target, toLocal(target, ev), ev.mods.alt)
         const { t: dragT } = drag

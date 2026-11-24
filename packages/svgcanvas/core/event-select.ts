@@ -20,6 +20,7 @@ import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
 import { getAlignBoxOf } from './align-box.ts'
 import { toCurrentGroupLocalDelta } from './event-group-context.ts'
+import { isDrag } from './pointer-intent.ts'
 import * as hstry from './history.js'
 import { parseMatrix } from './model/matrix.ts'
 import type SvgCanvas from '../svgcanvas.ts'
@@ -250,9 +251,8 @@ export const init = (canvas: SvgCanvas): {
     const { state } = gesture
     const { selectedElements, selected, zoom, svgRoot } = ctx
     const { x, y } = ctx
-    // Alt-drag-to-duplicate: only clone once the drag crosses the same "was
-    // this a real drag or just a click" 4-screen-px threshold used below
-    // (deltaThresholdReached) to gate an ordinary drag actually moving the
+    // Alt-drag-to-duplicate: only clone once the press is a drag
+    // (core/pointer-intent.ts), the test used below to gate an ordinary drag actually moving the
     // selection -- not on the mere first mousemove tick after an alt+
     // mousedown, and not at mousedown itself. event.js's mouseDownEventImpl
     // only arms the intent (`MoveState.clone`); cloning unconditionally
@@ -264,10 +264,7 @@ export const init = (canvas: SvgCanvas): {
     // stacked on the original; while armed and still under threshold this
     // returns early every tick, touching nothing.
     if (state.clone && selectedElements.length > 0) {
-      const armDeltaThreshold = 4 / zoom
-      const dx0 = x - svgCanvas.getStartX()
-      const dy0 = y - svgCanvas.getStartY()
-      if (Math.abs(dx0) <= armDeltaThreshold && Math.abs(dy0) <= armDeltaThreshold) {
+      if (!isDrag((x - svgCanvas.getStartX()) * zoom, (y - svgCanvas.getStartY()) * zoom)) {
         return
       }
       state.clone = false
@@ -367,14 +364,10 @@ export const init = (canvas: SvgCanvas): {
         if (Math.abs(dx) > Math.abs(dy)) { dy = 0 } else { dx = 0 }
       }
 
-      // Enable moving selection only if mouse has been moved at least 4 screen px in any
-      // direction. This prevents objects from being accidentally moved when (initially)
-      // selected. dx/dy are in content units, so the threshold must scale with zoom to stay
-      // a constant 4 screen px (otherwise drags feel "stuck" when zoomed in, or trigger too
-      // easily when zoomed out).
-      const deltaThreshold = 4 / zoom
-      const deltaThresholdReached = Math.abs(dx) > deltaThreshold || Math.abs(dy) > deltaThreshold
-      state.moved ||= deltaThresholdReached
+      // The selection moves only once the press is a drag (core/pointer-intent.ts: DRAG_PX screen px from where it went
+      // down, at any zoom), so selecting does not nudge it. Measured from the press, before snapping and the Shift lock
+      // shift the delta.
+      state.moved ||= isDrag((x - svgCanvas.getStartX()) * zoom, (y - svgCanvas.getStartY()) * zoom)
 
       if (state.moved) {
         // Inside a transformed group the children's translate lives in the
@@ -417,9 +410,8 @@ export const init = (canvas: SvgCanvas): {
     }, 100)
 
     // A press on empty canvas that jitters a pixel or two is a click (deselect), not a marquee: the band selects nothing until
-    // it is 4 screen px across in some direction, the threshold a drag of the selection uses (`move` above). Both are screen px.
-    const spanned = Math.abs(realX - svgCanvas.getRStartX()) > 4 || Math.abs(realY - svgCanvas.getRStartY()) > 4
-    gesture.state.moved ||= spanned
+    // the press is a drag (core/pointer-intent.ts), as a drag of the selection does. realX / realY and rStart are screen px here.
+    gesture.state.moved ||= isDrag(realX - svgCanvas.getRStartX(), realY - svgCanvas.getRStartY())
     if (!gesture.state.moved) return
 
     // for each selected:

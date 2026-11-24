@@ -33,8 +33,6 @@ import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 /** How close (screen px) the pointer must be to a widget to take it. */
 export const GRAB_PX = 8
-/** A drag shorter than this (screen px) is a click. */
-export const CLICK_PX = 3
 /** Widgets sit at least this far inside their corner (screen px, along each side of a right angle). */
 export const MIN_INSET_PX = 10
 /** Corners with a side shorter than this on screen (px) hide their widget. */
@@ -301,7 +299,7 @@ export default defineFeature({
           return
         }
         if (!target) return
-        if (!drag.moved && Math.hypot(ev.screenX - drag.press.x, ev.screenY - drag.press.y) < CLICK_PX) return
+        if (!drag.moved && !ev.dragging) return
         drag.moved = true
         // The pointer's travel in the element's own space, along the corner's bisector.
         const a = apply(target.inverse, drag.start)

@@ -257,7 +257,6 @@ export default defineFeature({
     // when idle), the mousedown position (for points[0] close-vs-drag
     // disambiguation), and the index hit-tested at mousedown time.
     let draggingIndex = -1
-    let mouseDownPos: { x: number, y: number } | null = null
     let mouseDownHitIndex = -1
     // Whether the pointer has moved past the click-vs-drag threshold since
     // the current drag began — the dragged anchor is left untouched until
@@ -273,8 +272,6 @@ export default defineFeature({
     const dist = (ax: number, ay: number, bx: number, by: number) => Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)
 
     const getLayer = () => (svgCanvas.getCurrentDrawing().getCurrentLayer() as Element)
-
-    const getMoveThreshold = () => 3 / svgCanvas.getZoom()
 
     /** Return the index of the first placed anchor within hit range of (x, y), or -1. */
     const hitTestAnchor = (x: number, y: number) => {
@@ -319,7 +316,6 @@ export default defineFeature({
      */
     const resetDragState = () => {
       draggingIndex = -1
-      mouseDownPos = null
       mouseDownHitIndex = -1
       dragMoved = false
     }
@@ -419,7 +415,6 @@ export default defineFeature({
         const isEnd = ev.mods.alt // Alt+click = end anchor (combinable with corner)
         const { x, y } = ev
 
-        mouseDownPos = { x, y }
         mouseDownHitIndex = -1
 
         // Double-click finalizes the path open. Checked before hit-testing:
@@ -471,7 +466,7 @@ export default defineFeature({
           // (larger) hit radius — not necessarily exactly on the anchor —
           // doesn't itself register as a move.
           if (!dragMoved) {
-            if (mouseDownPos && dist(mx, my, mouseDownPos.x, mouseDownPos.y) <= getMoveThreshold()) return
+            if (!ev.dragging) return // the click-or-drag test every press uses (core/pointer-intent.ts)
             dragMoved = true
           }
           points[draggingIndex].x = mx

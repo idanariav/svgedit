@@ -163,7 +163,6 @@ test.describe('one entry point per intent (R10)', () => {
     })
 
     test('the distance is measured straight: a 3 × 3 px diagonal (4.2 px) is a drag, as everywhere else', async ({ page }) => {
-      test.fail(true, 'R10 step 2: select measures each axis on its own (4 px per axis)')
       expect(await dragBy(page, 3, 3)).toBe(true)
     })
   })

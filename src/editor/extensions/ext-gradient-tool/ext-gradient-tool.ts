@@ -46,8 +46,6 @@ const STOP_HIT = 7
 const BAR_HIT = 4
 /** A stop dragged farther than this from the bar is deleted on release. */
 export const OFF_BAR = 24
-/** A drag shorter than this (screen px) is a click. */
-export const CLICK_PX = 3
 const BAR = '#202020'
 const LIGHT = '#f0f0f0'
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -503,7 +501,7 @@ export default defineFeature({
 
       pointerMove (ctx, ev) {
         if (pending && !drag) {
-          if (Math.hypot(ev.screenX - pending.screen.x, ev.screenY - pending.screen.y) < CLICK_PX) return
+          if (!ev.dragging) return
           const p = pending
           pending = null
           const grad = createGradient(p.el, p.prop, p.press, docPoint(ev))
@@ -543,7 +541,7 @@ export default defineFeature({
         }
         if (!target) return
         if (!drag.moved) {
-          if (Math.hypot(ev.screenX - drag.screen.x, ev.screenY - drag.screen.y) < CLICK_PX) return
+          if (!ev.dragging) return
           drag.moved = true
           if (!own(target)) return
           // The copy of a shared gradient has its own stop nodes: find ours again by index.

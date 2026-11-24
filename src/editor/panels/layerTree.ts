@@ -24,6 +24,7 @@ import {
 } from '@svgedit/svgcanvas/core/object-state.ts'
 import { fetchSvgEl } from '../components/svgIconLoader.ts'
 import { LayerKeyboard } from './layerKeyboard.ts'
+import { isDrag } from '@svgedit/svgcanvas/core/pointer-intent.ts'
 
 /** an object (or group) to list */
 export type ObjectRow = { el: Element, depth: number, group: boolean, expanded: boolean }
@@ -40,7 +41,6 @@ export type Drag = { tr: Element, movers: Element[], drop: DropTarget | null }
 
 /** Children listed per parent before "N more…". */
 export const ROW_LIMIT = 200
-const DRAG_THRESHOLD = 4
 
 /**
  * The rows under `parent`, front-most first, depth first through expanded groups.
@@ -494,7 +494,7 @@ export class LayerTree {
     const start = { x: evt.clientX, y: evt.clientY }
     const move = (e: PointerEvent) => {
       if (!this.drag) {
-        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_THRESHOLD) return
+        if (!isDrag(e.clientX - start.x, e.clientY - start.y)) return
         this.beginDrag(tr)
       }
       this.dragOver(e)

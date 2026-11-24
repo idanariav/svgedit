@@ -158,6 +158,18 @@ describe('tool registry (registerTool)', () => {
       expect(ev.mods).toMatchObject({ shift: true, alt: false, ctrl: true, mod: true }) // jsdom: non-Mac
       expect(ev.event).toBeInstanceOf(MouseEvent)
     })
+
+    it('says when the press became a drag (core/pointer-intent.ts), and keeps saying it', () => {
+      const t = makeTool()
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      canvas.toolPointerDown(mouse('mousedown', 10, 10))
+      const moved = (x, y) => { canvas.toolPointerMove(mouse('mousemove', x, y)); return t.calls.filter((c) => c[0] === 'move').at(-1)[1].dragging }
+      expect(t.calls.find((c) => c[0] === 'down')[1].dragging).toBe(false)
+      expect(moved(12, 11)).toBe(false) // 2.2 px: still a click
+      expect(moved(13, 14)).toBe(true) // 5 px: a drag
+      expect(moved(10, 10)).toBe(true) // back where it began: still a drag
+    })
   })
 
   describe('automatic undo', () => {

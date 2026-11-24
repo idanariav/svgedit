@@ -35,8 +35,6 @@ const NAMES = ['rotate3d']
 export const DEG_PER_PX = 0.5
 /** Shift snaps an angle to this step (degrees). */
 export const SNAP_DEG = 15
-/** A drag shorter than this (screen px) is a click. */
-export const CLICK_PX = 3
 /** The perspective a new rotation starts with. */
 export const DEFAULT_PERSPECTIVE = 40
 const INK = '#2b7fff'
@@ -186,7 +184,7 @@ export default defineFeature({
         if (!drag || !target) return
         const dx = ev.screenX - drag.press.x
         const dy = ev.screenY - drag.press.y
-        if (!drag.moved && Math.hypot(dx, dy) < CLICK_PX) return
+        if (!drag.moved && !ev.dragging) return
         drag.moved = true
         write(target, dragAngles(drag.p0, dx, dy, { spin: ev.mods.alt, snap: ev.mods.shift }))
         draw(ctx)

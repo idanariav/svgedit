@@ -35,8 +35,6 @@ const name = 'distort-tool'
 
 /** How close (screen px) the pointer must be to a corner's grip to take it. */
 export const GRAB_PX = 10
-/** A drag shorter than this (screen px) is a click. */
-export const CLICK_PX = 3
 const INK = '#2b7fff'
 
 export type Mat = { a: number, b: number, c: number, d: number, e: number, f: number }
@@ -224,7 +222,7 @@ export default defineFeature({
           return
         }
         if (!target) return
-        if (!drag.moved && Math.hypot(ev.screenX - drag.press.x, ev.screenY - drag.press.y) < CLICK_PX) return
+        if (!drag.moved && !ev.dragging) return
         drag.moved = true
         const u = toUnit(target, ctx.snap(space.docPoint(ev)))
         const from = drag.corners0[drag.i]

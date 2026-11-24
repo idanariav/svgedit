@@ -1,6 +1,6 @@
 # R10 plan: one entry point per user intent
 
-Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–1 done** (2026-11-24); step 2 (pointer intent) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–2 done** (2026-11-24); step 3 (tolerances) next.
 
 ## The problem, measured (2026-11-24)
 
@@ -171,6 +171,16 @@ Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Statu
    - **Fixed:** the menu's Paste no longer lands at the last right-click point, and an external SVG paste is one undo step
      (it was import, ungroup and two aligns).
 2. **Pointer intent** (target 2): core sites first, then the registry's `dragging`, then the extensions and the panels.
+   **Done (2026-11-24).**
+   - **`core/pointer-intent.ts`** (`DRAG_PX`, `HIT_PX`, `isDrag`, `createDragIntent`) and a sticky `ToolEvent.dragging`.
+   - **Moved onto it:**
+     - select's move and Alt-clone, measured from the press before snapping;
+     - the marquee and the text box (was 5 px);
+     - the layers panel (two files);
+     - Curvature (was `3 / zoom`);
+     - shape family and the five `CLICK_PX` tools, which now use `ev.dragging` (was 3 px).
+   - **Kept on purpose:** the path tool's curve-on-drag stays at 6 px, now documented. It must agree with its press's own
+     point tolerance, and a stray curve costs more than a missed one.
 3. **Tolerances** (target 3), with the literal guard.
 4. **Press target resolver** (target 4).
 5. **Curvature** (target 5).

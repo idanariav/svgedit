@@ -33,6 +33,7 @@ import { describeElement, describePointer } from './debug-events.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { DrawSnapOptions } from './draw-snap.ts'
 import type { GestureStartedPayload, GestureMovedPayload, GestureReleasedPayload } from './extension-hooks.ts'
+import { HIT_PX } from './pointer-intent.ts'
 
 const {
   InsertElementCommand
@@ -633,8 +634,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
   // Screen-pixel radius within which a fill-less element near the cursor is
   // preferred over a filled shape under the exact click point (see
-  // findStrokeElementNearPoint).
-  const HIT_TOLERANCE = 8
+  // findStrokeElementNearPoint); the pointer tolerances live in pointer-intent.ts.
+  const HIT_TOLERANCE = HIT_PX
 
   /**
  * Is `el` a fill-less, stroke-painted element? Such elements (freedraw paths,

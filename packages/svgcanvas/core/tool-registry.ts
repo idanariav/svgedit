@@ -38,6 +38,8 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 import type { Gesture, GestureEndReason } from './gesture-session.ts'
+import { createDragIntent } from './pointer-intent.ts'
+import type { DragIntent } from './pointer-intent.ts'
 import type { SVGElementJSON } from '../svgcanvas.ts'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
@@ -69,6 +71,11 @@ export interface ToolEvent {
   screenY: number
   /** screen pixels moved since the press (0 on the press itself) */
   dragDistance: number
+  /**
+   * the press has become a drag (core/pointer-intent.ts: `DRAG_PX` from where it went down, measured straight) and stays one;
+   * `false` on the press and on hover. Use it, not a threshold of the tool's own, so a click is a click in every tool.
+   */
+  dragging: boolean
   mods: ToolMods
   button: number
   /** the original event, for edge cases */
@@ -204,7 +211,7 @@ export interface ToolRegistryApi {
 }
 
 /** A registered tool's gesture on the session: the tool and the press that began it. */
-interface ToolGestureState { tool: ToolDef, start: ToolEvent }
+interface ToolGestureState { tool: ToolDef, start: ToolEvent, intent: DragIntent }
 
 const TOOL_KIND = 'tool:'
 
@@ -230,7 +237,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
    * hover.
    * @param tool the tool the event is for; one with `snap` gets object snapping
    */
-  const toToolEvent = (evt: MouseEvent, downClient?: { x: number, y: number }, tool?: ToolDef): ToolEvent => {
+  const toToolEvent = (evt: MouseEvent, downClient?: { x: number, y: number }, tool?: ToolDef, intent?: DragIntent): ToolEvent => {
     const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     let { x, y } = pt
     if (isCreateInCurrentGroup(svgCanvas)) ({ x, y } = toCurrentGroupLocalPoint(svgCanvas, x, y))
@@ -246,6 +253,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
       screenX: evt.clientX,
       screenY: evt.clientY,
       dragDistance: downClient ? Math.hypot(evt.clientX - downClient.x, evt.clientY - downClient.y) : 0,
+      dragging: intent ? intent.update(evt.clientX, evt.clientY) : false,
       mods: {
         shift: Boolean(evt.shiftKey),
         alt: Boolean(evt.altKey),
@@ -340,7 +348,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     const start = toToolEvent(evt, undefined, tool)
     // a gesture still open (its release never came) is cancelled by the session as a 'new press'
     const gesture = svgCanvas.beginGesture<ToolGestureState>(TOOL_KIND + tool.id, {
-      state: { tool, start },
+      state: { tool, start, intent: createDragIntent(start.screenX, start.screenY) },
       label: tool.undoLabel ?? tool.id,
       ownsUndo: tool.ownsUndo,
       onCancel: toolCancelled(tool),
@@ -365,9 +373,9 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const toolPointerMove = (evt: MouseEvent): boolean => {
     const gesture = current()
     if (!gesture) return false
-    const { tool, start } = gesture.state
+    const { tool, start, intent } = gesture.state
     try {
-      tool.pointerMove?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
+      tool.pointerMove?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool, intent))
     } catch (err) {
       gesture.cancel('error')
       throw err
@@ -395,13 +403,13 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const toolPointerUp = (evt: MouseEvent): boolean => {
     const gesture = current()
     if (!gesture) return false
-    const { tool, start } = gesture.state
+    const { tool, start, intent } = gesture.state
     gesture.detach() // before anything below can call setMode(), which would cancel it
     svgCanvas.setStarted(false)
     let result: ReturnType<NonNullable<ToolDef['pointerUp']>>
     endingStart = start
     try {
-      result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
+      result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool, intent))
     } catch (err) {
       gesture.cancel('error')
       throw err

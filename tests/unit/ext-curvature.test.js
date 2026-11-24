@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import extCurvature from '../../src/editor/extensions/ext-curvature/ext-curvature.ts'
+import { isDrag } from '../../packages/svgcanvas/core/pointer-intent.ts'
 
 describe('ext-curvature', () => {
   let svgCanvas
@@ -51,9 +52,11 @@ describe('ext-curvature', () => {
 
   // Document-space events, as the tool registry hands them out.
   const ctx = {}
+  let pressAt = null
   const ev = (x, y, { detail = 1, shift = false, alt = false } = {}) =>
-    ({ x, y, rawX: x, rawY: y, mods: { shift, alt }, event: { detail } })
-  const down = (x, y, opts) => tool.pointerDown(ctx, ev(x, y, opts))
+    // `dragging` as the registry decides it (core/pointer-intent.ts), from the last press
+    ({ x, y, rawX: x, rawY: y, mods: { shift, alt }, event: { detail }, dragging: pressAt ? isDrag(x - pressAt.x, y - pressAt.y) : false })
+  const down = (x, y, opts) => { pressAt = { x, y }; tool.pointerDown(ctx, ev(x, y, opts)) }
   const up = (x, y) => tool.pointerUp(ctx, ev(x, y))
   const click = (x, y, opts) => { down(x, y, opts); up(x, y) }
 

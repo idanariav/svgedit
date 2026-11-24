@@ -20,8 +20,7 @@
  */
 
 import { isPanelObject, isObjectHidden, hasLockMark } from '@svgedit/svgcanvas/core/object-state.ts'
-
-const DRAG_THRESHOLD = 4
+import { isDrag } from '@svgedit/svgcanvas/core/pointer-intent.ts'
 const CELLS = 'td.layervis, td.layerlock, td.objvis, td.objlock'
 
 /**
@@ -155,7 +154,7 @@ export class LayerGestures {
     let began = false
     const onMove = (e: PointerEvent) => {
       if (!began) {
-        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_THRESHOLD) return
+        if (!isDrag(e.clientX - start.x, e.clientY - start.y)) return
         began = true
         begin(e)
       }

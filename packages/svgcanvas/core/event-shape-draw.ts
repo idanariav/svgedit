@@ -13,13 +13,11 @@ import { areaAttrsForBox, writeAreaAttrs, TEXT_LINE_HEIGHT } from './text-rows.t
 import type SvgCanvas from '../svgcanvas.ts'
 import type { StyleProps } from './canvas-state.ts'
 import type { PenEnd } from './pen-continue.ts'
+import { isDrag } from './pointer-intent.ts'
 
 interface DownContext { x: number, y: number, realX: number, realY: number, curShape: StyleProps }
 interface MoveContext { x: number, y: number, realX: number, realY: number, shape: SVGElement }
 interface UpContext { element: Element | null | undefined, keep: boolean }
-
-/** Screen pixels the pointer must travel with the Text tool before the press becomes a box (area text). */
-const TEXT_DRAG_PX = 5
 
 /**
  * Cubic B-spline point used to smooth the freehand pencil stroke as it's
@@ -285,7 +283,7 @@ export const init = (canvas: SvgCanvas): {
         const sx = svgCanvas.getStartX()
         const sy = svgCanvas.getStartY()
         const zoom = svgCanvas.getZoom()
-        if (!textBoxDrag && Math.hypot(x - sx, y - sy) * zoom < TEXT_DRAG_PX) { break }
+        if (!textBoxDrag && !isDrag((x - sx) * zoom, (y - sy) * zoom)) { break }
         textBoxDrag = true
         textBoxEnd = { x, y }
         if (!svgCanvas.getRubberBox()) {

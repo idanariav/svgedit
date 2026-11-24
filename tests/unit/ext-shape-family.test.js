@@ -3,6 +3,7 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import extShapeFamily from '../../src/editor/extensions/ext-shape-family/ext-shape-family.ts'
 import en from '../../src/editor/extensions/ext-shape-family/locale/en.js'
 import { mockCommands } from './helpers/commands.js'
+import { isDrag } from '../../packages/svgcanvas/core/pointer-intent.ts'
 
 describe('ext-shape-family', () => {
   let svgContent
@@ -51,6 +52,7 @@ describe('ext-shape-family', () => {
     screenX: x,
     screenY: y,
     dragDistance: down ? Math.hypot(x - down.x, y - down.y) : 0,
+    dragging: down ? isDrag(x - down.x, y - down.y) : false, // as the registry decides it (core/pointer-intent.ts)
     mods: { shift: false, alt: false, ctrl: false, meta: false, mod: false, ...mods },
     button: 0,
     event

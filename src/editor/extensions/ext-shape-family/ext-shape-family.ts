@@ -51,9 +51,6 @@ const ARROW_OPTION: Record<string, { vertical?: string, horizontal?: string }> =
   polargrid: { vertical: 'concentric', horizontal: 'radial' }
 }
 
-/** Drag distance (screen px) before a press counts as a drag rather than a click. */
-const DRAG_THRESHOLD = 3
-
 /**
  * Popover fields per mode. `size` fields are geometry (not remembered between
  * uses beyond the popover's own defaults); the rest are tool options.
@@ -328,7 +325,7 @@ export default defineFeature({
         if (!drag) return
         const p = { x: ev.x, y: ev.y }
         drag.mods = { shift: ev.mods.shift, alt: ev.mods.alt }
-        if (!drag.drawing && ev.dragDistance < DRAG_THRESHOLD) {
+        if (!drag.drawing && !ev.dragging) {
           drag.last = p
           return
         }

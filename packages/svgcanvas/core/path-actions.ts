@@ -1038,6 +1038,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // hand tremor) commonly runs several CSS px, well past a stricter
           // 2-3px threshold, which left curves getting committed from plain
           // imprecise clicks (not just quick flick-and-return gestures).
+          // Deliberately looser than pointer-intent.ts's DRAG_PX (roadmap R10): a stray curve costs more than a
+          // missed one, and it must agree with the press's own point tolerance.
           const DRAG_THRESHOLD = 6 / zoom
           if (Math.hypot(curX - ptX, curY - ptY) < DRAG_THRESHOLD) {
             const seglist = drawnPath.pathSegList
