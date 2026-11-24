@@ -323,6 +323,9 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
   const mouseUpEventImpl = (evt: MouseEvent): void => {
     evt.preventDefault()
+    const moved = svgCanvas.gesture.moveSelectionThresholdReached
+    const clickSelect = svgCanvas.gesture.clickSelect
+    svgCanvas.gesture.clickSelect = null
     svgCanvas.gesture.moveSelectionThresholdReached = false
     svgCanvas.gesture.dragStartBBox = null
     svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
@@ -383,7 +386,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       case 'resize':
       case 'multiselect':
       case 'select':
-        eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected })
+        eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect })
         return
       case 'zoom': {
         eventZoom.up(evt, { realX, realY })
@@ -846,9 +849,13 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     }
 
     // Prefer an already-selected element under the cursor over the topmost one
-    // (matches Excalidraw). When stacked shapes overlap, a plain click keeps the
-    // current selection if it lies under the pointer instead of grabbing the top
-    // element. Skipped for grips, shift-click (additive) and right-click.
+    // (matches Excalidraw), so a drag that starts over a covered selection moves
+    // it. Skipped for grips, shift-click (additive) and right-click.
+    // A press that never becomes a drag is a click, and a click means "this one":
+    // `clickSelect` is what the release selects when the pointer did not move
+    // (event-select.ts `up`) — the topmost element the selection was preferred
+    // over, or the member of a multi-selection that was clicked.
+    let clickSelect: Element | null = null
     if (
       svgCanvas.getCurrentMode() === 'select' && !evt.shiftKey && !rightClick &&
     mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
@@ -860,8 +867,14 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         const stack = document.elementsFromPoint(evt.clientX, evt.clientY)
         for (const node of stack) {
           const hit = sel.find((s) => s === node || s.contains(node))
-          if (hit) { mouseTarget = hit; break }
+          if (hit) {
+            if (mouseTarget !== svgRoot) clickSelect = mouseTarget
+            mouseTarget = hit
+            break
+          }
         }
+      } else if (sel.length > 1 && sel.includes(mouseTarget)) {
+        clickSelect = mouseTarget
       }
     }
 
@@ -874,8 +887,9 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
     ) {
       const strokeHit = findStrokeElementNearPoint(evt, mouseTarget)
-      if (strokeHit) { mouseTarget = strokeHit }
+      if (strokeHit) { mouseTarget = strokeHit; clickSelect = null }
     }
+    svgCanvas.gesture.clickSelect = clickSelect
 
     // The empty part of an area text's box is part of the text: a click there selects it (only its glyphs are hit
     // natively). Only where the native hit-test found nothing, so a shape drawn under or over the box still wins.

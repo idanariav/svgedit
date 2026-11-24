@@ -47,6 +47,9 @@ export interface GestureState {
   dragStartBBox: BBox | null
   /** The pointer has moved far enough since the press for a drag to count as a move. */
   moveSelectionThresholdReached: boolean
+  /** What the release selects if the press never became a drag: the topmost element a covered selection was preferred over,
+   * or the clicked member of a multi-selection (event.ts mouseDown). */
+  clickSelect: Element | null
   /** Space is held: the next drag pans. */
   spaceKey: boolean
   /** A shape was just added with a drawing tool (the panel offers to keep its style). */
@@ -73,6 +76,7 @@ export const createGestureState = (): GestureState => ({
   altCloneArmed: false,
   dragStartBBox: null,
   moveSelectionThresholdReached: false,
+  clickSelect: null,
   spaceKey: false,
   addedNew: false,
   pendingNewElement: null

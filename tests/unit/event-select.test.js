@@ -173,3 +173,87 @@ describe('event-select up() after a rubber-band selection', () => {
     expect(calls).toEqual([])
   })
 })
+
+describe('event-select multiselectMove() marquee threshold', () => {
+  // A press on empty canvas that jitters a pixel used to be a 1px marquee: it selected every element whose bounding box
+  // covered that pixel (a big group, a background shape) instead of deselecting.
+  const makeMarqueeCanvas = () => {
+    const calls = { intersections: 0, added: [] }
+    const rubberBox = { setAttribute: () => {} }
+    return {
+      calls,
+      gesture: createGestureState(),
+      requireRubberBox: () => rubberBox,
+      getRStartX: () => 100,
+      getRStartY: () => 100,
+      getIntersectionList: () => { calls.intersections++; return ['hit'] },
+      removeFromSelection: () => {},
+      addToSelection: (els) => calls.added.push(...els)
+    }
+  }
+
+  it('selects nothing while the band is within 4 screen px', () => {
+    const svgCanvas = makeMarqueeCanvas()
+    const { multiselectMove } = eventSelectInit(svgCanvas)
+    multiselectMove({}, { selectedElements: [], realX: 102, realY: 101, zoom: 1 })
+    expect(svgCanvas.calls.intersections).toBe(0)
+    expect(svgCanvas.calls.added).toEqual([])
+  })
+
+  it('selects once the band spans more than 4 screen px, and keeps selecting when it shrinks back', () => {
+    const svgCanvas = makeMarqueeCanvas()
+    const { multiselectMove } = eventSelectInit(svgCanvas)
+    // zoom 2: 2.5 content units are 5 screen px
+    multiselectMove({}, { selectedElements: [], realX: 52.5, realY: 50, zoom: 2 })
+    expect(svgCanvas.calls.added).toEqual(['hit'])
+    multiselectMove({}, { selectedElements: ['hit'], realX: 50.5, realY: 50, zoom: 2 })
+    expect(svgCanvas.calls.intersections).toBe(2)
+  })
+})
+
+describe('event-select up() click without a drag', () => {
+  // A press over a covered selection keeps it so a drag moves it; a release that never moved selects what was clicked.
+  const makeUpCanvas = () => {
+    const calls = []
+    return {
+      calls,
+      gesture: createGestureState(),
+      getCurrentMode: () => 'select',
+      pathActions: { clear: () => calls.push('clear'), select: (el) => calls.push(['armPath', el.id]) },
+      selectOnly: (els) => calls.push(['selectOnly', els.map((el) => el.id)]),
+      selectorManager: { requestSelector: () => ({ showGrips: () => {}, resize: () => {} }) },
+      setCurProperties: () => {},
+      getRStartX: () => 0,
+      getRStartY: () => 0,
+      updateGroupSelector: () => {},
+      bakeDrag: () => true, // a drag's bake is covered by tests/e2e/click-select.spec.js
+      call: () => {}
+    }
+  }
+  const el = (id, nodeName = 'rect') => ({ id, nodeName, isConnected: true, getAttribute: () => null, removeAttribute: () => {} })
+  const upCtx = (overrides) => ({
+    realX: 0, realY: 0, operationMode: 'select', pendingMove: null, tempJustSelected: null, moved: false, ...overrides
+  })
+
+  it('selects the clicked element and arms a path for a double-click', () => {
+    const svgCanvas = makeUpCanvas()
+    const { up } = eventSelectInit(svgCanvas)
+    const top = el('top', 'path')
+    up({ shiftKey: false }, upCtx({ selectedElements: [el('under')], clickSelect: top }))
+    expect(svgCanvas.calls).toEqual(['clear', ['selectOnly', ['top']], ['armPath', 'top']])
+  })
+
+  it('leaves the selection alone after a drag', () => {
+    const svgCanvas = makeUpCanvas()
+    const { up } = eventSelectInit(svgCanvas)
+    up({ shiftKey: false }, upCtx({ selectedElements: [el('under')], clickSelect: el('top'), moved: true, realX: 5 }))
+    expect(svgCanvas.calls.some((c) => Array.isArray(c) && c[0] === 'selectOnly')).toBe(false)
+  })
+
+  it('leaves the selection alone when the marquee ended the press', () => {
+    const svgCanvas = makeUpCanvas()
+    const { up } = eventSelectInit(svgCanvas)
+    up({ shiftKey: false }, upCtx({ selectedElements: [], clickSelect: el('top'), operationMode: 'multiselect' }))
+    expect(svgCanvas.calls.some((c) => Array.isArray(c) && c[0] === 'selectOnly')).toBe(false)
+  })
+})

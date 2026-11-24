@@ -31,6 +31,10 @@ interface UpContext {
   operationMode: string
   pendingMove: { dx: number, dy: number } | null | undefined
   tempJustSelected: Element | null
+  /** the press moved far enough to count as a drag */
+  moved: boolean
+  /** what a press that did not move selects (see `GestureState.clickSelect`) */
+  clickSelect: Element | null
 }
 
 // update the dummy transform in our transform list
@@ -287,6 +291,12 @@ export const init = (canvas: SvgCanvas): {
       height: Math.abs(realY - svgCanvas.getRStartY())
     }, 100)
 
+    // A press on empty canvas that jitters a pixel or two is a click (deselect), not a marquee: the band selects nothing until
+    // it is 4 screen px across in some direction, the threshold a drag of the selection uses (`move` above). Both are screen px.
+    const spanned = Math.abs(realX - svgCanvas.getRStartX()) > 4 || Math.abs(realY - svgCanvas.getRStartY()) > 4
+    svgCanvas.gesture.moveSelectionThresholdReached ||= spanned
+    if (!svgCanvas.gesture.moveSelectionThresholdReached) return
+
     // for each selected:
     // - if newList contains selected, do nothing
     // - if newList doesn't contain selected, remove it from selected
@@ -325,7 +335,7 @@ export const init = (canvas: SvgCanvas): {
   // mouseUpEvent returns immediately after calling this, skipping the
   // ext_mouseUp/keep-discard epilogue, exactly as the original switch did.
   const up = (evt: MouseEvent, ctx: UpContext): void => {
-    const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected } = ctx
+    const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect } = ctx
     const mode = svgCanvas.getCurrentMode()
     if (mode === 'resize' && svgCanvas.gesture.areaResize) {
       // an area text's box drag: its transaction is the undo step
@@ -348,6 +358,18 @@ export const init = (canvas: SvgCanvas): {
         svgCanvas.setCurBBoxes([])
       }
       svgCanvas.setCurrentMode('select')
+    }
+    // A click (no drag) on the element above a covered selection, or on one member of a multi-selection, selects just that
+    // element: the selection was kept at the press only so that a drag would move it.
+    if (operationMode === 'select' && !moved && clickSelect?.isConnected && !evt.shiftKey) {
+      svgCanvas.gesture.dragStartTransforms = null
+      svgCanvas.gesture.dragPlan = null
+      svgCanvas.gesture.hasDragStartTransform = false
+      svgCanvas.pathActions.clear()
+      svgCanvas.selectOnly([clickSelect], true)
+      // arm the double-click into node edit, as a first click on a path does
+      if (clickSelect.nodeName === 'path') svgCanvas.pathActions.select(clickSelect)
+      return
     }
     if (selectedElements[0]) {
       // if we only have one selected element
