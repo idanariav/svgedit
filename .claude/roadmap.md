@@ -73,6 +73,12 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R3 | TypeScript (`.ts`) for the engine, then the editor (toolchain done; engine converted 2026-10-17 (except the modules R1 deletes); the editor is next) | M toolchain + L conversion | — |
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
+| R8 | A change to the drawing is announced once, from the history (`documentChanged`), not by 90 `call('changed')` sites | S, then M | — |
+| R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract | L | — |
+| R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver | M | — |
+| R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing | M | — |
+| R12 | One placement policy and one set of coordinate frames for every gesture and tool | L | R1 (matrix math on the model) |
+| R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) | S–M | — |
 
 **R1 stops at "the model owns state and undo, the DOM is the view and the measurer"** (2026-10-18); what is deliberately not
 being done is listed in [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md#not-worth-doing-decided-2026-10-18).
@@ -85,7 +91,7 @@ this order, because it needed neither: what it learned about R2 and R3 is in the
 
 | File | Covers |
 |---|---|
-| [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md) | R1–R4, R6 above (R5 and R7 are done) |
+| [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md) | R1–R4, R6, R8–R13 above (R5 and R7 are done) |
 | [`roadmap/infrastructure.md`](roadmap/infrastructure.md) | Tier 0 follow-ups (tool cursors, live-effects preview on transactions, precise `enabled`, puppet warp on `registerTool`, lazy transaction snapshot), round-trip corpus, `svgcanvas.d.ts` / host API, typing the `init` modules, TypeScript conversion steps |
 | [`roadmap/drawing-tools.md`](roadmap/drawing-tools.md) | Measure, Distort, Gradient, Shaper, Pencil / Smooth Path fit, Pen continue / join, centerline tracing, Pencil continue, Smooth tool, ruler guides, snapping while drawing, shape-family tools |
 | [`roadmap/appearance.md`](roadmap/appearance.md) | Recolor Artwork, live effects, Live Corners, art / pattern brushes, Blend, the live stack, width profiles, arrowheads, fitted dashes, Eyedropper Copy style, glow |

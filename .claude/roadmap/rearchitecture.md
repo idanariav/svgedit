@@ -1,4 +1,4 @@
-# Re-architecture (R1–R4, R6)
+# Re-architecture (R1–R4, R6, R8–R13)
 
 Part of the roadmap (index: [`../roadmap.md`](../roadmap.md)). Raised 2026-10-15 from a "what would we build
 differently from scratch" review, with everything on the table, including a rewrite of the canvas engine. Nothing here
@@ -350,3 +350,92 @@ source before minification; minified size not measured). The browser's `DOMParse
 build, keeping `saxes` for Node only (the model's infoset tests show the two agree on the corpus).
 
 Size: M.
+
+## Root causes behind the fixes of Oct–Nov 2026 (R8–R13)
+
+Raised 2026-11-24 from a review of the fix commits since mid-October (fork and plugin, ~15). Almost every one traced to one
+of the structural weaknesses below; each is spread over many call sites, so the same bug keeps coming back in a new form.
+Suggested order: R8 → R9 → R10 + R13 → R11 → R12.
+
+### R8. A change to the drawing is announced from the history, not by every call site
+
+**Today.** Three signals are raised by hand and independently: an undo step (a command lands), `call('changed', elems)`
+(90 sites in core and the editor) and, from that, the host's dirty flag (the plugin's `svg-changed`). They disagree: a
+marquee pushed a "position" step (8364dc73); no-op path edits recorded steps and a finished Curvature path announced nothing,
+so the host did not autosave (392929f5); a colour click was not an edit (8e1b7b2a); drags that changed nothing fired
+`changed` (debug log 2026-11-24). `changed` also does two jobs at once: "the document changed" (host dirty flag, derived-data
+extensions re-deriving) and "refresh the panels".
+
+**Target.** Since R1(d) the history knows exactly when the drawing changed: the model the DOM shows is a new object when, and
+only when, something differs (`share` keeps the old one otherwise). One announcer compares it with the last one announced
+after every step, undo / redo and `changed`, and raises `documentChanged` only when it differs. Hosts mark dirty on that;
+`changed` is left to mean "refresh the UI".
+
+**Path.** (1) the announcer + `documentChanged` in core and the host API; the plugin's dirty flag moves onto it (falling
+back to `changed` on an older bundle). (2) The editor's own document-level consumers (`showSaveWarning`, derived-data
+extensions' `elementChanged`) move too. (3) The `call('changed')` sites that exist only to say "something changed" go;
+the ones that refresh a panel stay. Size: S for (1), M for the rest.
+
+### R9. A gesture owns its state
+
+**Today.** Per-gesture state is loose fields on `GestureState` plus module slots (`getStartTransform`, `pathActions`'
+tracked path), each reset by hand at chosen points (57 resets in 5 files, with comments arguing where a reset must go). Bugs:
+`groupResizeStart` outlived its gesture and scaled old elements on later resizes (e6f50f31); a stale tracked path opened node
+edit on the wrong path (8364dc73 and the background-click fix); the shared start-transform slot gave multi-select drags the
+wrong undo transform; ghost and stale grips. The plugin's double teardown on close (onClose + onunload) was the same at the
+view level.
+
+**Target.** The select / resize / rotate / path-edit gestures in `event.ts` / `event-select.ts` follow the contract
+registered tools already have (`registerTool`: begin → preview → commit / cancel with state on a per-gesture object): the
+state is created at the press and dropped with the gesture, so nothing can outlive it. Size: L (the shared drag code every
+tool uses).
+
+### R10. One entry point per user intent
+
+**Today.** The same intent goes through different code depending on how it was asked. Paste from the menu read the
+drawing's stored copy, Cmd+V read the system clipboard (fixed 2026-11-24 by a fallback; `mod+v` is not a command, so it
+bypasses the registry); Curvature behaved differently finished by a click and by a tool switch; an extension hook was
+defined and never dispatched. Click versus drag is decided in at least five places (the 4 px move threshold, the marquee,
+which had none until 2026-11-24, Alt-clone, curve-on-drag in the path tool, the layers-panel drag); closing / matching
+tolerances differ by call site (184f99ae: two tolerances met and the distortion compounded); the press-target pipeline
+in `mouseDown` is a chain of order-dependent overrides (prefer-selected, stroke proximity, area text, bbox-as-handle), and
+two of them interacting was the 2026-11-24 selection bug.
+
+**Target.** Copy / cut / paste are registry commands for every source (keys, menu, native events), the native events
+only supplying the system clipboard's content. One pointer-intent classifier (click / drag / marquee, one threshold in
+screen px) that every press consults. Shared geometric tolerance constants. The target overrides as one ranked resolver
+with its rules tested together. Size: M.
+
+### R11. The editor's own state stays out of the drawing
+
+**Today.** Group dimming (`opacity="0.33"`, `pointer-events: none`) leaked into undo snapshots and saved files (5a3d78d6);
+`addSVGElementsFromJson` (`core/json.ts`) stamps `style="pointer-events:inherit"` on every element it creates, which ends up
+in saved files and on the clipboard; the release of a drag strips `style` off the selected element; previews are
+`data-se-ephemeral` nodes every reader filters out. R1 made the DOM a view of the model, but the editor still keeps
+interaction state on the same nodes, so readers compensate (`withContextUndimmed`, ephemeral filtering).
+
+**Target.** Editor-only state lives outside the document: CSS keyed off a state attribute on the container or the
+overlay, never attributes on drawing elements. Comes with a `repair-drawings` entry for the stray `pointer-events` style
+in saved drawings and a `checkDrawing` rule. Size: M.
+
+### R12. One placement policy, one set of coordinate frames
+
+**Today.** Where an element's placement lives (its attributes or its `transform`; a group only in its transform; a
+rotation decomposed or collapsed into a matrix) is decided in several places that copy each other: the drag release in
+`event-select.ts`, nudge in `selected-elem.ts` (the group-consolidation block is nearly verbatim), `recalculateDimensions`
+and the model's `affineEdit`. Bugs: a rotated group barely moved on a drag (efd2f3be); a turned curve was measured from its
+raw numbers and measuring added an empty `<path>` (2365847f); a font size went to ~0 after a rotation was collapsed.
+Coordinate frames (screen, document, layer, entered-group local, element-local) are plain numbers each tool converted on
+its own until `src/editor/toolSpace.ts`: 61569a3b, a2101f3b and 478dd235 fixed the same mistake in five tools.
+
+**Target.** One placement policy on the model's matrix math (R1's named next step: flip / rotate / scale on the model) and
+one frame-conversion module every tool and gesture uses. Size: L.
+
+### R13. Tests that run the host's conditions
+
+**Today.** Most of the bugs above were found from real Obsidian debug logs, not by the suite: the e2e pages mount one
+editor in a plain browser. Two editors in one document, leaf lifecycle events firing together, Electron's clipboard and
+menu roles are not simulated (the `window.svgEditor` problems, the 2026-11-24 paste and double-teardown bugs).
+
+**Target.** A host-harness e2e page: two editors plus a fake plugin view lifecycle (open / switch / close firing as Obsidian
+does) and a clipboard double that can drop or replace writes the way a host can. Size: S–M.
