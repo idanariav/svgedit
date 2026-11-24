@@ -111,6 +111,8 @@ class EditorStartup {
   pasteHandler: ((e: ClipboardEvent) => void) | null
   pasteFallbackArmer: ReturnType<typeof createPasteFallbackArmer> | null
   applyClipboardText: (text: string | undefined) => boolean
+  /** when this editor last saw its own Cmd/Ctrl+C or X keydown (performance.now()); see onNativeCopy */
+  clipboardKeyAt = -Infinity
   /** Read-only viewing (the mobile shell's view state): commands outside `VIEW_ONLY_COMMANDS` refuse and paste is ignored */ viewOnly = false
   setPanning: (active: boolean) => void
   toolShortcutBadges: ReturnType<typeof initToolShortcutBadges> | undefined
@@ -617,6 +619,9 @@ class EditorStartup {
       } else if ((e.key.toLowerCase() === 'shift') && (this.svgCanvas.getMode() === 'zoom')) {
         this.workarea.style.cursor = zoomOutIcon
         e.preventDefault()
+      } else if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'x')) {
+        // the native copy / cut event that follows carries the shapes (see onNativeCopy below)
+        this.clipboardKeyAt = performance.now()
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
         // See pasteFallbackArmer.js: arms a fallback paste for hosts that never
         // deliver a native `paste` DOM event to a non-editable workarea.
@@ -672,8 +677,12 @@ class EditorStartup {
       this.pasteFallbackArmer = createPasteFallbackArmer(async () => {
         try {
           const text = await navigator.clipboard.readText()
-          if (this.applyClipboardText(text)) return
+          if (this.applyClipboardText(text)) {
+            this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'fallback', kind: classifyClipboardText(text)?.type })
+            return
+          }
         } catch { /* clipboard read blocked by host/permissions */ }
+        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'fallback', kind: 'stored' })
         this.svgCanvas.pasteElements()
       })
     }
@@ -687,9 +696,51 @@ class EditorStartup {
       const t = e.target as HTMLElement | null
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
       const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain')
-      if (this.applyClipboardText(text)) e.preventDefault()
+      if (this.applyClipboardText(text)) {
+        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: classifyClipboardText(text)?.type })
+        e.preventDefault()
+        return
+      }
+      // The system clipboard holds nothing a drawing can take (it lost the shapes' JSON to a host's own copy, or was never
+      // written: a rejected `writeText`). Paste what this editor copied, as the menu's Paste and the keydown fallback do;
+      // before, Cmd/Ctrl+V did nothing here while Paste in the menu worked.
+      if (this.viewOnly || !this.hasStoredClipboard()) {
+        this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: 'none', types: Array.from(e.clipboardData?.types ?? []) })
+        return
+      }
+      this.svgCanvas.logDebugEvent?.('clipboard-paste', { via: 'native', kind: 'stored', types: Array.from(e.clipboardData?.types ?? []) })
+      e.preventDefault()
+      this.pasteInCenter()
     }
     document.addEventListener('paste', this.pasteHandler)
+
+    // Native copy / cut (Cmd/Ctrl+C / X, or a host's Edit menu, which in Electron runs the browser's copy after the
+    // keydown): when it is this drawing's, the clipboard gets the copied shapes, written synchronously on the event. Before,
+    // only the async `writeText` in `copySelectedElements` did it, and the browser's own copy of whatever text happened to be
+    // selected in the page could take the clipboard instead — so a paste in another drawing found no shapes.
+    const onNativeCopy = (e: ClipboardEvent): void => {
+      if (!e.clipboardData || !isActiveEditor(this) || !ownsKeyEvent(this.$container, e.target)) return
+      // this editor's own Cmd/Ctrl+C / X keydown just ran the copy / cut command (and a cut has already removed the selection)
+      const fromKey = performance.now() - this.clipboardKeyAt < 1000
+      this.clipboardKeyAt = -Infinity
+      // text selected in the page outside the drawing (a note beside it) is what the user is copying
+      const text = document.getSelection()
+      if (text && !text.isCollapsed && !this.$container.contains(text.anchorNode)) return
+      const hasSelection = this.svgCanvas.getSelectedElements().some(Boolean)
+      if (e.type === 'copy') {
+        if (!hasSelection) return // nothing selected: leave the browser's copy alone
+        if (!fromKey) this.svgCanvas.copySelectedElements() // a host's menu Copy, not our hotkey
+      } else if (!fromKey) {
+        return // a menu Cut without our hotkey: the drawing was not cut, so there is nothing new to put on the clipboard
+      }
+      const data = this.storedClipboard()
+      if (!data) return
+      e.clipboardData.setData('text/plain', data)
+      e.preventDefault()
+      this.svgCanvas.logDebugEvent?.('clipboard-copy', { via: 'native', event: e.type, fromKey, bytes: data.length })
+    }
+    document.addEventListener('copy', onNativeCopy, { signal: this.listenerAbort.signal })
+    document.addEventListener('cut', onNativeCopy, { signal: this.listenerAbort.signal })
 
     // Wheel navigation:
     //   plain wheel        → scroll the canvas up/down (native vertical scroll)
@@ -1032,6 +1083,19 @@ class EditorStartup {
       // Todo: Report errors through the UI
       logError('Failed to finish loading extensions', err, 'EditorStartup')
     }
+  }
+
+  /** What this editor's copy put on its own clipboard (the shapes' JSON the menu's Paste reads), or null. */
+  storedClipboard (): string | null {
+    try {
+      return sessionStorage.getItem(this.svgCanvas.getClipboardID())
+    } catch {
+      return null
+    }
+  }
+
+  hasStoredClipboard (): boolean {
+    return Boolean(this.storedClipboard())
   }
 
   /**

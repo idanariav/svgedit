@@ -10,6 +10,14 @@ When adding an entry: say what it is, why it wasn't done now, and roughly
 how big/risky it is. When an item is finally addressed, delete its entry
 (git history keeps the record).
 
+## Cmd/Ctrl+C with text selected in the page beside the drawing still copies the shapes
+
+The `copy` hotkey runs `copySelectedElements`, whose async `navigator.clipboard.writeText` puts the shapes' JSON on the system
+clipboard even when the user meant the text selected next to the drawing (focus on `<body>`, shapes selected). The native
+`copy` listener in `EditorStartup.ts` (`onNativeCopy`) already stands back in that case; the hotkey does not. The fix is to skip
+the hotkey copy (or just its `writeText`) when `document.getSelection()` holds text outside the editor's container, which
+needs the hotkey command to know it came from the keyboard. Small; pre-existing, found with the cross-drawing paste fix.
+
 ## A press consolidates an element's transform list in every mode, view-only included
 
 `mouseDownEventImpl` (`core/event.ts`) folds an element's multi-entry transform list into one `matrix(…)` on any press that

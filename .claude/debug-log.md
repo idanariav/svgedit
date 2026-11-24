@@ -22,6 +22,8 @@ Every detail carries `seq` (1, 2, 3… from switch-on) and `t` (ms since switch-
 | `history-apply` | undo / redo applied | `direction`, `cmdType`, `text`, `elemIds`, `mode`, `refreshedInPlace` (by snapshot: `direction: 'snapshot'`, `elemIds` of the elements the step changed, no `cmdType`) |
 | `path-*`, `pathedit-*` | node selection, enter / exit path edit, open / close subpath, node delete, commits | see `path-actions.js`, `path-method.js` |
 | `debug-snapshot` | the visibility state changed (polled every 400 ms) | selectors and path grips that show or are `stale` (rendered without a model behind them); the hidden pool is a count (`hiddenSelectors`, `hiddenGrips`); group dimming as `disabledCount`; `pathEditing.mode` |
+| `clipboard-copy` | a native `copy` / `cut` event this drawing filled with the selected shapes (`EditorStartup.ts` `onNativeCopy`) | `via: 'native'`, `event` (`copy` / `cut`), `fromKey` (the editor's own Cmd/Ctrl+C / X keydown ran just before), `bytes` |
+| `clipboard-paste` | a keyboard paste was handled | `via` (`native`: the browser's `paste` event / `fallback`: the keydown fallback for hosts without one), `kind` (`internal` / `external-svg` from the system clipboard, `stored`: the drawing's own copy because the system clipboard held nothing usable, `none`), `types` (the clipboard's MIME types, native only) |
 | `layer-tree` | the Layers panel's object tree folded or opened | `action` (`expand` / `collapse` by the user, `reveal` when a canvas selection opened it), `target` (`layer:<name>` or `tag#id`) |
 
 `drawing` is `{ ok: true }` or `{ ok: false, count, findings: [{ code, message, id }] }` (first 5): the `checkDrawing()`
