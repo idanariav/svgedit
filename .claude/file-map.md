@@ -69,7 +69,7 @@
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gesture-session.ts` | The lifecycle every pointer gesture on the canvas shares: a press begins one (and opens its undo transaction), the release commits it, and every other way out rolls it back (roadmap R9,… |
-| `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
+| `gesture-state.ts` | The state the canvas keeps between mouse events that is not one gesture's (`svgCanvas.gesture`): a key being held, the panel's "keep this style" offer, the deferred selection of a just-created element, and the stroke… |
 | `gradient-edit.ts` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.ts` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
 | `group-ops.ts` | Grouping operations (group, ungroup, convert-to-group, push group properties down to children), split out of selected-elem.js |

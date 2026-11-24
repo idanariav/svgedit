@@ -12,7 +12,9 @@ import { visitAndApproveStorage } from './helpers.js'
 // The exits a built-in gesture does not have yet are marked `test.fail()` against the step of the plan that adds them;
 // a step that lands makes its cases pass, and Playwright then reports them as unexpectedly passing until the mark goes.
 
-const SVG = `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg"><g class="layer"><title>Layer 1</title>
+// The layer has an id as a loaded drawing's does (the editor's load names its layers; without one the layers panel names it at
+// the first change, which no step records).
+const SVG = `<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg"><g class="layer" id="layer1"><title>Layer 1</title>
   <rect id="r1" x="100" y="100" width="100" height="80" fill="red"/>
   <rect id="r2" x="260" y="100" width="80" height="80" fill="blue"/>
   <rect id="r3" x="100" y="260" width="100" height="80" fill="green"/>
@@ -117,14 +119,6 @@ const EXITS = {
  */
 const allExits = (gesture, why) => Object.fromEntries(Object.keys(EXITS).map((e) => [`${gesture} › ${e}`, why]))
 const NOT_YET = {
-  ...allExits('move', 'step 4: move on the gesture session'),
-  ...allExits('multi-move', 'step 4: move on the gesture session'),
-  ...allExits('alt-clone', 'step 4: move on the gesture session'),
-  // the clone and the move are two undo steps: one undo leaves the clone hidden on top of its original
-  'alt-clone › release': 'step 4: the clone and its move in one transaction',
-  'alt-clone › twice': 'step 4: the clone and its move in one transaction',
-  // switching modes mid-marquee leaves the rubber band on screen
-  'marquee › a mode switch': 'step 4: the marquee on the gesture session',
   ...allExits('node drag', 'step 6: node drag on the gesture session')
 }
 

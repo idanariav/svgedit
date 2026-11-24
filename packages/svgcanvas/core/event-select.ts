@@ -6,6 +6,11 @@
  * property-capture + transform-consolidation tail shared (via fallthrough in
  * the original switch) by `resize` and `multiselect` as well as `select`
  * itself.
+ *
+ * A press in select mode begins a gesture on the gesture session (core/gesture-session.ts, roadmap R9): a `move` on an
+ * element (its state, `MoveState`, on it) or a `marquee` on empty canvas (`MarqueeState`), each with one transaction for its
+ * undo step (a click commits nothing); `event.ts` commits it after the release body. Escape, a mode switch, a new press, a
+ * lost focus or a context menu roll it back with its selection, and the state goes with it.
  * @module event-select
  * @license MIT
  */
@@ -18,10 +23,57 @@ import { toCurrentGroupLocalDelta } from './event-group-context.ts'
 import * as hstry from './history.js'
 import { parseMatrix } from './model/matrix.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { BBox } from '../svgcanvas.ts'
+import type { Gesture } from './gesture-session.ts'
+import type { DragEntry } from './model-commands.ts'
+import type { SnapTarget } from './smart-guides.ts'
 
 const { BatchCommand, ChangeElementCommand } = hstry
 
-interface DownContext { mouseTarget: Element, svgRoot: SVGSVGElement, rightClick: boolean, selectedElements: Element[], zoom: number }
+/** What a drag of the selection keeps from its press to its release. */
+export interface MoveState {
+  /** Alt was down at the press: the drag clones the selection once it passes the click / drag threshold */
+  clone: boolean
+  /** what the release selects if the press never became a drag (the topmost element a covered selection was preferred
+   * over, or the clicked member of a multi-selection; event.ts mouseDown) */
+  clickSelect: Element | null
+  /** the first movement has happened: the start transforms are taken and the dummy translates are in (or the plan decided) */
+  begun: boolean
+  /** each dragged element's transform before the drag (what its undo goes back to) */
+  startTransforms: Map<Element, string> | null
+  /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each element's transform amounts to */
+  plan: Map<Element, DragEntry> | null
+  /** the selection's box at the first movement: what proportion and smart snapping test */
+  startBBox: BBox | null
+  /** the pointer has moved past the click / drag threshold */
+  moved: boolean
+  /** the delta transformAgain repeats once the drag is committed */
+  pending: { dx: number, dy: number } | null
+  /** what smart snapping snaps to, collected at its first use */
+  snapTargets: SnapTarget[] | null
+}
+
+/** What a rubber-band selection keeps from its press to its release. */
+export interface MarqueeState {
+  /** the band has spanned more than the click / drag threshold */
+  moved: boolean
+}
+
+/** The drag data the shared release body bakes from: the move gesture's, or the resize gesture's. */
+export interface DragBake {
+  startTransforms: Map<Element, string> | null
+  plan: Map<Element, DragEntry> | null
+}
+
+interface DownContext {
+  mouseTarget: Element
+  svgRoot: SVGSVGElement
+  rightClick: boolean
+  selectedElements: Element[]
+  zoom: number
+  /** what the release selects if the press does not become a drag (event.ts) */
+  clickSelect: Element | null
+}
 interface MoveContext { selectedElements: Element[], selected: Element | null, x: number, y: number, zoom: number, svgRoot: SVGSVGElement }
 interface MultiselectContext { selectedElements: Element[], realX: number, realY: number, zoom: number }
 interface UpContext {
@@ -33,8 +85,10 @@ interface UpContext {
   tempJustSelected: Element | null
   /** the press moved far enough to count as a drag */
   moved: boolean
-  /** what a press that did not move selects (see `GestureState.clickSelect`) */
+  /** what a press that did not move selects (`MoveState.clickSelect`) */
   clickSelect: Element | null
+  /** what the release bakes (the gesture's start transforms and model plan), or null */
+  drag: DragBake | null
 }
 
 // update the dummy transform in our transform list
@@ -66,14 +120,80 @@ export const init = (canvas: SvgCanvas): {
   move: (evt: MouseEvent, ctx: MoveContext) => void
   multiselectMove: (evt: MouseEvent, ctx: MultiselectContext) => void
   up: (evt: MouseEvent, ctx: UpContext) => void
+  /** The drag of the selection in progress, or null. */
+  currentMove: () => Gesture<MoveState> | null
+  /** The rubber-band selection in progress, or null. */
+  currentMarquee: () => Gesture<MarqueeState> | null
 } => {
   const svgCanvas = canvas
 
+  const currentMove = (): Gesture<MoveState> | null => {
+    const g = svgCanvas.activeGesture()
+    return g?.kind === 'move' ? g as Gesture<MoveState> : null
+  }
+  const currentMarquee = (): Gesture<MarqueeState> | null => {
+    const g = svgCanvas.activeGesture()
+    return g?.kind === 'marquee' ? g as Gesture<MarqueeState> : null
+  }
+
+  /** The rubber band goes when its gesture ends (released or rolled back). */
+  const hideRubberBand = (): void => {
+    const box = svgCanvas.getRubberBox()
+    if (!box) return
+    box.setAttribute('display', 'none')
+    svgCanvas.setCurBBoxes([])
+  }
+
+  /** The guides a drag shows, and the selection boxes, go back with a rolled-back gesture. */
+  const clearDragOverlays = (): void => {
+    svgCanvas.showSnapGuides?.(null)
+    svgCanvas.showSmartGuides?.(null)
+    svgCanvas.dragLiveMoveDelta = undefined
+  }
+
   const down = (evt: MouseEvent, ctx: DownContext): void => {
-    const { mouseTarget, svgRoot, rightClick, selectedElements, zoom } = ctx
+    const { mouseTarget, svgRoot, rightClick, selectedElements, zoom, clickSelect } = ctx
     svgCanvas.setStarted(true)
     svgCanvas.setCurrentResizeMode('none')
     if (rightClick) { svgCanvas.setStarted(false) }
+
+    // The gesture begins before the press changes the selection, so a roll-back puts the selection back too. A right-click
+    // is not a gesture: it keeps the selection for the context menu.
+    if (!rightClick && mouseTarget !== svgRoot) {
+      const state: MoveState = {
+        // Alt-drag duplicates: only armed here, the clone happens in move() once the drag passes the threshold
+        clone: evt.altKey,
+        clickSelect,
+        begun: false,
+        startTransforms: null,
+        plan: null,
+        startBBox: null,
+        moved: false,
+        pending: null,
+        snapTargets: null
+      }
+      svgCanvas.beginGesture<MoveState>('move', {
+        state,
+        label: 'position',
+        onCancel: () => {
+          clearDragOverlays()
+          svgCanvas.setStarted(false)
+          svgCanvas.setCurrentMode('select')
+          for (const el of svgCanvas.getSelectedElements()) if (el) svgCanvas.selectorManager.requestSelector(el).resize()
+          svgCanvas.updateGroupSelector()
+        }
+      })
+    } else if (!rightClick) {
+      svgCanvas.beginGesture<MarqueeState>('marquee', {
+        state: { moved: false },
+        label: 'select',
+        onCancel: () => {
+          svgCanvas.setStarted(false)
+          hideRubberBand()
+          svgCanvas.setCurrentMode('select')
+        }
+      })
+    }
 
     if (mouseTarget !== svgRoot) {
       // On right-click with an existing selection, keep that selection so the
@@ -125,6 +245,9 @@ export const init = (canvas: SvgCanvas): {
   }
 
   const move = (evt: MouseEvent, ctx: MoveContext): void => {
+    const gesture = currentMove()
+    if (!gesture) return
+    const { state } = gesture
     const { selectedElements, selected, zoom, svgRoot } = ctx
     const { x, y } = ctx
     // Alt-drag-to-duplicate: only clone once the drag crosses the same "was
@@ -132,7 +255,7 @@ export const init = (canvas: SvgCanvas): {
     // (deltaThresholdReached) to gate an ordinary drag actually moving the
     // selection -- not on the mere first mousemove tick after an alt+
     // mousedown, and not at mousedown itself. event.js's mouseDownEventImpl
-    // only arms the intent (svgCanvas.gesture.altCloneArmed); cloning unconditionally
+    // only arms the intent (`MoveState.clone`); cloning unconditionally
     // right there used to stamp an invisible duplicate (offset 0,0, sitting
     // exactly on top of the original) on a plain alt+click that never
     // actually dragged, or on any mousedown where the browser/OS misreports
@@ -140,29 +263,31 @@ export const init = (canvas: SvgCanvas): {
     // so a clone that never happens doesn't leave a stray no-op transform
     // stacked on the original; while armed and still under threshold this
     // returns early every tick, touching nothing.
-    if (svgCanvas.gesture.altCloneArmed && selectedElements.length > 0) {
+    if (state.clone && selectedElements.length > 0) {
       const armDeltaThreshold = 4 / zoom
       const dx0 = x - svgCanvas.getStartX()
       const dy0 = y - svgCanvas.getStartY()
       if (Math.abs(dx0) <= armDeltaThreshold && Math.abs(dy0) <= armDeltaThreshold) {
         return
       }
-      svgCanvas.gesture.altCloneArmed = false
+      state.clone = false
+      // the clone and its move are one step: the gesture's
+      gesture.relabel('Clone Elements')
       svgCanvas.cloneSelectedElements(0, 0)
       return
     }
 
     // Insert dummy transform on first mouse move (drag start), not on click.
     // This avoids creating multiple transforms that trigger unwanted flattening.
-    if (!svgCanvas.gesture.hasDragStartTransform && selectedElements.length > 0) {
+    if (!state.begun && selectedElements.length > 0) {
       // Store original transforms BEFORE adding the drag transform (for undo)
-      svgCanvas.gesture.dragStartTransforms = new Map()
-      svgCanvas.gesture.dragPlan = svgCanvas.dragPlan(selectedElements.filter(Boolean), true)
+      state.startTransforms = new Map()
+      state.plan = svgCanvas.dragPlan(selectedElements.filter(Boolean), true)
       for (const selectedElement of selectedElements) {
         if (!selectedElement) { continue }
         // Capture the transform attribute before we modify it
-        svgCanvas.gesture.dragStartTransforms.set(selectedElement, selectedElement.getAttribute('transform') || '')
-        if (svgCanvas.gesture.dragPlan) continue // shown through the model: no transform is put on the element
+        state.startTransforms.set(selectedElement, selectedElement.getAttribute('transform') || '')
+        if (state.plan) continue // shown through the model: no transform is put on the element
         const slist = getTransformList(selectedElement)
         if (!slist) { continue }
         if (slist.numberOfItems) {
@@ -171,11 +296,11 @@ export const init = (canvas: SvgCanvas): {
           slist.appendItem(svgRoot.createSVGTransform())
         }
       }
-      svgCanvas.gesture.hasDragStartTransform = true
+      state.begun = true
       // Snapshot the selection bbox at drag start so proportion snapping can
       // test edge/center positions against the candidate (post-delta) bbox.
       // (a group with an alignment box snaps by that child, core/align-box.ts)
-      svgCanvas.gesture.dragStartBBox = getAlignBoxOf(svgCanvas, selectedElements.filter(Boolean))
+      state.startBBox = getAlignBoxOf(svgCanvas, selectedElements.filter(Boolean))
     }
     // we temporarily use a translate on the element(s) being dragged
     // this transform is removed upon mousing up and the element is
@@ -189,10 +314,10 @@ export const init = (canvas: SvgCanvas): {
       // Wireframe proportion snapping: align the moving selection's edges or
       // center to the canvas proportion lines (x = w·f, y = h·f). On a match,
       // ask the markers extension to draw a guide line in the marker's color.
-      if (svgCanvas.getCurConfig().wireframeSnapping && svgCanvas.gesture.dragStartBBox) {
+      if (svgCanvas.getCurConfig().wireframeSnapping && state.startBBox) {
         const res = svgCanvas.getResolution()
         const tol = 8 / zoom // ~8 screen px
-        const bb = svgCanvas.gesture.dragStartBBox
+        const bb = state.startBBox
         const snapAxis = (lines: Array<{ pos: number, color: string }>, refs: number[]): { delta: number, pos: number, color: string } | null => {
           let best: { delta: number, pos: number, color: string } | null = null
           for (const ln of lines) {
@@ -217,14 +342,12 @@ export const init = (canvas: SvgCanvas): {
       // spacing). Skipped inside a group context — bboxes of children of a
       // transformed group are not in content space.
       if (svgCanvas.getCurConfig().smartSnapping !== false &&
-        svgCanvas.gesture.dragStartBBox && !svgCanvas.getCurrentGroup()) {
-        if (!svgCanvas.smartSnapTargets) {
-          svgCanvas.smartSnapTargets = collectSnapTargets(svgCanvas, selectedElements)
-        }
+        state.startBBox && !svgCanvas.getCurrentGroup()) {
+        state.snapTargets ??= collectSnapTargets(svgCanvas, selectedElements)
         const tol = 8 / zoom // ~8 screen px
-        const bb = svgCanvas.gesture.dragStartBBox
-        const snap = snapMovingBBox(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
-        const spacing = findEqualSpacing(bb, dx, dy, svgCanvas.smartSnapTargets, tol)
+        const bb = state.startBBox
+        const snap = snapMovingBBox(bb, dx, dy, state.snapTargets, tol)
+        const spacing = findEqualSpacing(bb, dx, dy, state.snapTargets, tol)
         // Per-axis precedence: same-kind alignment (edge↔edge/center↔center)
         // > equal spacing > mixed alignment (edge↔center).
         const useSpacingX = spacing.x && !(snap.x?.same)
@@ -251,17 +374,17 @@ export const init = (canvas: SvgCanvas): {
       // easily when zoomed out).
       const deltaThreshold = 4 / zoom
       const deltaThresholdReached = Math.abs(dx) > deltaThreshold || Math.abs(dy) > deltaThreshold
-      svgCanvas.gesture.moveSelectionThresholdReached = svgCanvas.gesture.moveSelectionThresholdReached || deltaThresholdReached
+      state.moved ||= deltaThresholdReached
 
-      if (svgCanvas.gesture.moveSelectionThresholdReached) {
+      if (state.moved) {
         // Inside a transformed group the children's translate lives in the
         // group's local space, so map the content-space delta accordingly
         // (no-op at top level). Fixes child dragging too far in a scaled/
         // rotated group.
         const { dx: ldx, dy: ldy } = toCurrentGroupLocalDelta(svgCanvas, dx, dy)
         // Candidate delta for transformAgain — committed in mouseUp.
-        svgCanvas.pendingMoveDelta = { dx, dy }
-        const plan = svgCanvas.gesture.dragPlan
+        state.pending = { dx, dy }
+        const { plan } = state
         if (plan) svgCanvas.previewDrag(plan, ldx, ldy)
         selectedElements.forEach((el) => {
           if (el) {
@@ -280,6 +403,8 @@ export const init = (canvas: SvgCanvas): {
   }
 
   const multiselectMove = (evt: MouseEvent, ctx: MultiselectContext): void => {
+    const gesture = currentMarquee()
+    if (!gesture) return
     const { selectedElements, zoom } = ctx
     let { realX, realY } = ctx
     realX *= zoom
@@ -294,8 +419,8 @@ export const init = (canvas: SvgCanvas): {
     // A press on empty canvas that jitters a pixel or two is a click (deselect), not a marquee: the band selects nothing until
     // it is 4 screen px across in some direction, the threshold a drag of the selection uses (`move` above). Both are screen px.
     const spanned = Math.abs(realX - svgCanvas.getRStartX()) > 4 || Math.abs(realY - svgCanvas.getRStartY()) > 4
-    svgCanvas.gesture.moveSelectionThresholdReached ||= spanned
-    if (!svgCanvas.gesture.moveSelectionThresholdReached) return
+    gesture.state.moved ||= spanned
+    if (!gesture.state.moved) return
 
     // for each selected:
     // - if newList contains selected, do nothing
@@ -335,28 +460,21 @@ export const init = (canvas: SvgCanvas): {
   // mouseUpEvent returns immediately after calling this, skipping the
   // ext_mouseUp/keep-discard epilogue, exactly as the original switch did.
   const up = (evt: MouseEvent, ctx: UpContext): void => {
-    const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect } = ctx
+    const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect, drag } = ctx
     const mode = svgCanvas.getCurrentMode()
     // an Alt-drag stretch: it applies the stretch (in the resize gesture's step), nothing is left to bake below
     const stretched = mode === 'resize' && svgCanvas.stretch.isActive()
     if (stretched) {
       svgCanvas.stretch.commit()
-      svgCanvas.gesture.dragStartTransforms = null
     }
     const wasMarquee = mode === 'multiselect'
     if (mode === 'resize' || mode === 'multiselect') {
-      if (svgCanvas.getRubberBox()) {
-        svgCanvas.requireRubberBox().setAttribute('display', 'none')
-        svgCanvas.setCurBBoxes([])
-      }
+      hideRubberBand()
       svgCanvas.setCurrentMode('select')
     }
     // A click (no drag) on the element above a covered selection, or on one member of a multi-selection, selects just that
     // element: the selection was kept at the press only so that a drag would move it.
     if (operationMode === 'select' && !moved && clickSelect?.isConnected && !evt.shiftKey) {
-      svgCanvas.gesture.dragStartTransforms = null
-      svgCanvas.gesture.dragPlan = null
-      svgCanvas.gesture.hasDragStartTransform = false
       svgCanvas.pathActions.clear()
       svgCanvas.selectOnly([clickSelect], true)
       // arm the double-click into node edit, as a first click on a path does
@@ -405,8 +523,8 @@ export const init = (canvas: SvgCanvas): {
         const batchCmd = new BatchCommand('position')
         // A drag of plain shapes that only carry a translation is stated on the model (one step); anything else bakes below
         const before = new Map<Element, string>()
-        for (const elem of selectedElements) if (elem) before.set(elem, svgCanvas.gesture.dragStartTransforms?.get(elem) ?? '')
-        const bakedByModel = before.size > 0 && svgCanvas.bakeDrag(before, restoreTransformAttr)
+        for (const elem of selectedElements) if (elem) before.set(elem, drag?.startTransforms?.get(elem) ?? '')
+        const bakedByModel = before.size > 0 && svgCanvas.bakeDrag(before, restoreTransformAttr, drag?.plan ?? null)
 
         selectedElements.forEach((elem) => {
           if (bakedByModel) return
@@ -416,7 +534,7 @@ export const init = (canvas: SvgCanvas): {
           if (!tlist || tlist.numberOfItems === 0) return
 
           // Get the transform from BEFORE the drag started
-          const oldTransform = svgCanvas.gesture.dragStartTransforms?.get(elem) || ''
+          const oldTransform = drag?.startTransforms?.get(elem) || ''
 
           // Check if the first transform is a translate (the drag transform we added)
           const firstTransform = tlist.getItem(0)
@@ -491,7 +609,7 @@ export const init = (canvas: SvgCanvas): {
           svgCanvas.setStartTransform(oldTransform)
           // A bake that folds the element's pre-gesture transform into its geometry (a move, a group resize) keeps its stroke's
           // look: recalculateDimensions scales the stroke by this, in the same undo command. Only when the start is known.
-          const was = svgCanvas.gesture.dragStartTransforms?.has(elem) ? parseMatrix(oldTransform) : null
+          const was = drag?.startTransforms?.has(elem) ? parseMatrix(oldTransform) : null
           svgCanvas.gesture.bakeStrokeScale = was ? Math.sqrt(Math.abs(was[0] * was[3] - was[1] * was[2])) : null
           let cmd
           try {
@@ -522,11 +640,6 @@ export const init = (canvas: SvgCanvas): {
           // Fire 'changed' so the context panel reflects those new values
           // instead of the pre-drag ones.
         }
-
-        // Clear the stored transforms AND reset the flag together
-        svgCanvas.gesture.dragStartTransforms = null
-        svgCanvas.gesture.dragPlan = null
-        svgCanvas.gesture.hasDragStartTransform = false
 
         const len = selectedElements.length
         for (let i = 0; i < len; ++i) {
@@ -573,5 +686,5 @@ export const init = (canvas: SvgCanvas): {
     }
   }
 
-  return { down, move, multiselectMove, up }
+  return { down, move, multiselectMove, up, currentMove, currentMarquee }
 }

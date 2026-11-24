@@ -149,7 +149,6 @@ import type { PathStateApi } from './core/path.ts'
 import { attachApi } from './common/initGuard.ts'
 
 import dataStorage from './core/dataStorage.ts'
-import type { SnapTarget } from './core/smart-guides.ts'
 import type { SmartGuidesPayload } from './core/smart-guides.ts'
 import type { DrawGuidesPayload } from './core/smart-guides.ts'
 import type { PathNodeGuidesPayload } from './core/path-node-guides.ts'
@@ -440,9 +439,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   /** The text-box resize in progress (its transaction stays open until mouse-up). */
   /** The live scale of a resize, for panels that show the in-progress size. */
   declare dragLiveResizeBox?: { left: number, top: number, width: number, height: number, tx: number, ty: number, sx: number, sy: number }
-  // Move gesture state (select mode)
-  declare smartSnapTargets?: SnapTarget[] | null
-  declare pendingMoveDelta?: { dx: number, dy: number } | null
+  // The live readout of a drag of the selection, for the position panels
   declare dragLiveMoveDelta?: { dx: number, dy: number } | null
   /** The repeatable delta for transformAgain. */
   declare lastMoveDelta?: { dx: number, dy: number }
@@ -1519,9 +1516,10 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
    * @param name String with the new mode to change to
    */
   setMode (name: string): void {
-    // The open gesture is rolled back by any mode change (core/gesture-session.ts).
-    this.cancelGesture?.('mode switch')
     const previousMode = this.state.drawing.currentMode
+    // The open gesture is rolled back by a change of mode (core/gesture-session.ts). Setting the mode already in effect is not
+    // one: the editor re-arms the Select tool whenever the selection changes, which a press in select mode does.
+    if (name !== previousMode) this.cancelGesture?.('mode switch')
     // Tear down any in-progress path/text edit before switching. These run
     // FIRST because clear() inspects the *current* (outgoing) mode to know what
     // to clean up. But a throw in here must never block the mode change below:

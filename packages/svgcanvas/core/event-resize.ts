@@ -24,6 +24,7 @@ import type SvgCanvas from '../svgcanvas.ts'
 import type { BBox } from '../svgcanvas.ts'
 import type { BBoxObject } from './bbox-utils.ts'
 import type { Gesture } from './gesture-session.ts'
+import type { DragEntry } from './model-commands.ts'
 
 /** What a resize keeps from its press to its release. */
 export interface ResizeState {
@@ -39,6 +40,10 @@ export interface ResizeState {
   startBox: BBox | null
   /** an area text: its box resizes, its type keeps its size */
   area: { elem: Element, box: BBox, fixedHeight: boolean, anchor: string } | null
+  /** a resize shown through the model (core/model-commands.ts `dragPlan`): what each element's transform amounts to */
+  plan: Map<Element, DragEntry> | null
+  /** a group resize: each element's transform at the press, which the release bakes from */
+  startTransforms: Map<Element, string> | null
 }
 
 const KIND = 'resize'
@@ -90,10 +95,10 @@ const resizeGroup = (svgCanvas: SvgCanvas, state: ResizeState, x: number, y: num
   const starts = state.groupStart as Map<Element, SVGMatrix>
   // Shapes that can take the scale in their own coordinates are shown by the renderer (the model states each size)
   if (!state.begun) {
-    svgCanvas.gesture.dragPlan = svgCanvas.dragPlan([...starts.keys()])
+    state.plan = svgCanvas.dragPlan([...starts.keys()])
     state.begun = true
   }
-  const plan = svgCanvas.gesture.dragPlan
+  const plan = state.plan
   if (plan) {
     svgCanvas.previewAfter(plan, { a: sx, d: sy, e: ax - sx * ax, f: ay - sy * ay })
     for (const elem of starts.keys()) svgCanvas.selectorManager.requestSelector(elem).resize()
@@ -177,13 +182,13 @@ export const init = (canvas: SvgCanvas): {
     const elems = selectedElements.filter(Boolean)
     // The dummy translate/scale/translate transforms are only needed once a drag actually starts (`begun`, see move()):
     // a click on a resize grip without a drag leaves the element untouched.
-    const state: ResizeState = { elems, initBox: { x: 0, y: 0, width: 0, height: 0 }, groupStart: null, begun: false, startBox: null, area: null }
+    const state: ResizeState = { elems, initBox: { x: 0, y: 0, width: 0, height: 0 }, groupStart: null, begun: false, startBox: null, area: null, plan: null, startTransforms: null }
     if (elems.length > 1) {
       // multi-selection: per-element start matrices and the union bbox; a move applies one group-scale matrix to each
       state.initBox = svgCanvas.getStrokedBBoxDefaultVisible(elems)
       state.groupStart = new Map(elems.map((elem) => [elem, transformListToTransform(getTransformList(elem)).matrix]))
-      // the shared release body (event-select.ts) bakes from these; they go with the move gesture (R9 step 4)
-      svgCanvas.gesture.dragStartTransforms = new Map(elems.map((elem) => [elem, elem.getAttribute('transform') || '']))
+      // the shared release body (event-select.ts) bakes from these
+      state.startTransforms = new Map(elems.map((elem) => [elem, elem.getAttribute('transform') || '']))
     } else {
       // Getting the BBox from the selection box, since we know we want to orient around it
       const selectedBox = requireBBox(svgCanvas.$id('selectedBox0') as Element)
@@ -199,9 +204,6 @@ export const init = (canvas: SvgCanvas): {
       label: state.area ? 'Resize text box' : 'position',
       onCancel: () => {
         svgCanvas.stretch.cancel()
-        // shared with the move gesture until R9 step 4
-        svgCanvas.gesture.dragPlan = null
-        svgCanvas.gesture.dragStartTransforms = null
         svgCanvas.dragLiveResizeBox = undefined
         svgCanvas.setStarted(false)
         svgCanvas.setCurrentMode('select')
@@ -255,11 +257,11 @@ export const init = (canvas: SvgCanvas): {
       const pos = getRotationAngle(selected) ? 1 : 0
       // A plain shape is resized in front of the renderer: the model shows each size, the element gets no dummy transforms
       const turnable = ['rect', 'ellipse', 'circle', 'image', 'foreignObject', 'line', 'polyline', 'polygon', 'path'].includes(selected.tagName)
-      svgCanvas.gesture.dragPlan = !hasMatrix && (!pos || turnable) ? svgCanvas.dragPlan([selected], Boolean(pos)) : null
+      state.plan = !hasMatrix && (!pos || turnable) ? svgCanvas.dragPlan([selected], Boolean(pos)) : null
       // (a clipped shape's entry is a matrix to move, not a geometry to scale: it resizes the old way)
-      if (svgCanvas.gesture.dragPlan?.get(selected)?.matrix) svgCanvas.gesture.dragPlan = null
-      state.startBox = svgCanvas.gesture.dragPlan ? requireBBox(selected) : null
-      if (svgCanvas.gesture.dragPlan) {
+      if (state.plan?.get(selected)?.matrix) state.plan = null
+      state.startBox = state.plan ? requireBBox(selected) : null
+      if (state.plan) {
         // nothing to insert
       } else if (hasMatrix) {
         tlist.insertItemBefore(svgRoot.createSVGTransform(), pos)
@@ -272,7 +274,7 @@ export const init = (canvas: SvgCanvas): {
       }
       state.begun = true
     }
-    const box = hasMatrix ? state.initBox : (svgCanvas.gesture.dragPlan ? state.startBox as BBox : requireBBox(selected))
+    const box = hasMatrix ? state.initBox : (state.plan ? state.startBox as BBox : requireBBox(selected))
     let left = box.x
     let top = box.y
     let { width, height } = box
@@ -343,7 +345,7 @@ export const init = (canvas: SvgCanvas): {
     scale.setScale(sx, sy)
 
     translateBack.setTranslate(left + tx, top + ty)
-    const plan = svgCanvas.gesture.dragPlan
+    const plan = state.plan
     if (plan) {
       const px = left + tx
       const py = top + ty

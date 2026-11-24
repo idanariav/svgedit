@@ -229,11 +229,11 @@ describe('event', () => {
     })
 
     expect(canvas.cloneSelectedElementsCalls).toBeUndefined()
-    expect(canvas.gesture.altCloneArmed).toBe(true)
   })
 
-  it('mouseDownEvent() disarms alt-clone intent on a plain click', () => {
-    canvas.gesture.altCloneArmed = true // leftover from a previous alt+drag gesture
+  it('mouseDownEvent() does not inherit the armed clone of a drag whose release never came', () => {
+    // the clone intent lives on the move gesture (event-select.ts MoveState): a new press rolls that gesture back
+    const stale = canvas.beginGesture('move', { state: { clone: true } })
     canvas.setCurrentMode('zoom') // see zoom-mode note in the sibling test above
     canvas.mouseDownEvent({
       clientX: 10,
@@ -245,13 +245,14 @@ describe('event', () => {
       target: contentGroup
     })
 
-    expect(canvas.gesture.altCloneArmed).toBe(false)
+    expect(stale.ended).toBe(true)
+    expect(canvas.activeGesture()).not.toBe(stale)
   })
 
-  it('mouseUpEvent() clears a still-armed alt-clone intent (e.g. an alt+click with no drag)', () => {
+  it('mouseUpEvent() ends the drag gesture, armed clone and all (e.g. an alt+click with no drag)', () => {
     canvas.setCurrentMode('select')
     canvas.setStarted(true) // mouseUpEventImpl no-ops entirely if !getStarted()
-    canvas.gesture.altCloneArmed = true
+    const gesture = canvas.beginGesture('move', { state: { clone: true, moved: false, clickSelect: null, pending: null } })
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     canvas.mouseUpEvent({
@@ -263,7 +264,8 @@ describe('event', () => {
       target: contentGroup
     })
 
-    expect(canvas.gesture.altCloneArmed).toBe(false)
+    expect(gesture.ended).toBe(true)
+    expect(canvas.activeGesture()).toBeNull()
     errSpy.mockRestore()
   })
 
@@ -368,14 +370,10 @@ describe('event', () => {
   it('mouseDownEvent() resets drag state instead of leaving it stuck when the mode dispatch throws', () => {
     // event-zoom.js's down() calls svgCanvas.setStarted(true) *before*
     // reaching getRubberBandBox() — if that throws, `started` would be left
-    // stuck at true (and hasDragStartTransform/dragStartTransforms at
-    // whatever stale value a previous gesture left) with no cleanup ever
-    // running, since mouseDownEvent's steps are one data-flow pipeline, not
-    // independently-continuable steps.
+    // stuck at true with no cleanup ever running, since mouseDownEvent's
+    // steps are one data-flow pipeline, not independently-continuable steps.
     canvas.setCurrentMode('zoom')
     canvas.selectorManager.getRubberBandBox = () => { throw new Error('boom') }
-    canvas.gesture.hasDragStartTransform = true
-    canvas.gesture.dragStartTransforms = { stale: true }
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -391,8 +389,7 @@ describe('event', () => {
     }).not.toThrow()
 
     expect(canvas.getStarted()).toBe(false)
-    expect(canvas.gesture.hasDragStartTransform).toBe(false)
-    expect(canvas.gesture.dragStartTransforms).toBe(null)
+    expect(canvas.activeGesture()).toBeNull()
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })
@@ -407,7 +404,6 @@ describe('event', () => {
       state: { elems: [], startTransforms: new Map(), group: null, plan: null, groupPlan: null, planned: false },
       onCancel: cancelled
     })
-    canvas.gesture.altCloneArmed = true // not on the session yet (R9 step 4): still reset by hand
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -424,7 +420,6 @@ describe('event', () => {
     expect(cancelled).toHaveBeenCalledWith('error')
     expect(canvas.activeGesture()).toBeNull()
     expect(canvas.getStarted()).toBe(false)
-    expect(canvas.gesture.altCloneArmed).toBe(false)
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })

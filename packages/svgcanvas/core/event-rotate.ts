@@ -177,8 +177,6 @@ export const init = (canvas: SvgCanvas): {
   }
 
   const up = (_evt: MouseEvent, _ctx: { selectedElements: Element[] }): { element: null, keep: true } => {
-    svgCanvas.gesture.hasDragStartTransform = false
-    svgCanvas.gesture.dragStartTransforms = null
     svgCanvas.setCurrentMode('select')
     const gesture = current()
     if (!gesture) return { element: null, keep: true as const }

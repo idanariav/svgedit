@@ -292,9 +292,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       logError('mouseUpEvent failed; resetting drag state', err, 'event')
       svgCanvas.cancelGesture('error')
       svgCanvas.setStarted(false)
-      svgCanvas.gesture.hasDragStartTransform = false
-      svgCanvas.gesture.dragStartTransforms = null
-      svgCanvas.gesture.altCloneArmed = false
       svgCanvas.stretch.cancel()
       svgCanvas.setStartTransform(null)
     } finally {
@@ -324,17 +321,15 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
   const mouseUpEventImpl = (evt: MouseEvent): void => {
     evt.preventDefault()
-    const moved = svgCanvas.gesture.moveSelectionThresholdReached
-    const clickSelect = svgCanvas.gesture.clickSelect
-    svgCanvas.gesture.clickSelect = null
-    svgCanvas.gesture.moveSelectionThresholdReached = false
-    svgCanvas.gesture.dragStartBBox = null
+    // what the select-mode gesture (event-select.ts) knows about the press it began with
+    const move = eventSelect.currentMove()
+    const marquee = eventSelect.currentMarquee()
+    const moved = Boolean(move?.state.moved || marquee?.state.moved)
+    const clickSelect = move?.state.clickSelect ?? null
+    const pendingMove = move?.state.pending ?? null
     svgCanvas.showSnapGuides?.(null) // clear any proportion snap guide lines
-    svgCanvas.smartSnapTargets = null
     svgCanvas.drawSnap.clearDrawSnap()
     svgCanvas.showSmartGuides?.(null) // clear any smart alignment guide lines (the drawing-time ones share the overlay)
-    const pendingMove = svgCanvas.pendingMoveDelta
-    svgCanvas.pendingMoveDelta = null
     if (evt.button === 2) { return }
     if (!svgCanvas.getStarted()) { return }
 
@@ -363,34 +358,28 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     // TODO: Make true when in multi-unit mode
     const useUnit = false // (svgCanvas.getCurConfig().baseUnit !== 'px');
     svgCanvas.setStarted(false)
-    // Reset here, unconditionally, rather than in the "reset drag flag after
-    // any mouseUp" block further down: the 'select'/'resize'/'multiselect'
-    // cases below `return` directly out of eventSelect.up() and never reach
-    // that block, and an armed-but-never-consumed intent (e.g. a mousedown
-    // with altKey held while some other mode was active, which move() in
-    // event-select.js never got a chance to see) must not leak into a later,
-    // unrelated select-mode drag.
-    svgCanvas.gesture.altCloneArmed = false
     let t: Element | null = null
     // Capture the mode before the 'resize'/'multiselect' cases reset it to 'select'.
     // Resize must be flattened via recalculateDimensions (which bakes the scale into
     // real attributes like width/height/font-size), not consolidated into a matrix.
     const operationMode = svgCanvas.getCurrentMode()
     if (svgCanvas.toolPointerUp?.(evt)) {
-      svgCanvas.gesture.hasDragStartTransform = false
-      svgCanvas.gesture.dragStartTransforms = null
       svgCanvas.setStartTransform(null)
       return
     }
     switch (svgCanvas.getCurrentMode()) {
     // intentionally fall-through to select here (handled inside eventSelect.up)
-      case 'resize': {
-        // The resize gesture (event-resize.ts) is detached while the shared release body runs (it may switch modes) and
-        // committed after it: what the body bakes is the gesture's one step.
-        const gesture = eventResize.current()
+      case 'resize':
+      case 'multiselect':
+      case 'select': {
+        // The gesture (a resize, a move or a marquee) is detached while the shared release body runs (it may switch modes)
+        // and committed after it: what the body bakes is the gesture's one step.
+        const resize = eventResize.current()
+        const gesture = resize ?? move ?? marquee
+        const drag = resize ? resize.state : move ? move.state : null
         gesture?.detach()
         try {
-          eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect })
+          eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect, drag })
         } catch (err) {
           gesture?.cancel('error')
           throw err
@@ -398,10 +387,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         gesture?.commit()
         return
       }
-      case 'multiselect':
-      case 'select':
-        eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect })
-        return
       case 'zoom': {
         eventZoom.up(evt, { realX, realY })
         return
@@ -434,13 +419,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         break
       } default:
       // This could occur in an extension
-        svgCanvas.gesture.hasDragStartTransform = false
-        svgCanvas.gesture.dragStartTransforms = null
         break
     }
-    // Reset drag flag after any mouseUp
-    svgCanvas.gesture.hasDragStartTransform = false
-    svgCanvas.gesture.dragStartTransforms = null
 
     /**
 * The main (left) mouse button is released (anywhere).
@@ -755,10 +735,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       mouseDownEventImpl(evt)
     } catch (err) {
       logError('mouseDownEvent failed; resetting drag state', err, 'event')
+      svgCanvas.cancelGesture('error')
       svgCanvas.setStarted(false)
-      svgCanvas.gesture.hasDragStartTransform = false
-      svgCanvas.gesture.dragStartTransforms = null
-      svgCanvas.gesture.altCloneArmed = false
     }
   }
 
@@ -776,17 +754,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     if (svgCanvas.gesture.spaceKey || evt.button === 1) { return }
 
     const rightClick = (evt.button === 2)
-
-    // Alt-drag-to-duplicate: only arm the intent here. Cloning unconditionally
-    // on every alt+mousedown — regardless of whether a drag ever actually
-    // followed, or whether the click even landed on the current selection —
-    // silently stamped an invisible duplicate (same position, offset 0,0)
-    // under the cursor on a plain alt+click, and on any mousedown where the
-    // browser/OS momentarily misreports a stale altKey:true. The clone itself
-    // now happens in event-select.js's move(), once the mouse actually crosses
-    // the same real-drag distance threshold used to gate an ordinary move,
-    // after the mousedown's own selection change has taken effect.
-    svgCanvas.gesture.altCloneArmed = evt.altKey
 
     // Get screenCTM from the first child group of svgcontent
     // Note: svgcontent itself has x/y offset attributes, so we use its first child
@@ -902,7 +869,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       const strokeHit = findStrokeElementNearPoint(evt, mouseTarget)
       if (strokeHit) { mouseTarget = strokeHit; clickSelect = null }
     }
-    svgCanvas.gesture.clickSelect = clickSelect
 
     // The empty part of an area text's box is part of the text: a click there selects it (only its glyphs are hit
     // natively). Only where the native hit-test found nothing, so a shape drawn under or over the box still wins.
@@ -1013,7 +979,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
 
     switch (svgCanvas.getCurrentMode()) {
       case 'select':
-        eventSelect.down(evt, { mouseTarget, svgRoot, rightClick, selectedElements, zoom })
+        eventSelect.down(evt, { mouseTarget, svgRoot, rightClick, selectedElements, zoom, clickSelect })
         break
       case 'zoom':
         eventZoom.down(evt, { realX, realY, zoom })

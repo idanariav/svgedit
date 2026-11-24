@@ -1,11 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { init as eventSelectInit } from '../../packages/svgcanvas/core/event-select.ts'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
+import { createGestureSession } from '../../packages/svgcanvas/core/gesture-session.ts'
+
+/** Give a canvas mock the gesture session, with a transaction that records nothing (the history is not under test here). */
+const withSession = (canvas) => {
+  canvas.beginTransaction = () => ({ commit () {}, cancel () {}, relabel () {} })
+  return Object.assign(canvas, createGestureSession(canvas))
+}
+
+/** A drag of the selection under way, as event-select's down() begins it (a select-mode press on an element). */
+const beginMove = (canvas, state = {}) => canvas.beginGesture('move', {
+  state: { clone: false, clickSelect: null, begun: false, startTransforms: null, plan: null, startBBox: null, moved: false, pending: null, snapTargets: null, ...state }
+})
 
 // Minimal svgCanvas mock: only what `move()` touches before/at the
 // accidental-move threshold check when selectedElements is empty (so the
 // dummy-transform-insertion and per-element branches are no-ops).
-const makeCanvas = () => ({
+const makeCanvas = () => withSession({
   gesture: createGestureState(),
   getStartX: () => 0,
   getStartY: () => 0,
@@ -36,7 +48,7 @@ describe('event-select down() background click', () => {
   const makeBgCanvas = () => {
     const calls = []
     const rubberBox = { setAttribute: () => {} }
-    return {
+    return withSession({
       calls,
       setStarted: () => {},
       setCurrentResizeMode: () => {},
@@ -50,7 +62,7 @@ describe('event-select down() background click', () => {
       getRStartY: () => 0,
       setRStartX: () => {},
       setRStartY: () => {}
-    }
+    })
   }
 
   it('clears pathActions arming state, same as clicking a different element', () => {
@@ -61,6 +73,7 @@ describe('event-select down() background click', () => {
     down({ shiftKey: false }, makeCtx({ mouseTarget: svgRoot, svgRoot, selectedElements: [] }))
 
     expect(svgCanvas.calls).toContain('pathActions.clear')
+    expect(svgCanvas.activeGesture().kind).toBe('marquee') // a press on empty canvas begins a rubber-band selection
   })
 })
 
@@ -72,22 +85,24 @@ describe('event-select move() drag threshold', () => {
   it('reaches the threshold on a 14-screen-px drag at zoom 4 (previously stuck)', () => {
     const svgCanvas = makeCanvas()
     const { move } = eventSelectInit(svgCanvas)
+    const gesture = beginMove(svgCanvas)
     // 14 screen px at zoom 4 == 3.5 content units, which is under the old
     // flat threshold of 4 -- the drag would previously do nothing.
     move({ shiftKey: false }, makeCtx({ x: 3.5, zoom: 4 }))
 
-    expect(svgCanvas.gesture.moveSelectionThresholdReached).toBe(true)
+    expect(gesture.state.moved).toBe(true)
   })
 
   it('does not fire on a 2-screen-px drag at zoom 0.25 (previously too sensitive)', () => {
     const svgCanvas = makeCanvas()
     const { move } = eventSelectInit(svgCanvas)
+    const gesture = beginMove(svgCanvas)
     // 2 screen px at zoom 0.25 == 8 content units, which cleared the old flat
     // threshold of 4 -- objects moved on a drag far smaller than the
     // intended 4-screen-px accidental-move guard.
     move({ shiftKey: false }, makeCtx({ x: 8, zoom: 0.25 }))
 
-    expect(svgCanvas.gesture.moveSelectionThresholdReached).toBeFalsy()
+    expect(gesture.state.moved).toBe(false)
   })
 })
 
@@ -97,7 +112,7 @@ describe('event-select move() alt-drag-to-duplicate', () => {
   // invisible duplicate (offset 0,0, on top of the original) on a plain
   // alt+click that never actually dragged, or on any mousedown where the
   // browser/OS misreports a stale altKey:true. event.js now only arms the
-  // intent (svgCanvas.gesture.altCloneArmed); the actual clone happens here, gated
+  // intent (the move gesture's `clone`); the actual clone happens here, gated
   // on the same real-drag distance threshold used for an ordinary move.
   const makeCloneCanvas = () => {
     const calls = []
@@ -106,37 +121,37 @@ describe('event-select move() alt-drag-to-duplicate', () => {
 
   it('does not clone while still under the real-drag threshold, and touches nothing else', () => {
     const svgCanvas = makeCloneCanvas()
-    svgCanvas.gesture.altCloneArmed = true
+    const gesture = beginMove(svgCanvas, { clone: true })
     const { move } = eventSelectInit(svgCanvas)
 
     // 1 content unit at zoom 1, well under the 4-screen-px threshold.
     move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 1, zoom: 1 }))
 
     expect(svgCanvas.calls).toEqual([])
-    expect(svgCanvas.gesture.altCloneArmed).toBe(true) // still armed -- next tick gets another chance
-    expect(svgCanvas.gesture.hasDragStartTransform).toBe(false) // no dummy transform inserted on the original
+    expect(gesture.state.clone).toBe(true) // still armed -- next tick gets another chance
+    expect(gesture.state.begun).toBe(false) // no dummy transform inserted on the original
   })
 
   it('clones exactly once the drag crosses the threshold, deferring the drag-start bookkeeping to the next tick', () => {
     const svgCanvas = makeCloneCanvas()
-    svgCanvas.gesture.altCloneArmed = true
+    const gesture = beginMove(svgCanvas, { clone: true })
     const { move } = eventSelectInit(svgCanvas)
 
     // 5 content units at zoom 1, over the 4-screen-px threshold.
     move({ shiftKey: false }, makeCtx({ selectedElements: [{}], x: 5, zoom: 1 }))
 
     expect(svgCanvas.calls).toEqual([{ dx: 0, dy: 0 }])
-    expect(svgCanvas.gesture.altCloneArmed).toBe(false) // consumed, so a second move tick won't clone again
+    expect(gesture.state.clone).toBe(false) // consumed, so a second move tick won't clone again
     // cloneSelectedElements() re-selects the clones itself; this tick
-    // deliberately doesn't touch hasDragStartTransform so the *next* move
+    // deliberately doesn't begin the drag so the *next* move
     // tick inserts the dummy transform for the clones, same as any other
     // fresh drag start.
-    expect(svgCanvas.gesture.hasDragStartTransform).toBe(false)
+    expect(gesture.state.begun).toBe(false)
   })
 
   it('never clones when not armed, regardless of drag distance', () => {
     const svgCanvas = makeCloneCanvas()
-    // altCloneArmed left unset (falsy) -- an ordinary, non-alt drag.
+    beginMove(svgCanvas) // not armed: an ordinary, non-alt drag
     const { move } = eventSelectInit(svgCanvas)
 
     move({ shiftKey: false }, makeCtx({ selectedElements: [], x: 100, zoom: 1 }))
@@ -180,7 +195,7 @@ describe('event-select multiselectMove() marquee threshold', () => {
   const makeMarqueeCanvas = () => {
     const calls = { intersections: 0, added: [] }
     const rubberBox = { setAttribute: () => {} }
-    return {
+    const canvas = withSession({
       calls,
       gesture: createGestureState(),
       requireRubberBox: () => rubberBox,
@@ -189,7 +204,9 @@ describe('event-select multiselectMove() marquee threshold', () => {
       getIntersectionList: () => { calls.intersections++; return ['hit'] },
       removeFromSelection: () => {},
       addToSelection: (els) => calls.added.push(...els)
-    }
+    })
+    canvas.beginGesture('marquee', { state: { moved: false } })
+    return canvas
   }
 
   it('selects nothing while the band is within 4 screen px', () => {

@@ -7,8 +7,6 @@ const fakeCanvas = (over = {}) => ({
   getStarted: () => false,
   getStartTransform: () => null,
   getJustSelected: () => null,
-  pendingMoveDelta: null,
-  smartSnapTargets: null,
   getRubberBox: () => null,
   stretch: { isActive: () => false },
   inTransaction: () => false,
@@ -23,9 +21,8 @@ describe('gestureLeftovers (the gesture rest check)', () => {
 
   it('names a per-gesture field that outlived its gesture', () => {
     const c = fakeCanvas()
-    c.gesture.dragStartTransforms = new Map()
-    c.gesture.altCloneArmed = true
-    expect(gestureLeftovers(c)).toEqual(['gesture.dragStartTransforms', 'gesture.altCloneArmed'])
+    c.gesture.bakeStrokeScale = 2
+    expect(gestureLeftovers(c)).toEqual(['gesture.bakeStrokeScale'])
   })
 
   it('ignores the fields that outlive a gesture on purpose', () => {
@@ -42,15 +39,17 @@ describe('gestureLeftovers (the gesture rest check)', () => {
       getStarted: () => true,
       getStartTransform: () => 'matrix(1 0 0 1 5 5)',
       getJustSelected: () => ({}),
-      pendingMoveDelta: { dx: 1, dy: 0 },
-      smartSnapTargets: [],
       getRubberBox: () => box,
       stretch: { isActive: () => true },
       inTransaction: () => true,
       snapshotHistory: { previewing: true }
     })
-    expect(gestureLeftovers(c)).toEqual(['started', 'startTransform', 'justSelected', 'pendingMoveDelta', 'smartSnapTargets',
-      'rubberBox shown', 'stretch', 'transaction open', 'preview open'])
+    expect(gestureLeftovers(c)).toEqual(['started', 'startTransform', 'justSelected', 'rubberBox shown', 'stretch',
+      'transaction open', 'preview open'])
+  })
+
+  it('names an active gesture', () => {
+    expect(gestureLeftovers(fakeCanvas({ activeGesture: () => ({ kind: 'move' }) }))).toEqual(['active gesture: move'])
   })
 
   it('accepts a hidden rubber box', () => {

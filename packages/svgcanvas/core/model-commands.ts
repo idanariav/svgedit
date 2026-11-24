@@ -54,8 +54,9 @@ export interface ModelCommandsApi {
   /**
    * A drag or resize of plain shapes ended: put each back to the transform it had before the drag (`before`) and state the move on
    * the model instead, as one step. Returns false, having touched nothing, unless every one of them can take it that way.
+   * `dragPlan` is the gesture's model plan (`dragPlan`): its entries with feature data are baked on a copy.
    */
-  bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean
+  bakeDrag(before: Map<Element, string>, undoPreview: (el: Element, was: string) => void, dragPlan: Map<Element, DragEntry> | null): boolean
   /** `setElementAttributes` for several elements at once: one step. False, touching nothing, if one has no id. */
   /**
    * A gesture that left a new `transform` on each of these elements (a rotation) ended: put each back to the transform it had
@@ -469,11 +470,11 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
-  const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void): boolean => {
+  const bakeDrag = (before: Map<Element, string>, undoPreview: (el: Element, was: string) => void, dragPlan: Map<Element, DragEntry> | null): boolean => {
     // a drag shown through the model ends here: the preview is the step
     if (svgCanvas.snapshotHistory.previewing) {
       // Shapes with feature data are baked on a copy now that the move is final; the model takes what the bake changed
-      const scratch = [...(svgCanvas.gesture.dragPlan ?? [])].filter(([, entry]) => entry.scratch)
+      const scratch = [...(dragPlan ?? [])].filter(([, entry]) => entry.scratch)
       const baked = scratch.map(([el, entry]) => {
         const changes = bakeInScratch(svgCanvas, el)
         // the bake folds the matrix the element had before the drag (entry.matrix) into its geometry: keep the stroke's look

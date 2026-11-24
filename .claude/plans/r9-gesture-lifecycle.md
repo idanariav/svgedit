@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–3 done** (2026-11-24); step 4 (move and marquee) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–4 done** (2026-11-24); step 5 (`startTransform` as an argument) next.
 
 ## The problem, measured
 
@@ -240,6 +240,28 @@ lifecycle, not the registration.
   classifier will later plug in. Here only the field moves; the thresholds stay as they are.
 - **Re-check** the R8 sweep guard and the `drag that went nowhere` cases. A move that changes nothing must still record no
   step: the transaction commits nothing.
+
+**Done (2026-11-24).**
+- **`move` and `marquee` gestures** (`MoveState` / `MarqueeState` in `event-select.ts`) begin in `eventSelect.down`, before
+  the press changes the selection, so a roll-back restores it. A right-click begins none.
+- **Gone from `GestureState`:** `hasDragStartTransform`, `dragStartTransforms`, `dragPlan`, `dragStartBBox`, `altCloneArmed`,
+  `moveSelectionThresholdReached` and `clickSelect`. Gone from the canvas: `smartSnapTargets` and `pendingMoveDelta`.
+  `GestureState` now holds only `spaceKey`, `addedNew`, `pendingNewElement` and `bakeStrokeScale` (step 5).
+- **The shared release body takes its bake data as an argument** (`drag: { startTransforms, plan }`), from the move or the
+  resize gesture. `bakeDrag` takes the plan, and resize keeps its own `plan` / `startTransforms`.
+- **Alt-drag is one step:** the gesture is relabelled `Clone Elements` when the clone happens, so one undo removes the clone
+  and its move together.
+- **Found on the way:**
+  - The editor calls `setMode('select')` on every selection change in select mode (to re-arm the Select tool). `setMode`
+    now cancels the gesture only when the mode actually changes; before this, every select-mode click was rolled back.
+  - A layer without an id gets one from the layers panel at the first change, and no step records it. Loads name their
+    layers already (R8); the lifecycle spec's drawing now has an id, as a loaded one would.
+- **Deferred, not part of R9:**
+  - The press prelude in `event.ts` merges the transform list of whatever is under the pointer into one matrix, *in every
+    mode*, before any gesture begins. It doesn't change how the element looks, and it is a placement concern, so it goes with
+    R12.
+  - The live readouts `dragLiveMoveDelta` / `dragLiveResizeBox` stay canvas slots: the editor's panels read them.
+  - `startX/Y` and `rStartX/Y` stay canvas slots: every mode sets them at its press.
 
 ### 5. `startTransform` becomes an argument
 

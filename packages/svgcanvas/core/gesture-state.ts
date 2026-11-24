@@ -1,32 +1,18 @@
 /**
- * The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed
- * alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose members.
- * Created at construction with every field at rest, so a reader never sees `undefined`; the gesture modules
- * (`event.js`, `event-select.js`, `event-resize.js`, `event-rotate.js`, `tool-registry.js`) own the writes.
+ * The state the canvas keeps between mouse events that is not one gesture's (`svgCanvas.gesture`): a key being held, the
+ * panel's "keep this style" offer, the deferred selection of a just-created element, and the stroke scale a bake passes
+ * down. A gesture's own state lives on the gesture (core/gesture-session.ts, roadmap R9). Created at construction with every
+ * field at rest, so a reader never sees `undefined`.
  * `gestureLeftovers` is the rest check: what a finished gesture left behind (roadmap R9; the e2e suite asserts it after every test).
  * @module gesture-state
  * @license MIT
  */
 import type SvgCanvas from '../svgcanvas.ts'
-import type { BBox } from '../svgcanvas.ts'
 
 export interface GestureState {
-  /** A drag or rotate has recorded its start transforms. */
-  hasDragStartTransform: boolean
-  dragStartTransforms: Map<Element, string> | null
-  /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
-  dragPlan: Map<Element, import('./model-commands.ts').DragEntry> | null
   /** set around one `recalculateDimensions` call: the scale of the element's transform before the gesture, which a bake of
    * the whole transform must keep in the stroke (`null` otherwise: a bake leaves the stroke alone) */
   bakeStrokeScale: number | null
-  /** Alt was down at the press: the drag clones instead of moving. */
-  altCloneArmed: boolean
-  dragStartBBox: BBox | null
-  /** The pointer has moved far enough since the press for a drag to count as a move. */
-  moveSelectionThresholdReached: boolean
-  /** What the release selects if the press never became a drag: the topmost element a covered selection was preferred over,
-   * or the clicked member of a multi-selection (event.ts mouseDown). */
-  clickSelect: Element | null
   /** Space is held: the next drag pans. */
   spaceKey: boolean
   /** A shape was just added with a drawing tool (the panel offers to keep its style). */
@@ -36,14 +22,7 @@ export interface GestureState {
 }
 
 export const createGestureState = (): GestureState => ({
-  hasDragStartTransform: false,
-  dragStartTransforms: null,
-  dragPlan: null,
   bakeStrokeScale: null,
-  altCloneArmed: false,
-  dragStartBBox: null,
-  moveSelectionThresholdReached: false,
-  clickSelect: null,
   spaceKey: false,
   addedNew: false,
   pendingNewElement: null
@@ -73,8 +52,6 @@ export const gestureLeftovers = (canvas: SvgCanvas): string[] => {
   if (canvas.getStarted()) out.push('started')
   if (canvas.getStartTransform()) out.push('startTransform')
   if (canvas.getJustSelected()) out.push('justSelected')
-  if (canvas.pendingMoveDelta) out.push('pendingMoveDelta')
-  if (canvas.smartSnapTargets) out.push('smartSnapTargets')
   const box = canvas.getRubberBox()
   if (box && box.getAttribute('display') !== 'none') out.push('rubberBox shown')
   if (canvas.stretch?.isActive()) out.push('stretch')
