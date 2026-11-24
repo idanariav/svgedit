@@ -9,8 +9,8 @@ import { visitAndApproveStorage } from './helpers.js'
 // gesture twice on different elements: the second reads nothing of the first (e6f50f31: `groupResizeStart` outlived its
 // gesture and scaled old elements on later resizes).
 //
-// The exits a built-in gesture does not have yet are marked `test.fail()` against the step of the plan that adds them;
-// a step that lands makes its cases pass, and Playwright then reports them as unexpectedly passing until the mark goes.
+// When this spec was written (2026-11-24) no built-in gesture had an exit but its release: the drag stayed applied and the
+// release committed it. R9 put each on the gesture session, which owns every way out.
 
 // The layer has an id as a loaded drawing's does (the editor's load names its layers; without one the layers panel names it at
 // the first change, which no step records).
@@ -112,16 +112,6 @@ const EXITS = {
   'the window losing focus': (page) => page.evaluate(() => window.dispatchEvent(new Event('blur')))
 }
 
-/**
- * The cases that fail today, keyed `gesture › case`, with the step of the plan that makes them pass (first run of this spec,
- * 2026-11-24). Today no built-in gesture has an exit other than its release: Escape, a mode switch, a second press and a
- * lost focus all leave the drag applied, and the release then commits it.
- */
-const allExits = (gesture, why) => Object.fromEntries(Object.keys(EXITS).map((e) => [`${gesture} › ${e}`, why]))
-const NOT_YET = {
-  ...allExits('node drag', 'step 6: node drag on the gesture session')
-}
-
 const state = (page) => page.evaluate(() => {
   const c = window.svgEditor.svgCanvas
   return { svg: c.getSvgString(), undo: c.undoMgr.getUndoStackSize() }
@@ -143,7 +133,6 @@ test.describe('a gesture owns its state (R9)', () => {
 
   for (const [name, g] of Object.entries(GESTURES)) {
     test(`${name}: a press, a drag and a release is one undo step and leaves nothing behind`, async ({ page }) => {
-      if (NOT_YET[`${name} › release`]) test.fail(true, NOT_YET[`${name} › release`])
       await g.prepare(page)
       const before = await state(page)
       const { from, to } = await g.points(page)
@@ -163,9 +152,7 @@ test.describe('a gesture owns its state (R9)', () => {
     })
 
     for (const [exit, leave] of Object.entries(EXITS)) {
-      const key = `${name} › ${exit}`
       test(`${name}: ended by ${exit}, it rolls back and leaves nothing behind`, async ({ page }) => {
-        if (NOT_YET[key]) test.fail(true, NOT_YET[key])
         await g.prepare(page)
         const before = await state(page)
         const { from, to } = await g.points(page)
@@ -188,7 +175,6 @@ test.describe('a gesture owns its state (R9)', () => {
 
     if (g.second) {
       test(`${name}: done twice on different elements, the second reads nothing of the first`, async ({ page }) => {
-        if (NOT_YET[`${name} › twice`]) test.fail(true, NOT_YET[`${name} › twice`])
         const run = async (gesture) => {
           await gesture.prepare(page)
           const { from, to } = await gesture.points(page)

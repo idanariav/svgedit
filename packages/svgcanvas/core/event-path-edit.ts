@@ -4,12 +4,19 @@
  * switches. Mostly thin delegates onto `svgCanvas.pathActions`, plus the
  * grid-snap/shift-angle-snap/rubber-band bookkeeping that precedes the
  * mouseMove delegate call.
+ *
+ * A node or control-point drag in `pathedit` is a gesture on the gesture session (core/gesture-session.ts, roadmap R9): the
+ * press begins it once `pathActions` has armed the drag, with one transaction for its undo step; the release commits it;
+ * Escape, a mode switch, a new press, a lost focus or a context menu roll it back.
  * @module event-path-edit
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.ts'
 import { snapToAngle, transformPoint } from './math.ts'
 import type SvgCanvas from '../svgcanvas.ts'
+import type { Gesture } from './gesture-session.ts'
+
+const KIND = 'pathNode'
 
 /**
  * Reentrant init: each SvgCanvas instance gets its own copy of these
@@ -24,12 +31,30 @@ export const init = (canvas: SvgCanvas): {
 } => {
   const svgCanvas = canvas
 
+  /** The node drag in progress, or null. */
+  const current = (): Gesture | null => {
+    const g = svgCanvas.activeGesture()
+    return g?.kind === KIND ? g : null
+  }
+
   const down = (evt: MouseEvent, ctx: { mouseTarget: Element, zoom: number }): void => {
     const { mouseTarget, zoom } = ctx
     svgCanvas.setStartX(svgCanvas.getStartX() * zoom)
     svgCanvas.setStartY(svgCanvas.getStartY() * zoom)
+    const editing = svgCanvas.getCurrentMode() === 'pathedit'
     svgCanvas.pathActions.mouseDown(evt, mouseTarget, svgCanvas.getStartX(), svgCanvas.getStartY())
     svgCanvas.setStarted(true)
+    // The press armed a node or control-point drag (it only selected nodes, which is not the drawing): the drag is a gesture
+    if (editing && svgCanvas.getPathObj()?.dragging) {
+      svgCanvas.beginGesture(KIND, {
+        state: {},
+        label: 'Move path point(s)',
+        onCancel: () => {
+          svgCanvas.pathActions.endDrag()
+          svgCanvas.setStarted(false)
+        }
+      })
+    }
   }
 
   const move = (evt: MouseEvent, ctx: { x: number, y: number, realX: number, realY: number, zoom: number }): void => {
@@ -100,7 +125,16 @@ export const init = (canvas: SvgCanvas): {
   }
 
   const upPathEdit = (evt: MouseEvent): { element: null, keep: true } => {
-    svgCanvas.pathActions.mouseUp(evt)
+    // detached while pathActions ends the drag (it may switch modes), committed after: its step is the gesture's
+    const gesture = current()
+    gesture?.detach()
+    try {
+      svgCanvas.pathActions.mouseUp(evt)
+    } catch (err) {
+      gesture?.cancel('error')
+      throw err
+    }
+    gesture?.commit()
     return { element: null, keep: true as const }
   }
 

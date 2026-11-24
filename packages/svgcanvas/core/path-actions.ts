@@ -54,6 +54,8 @@ export interface PathActionsApi {
   /** `snap` (Shift): a dragged anchor snaps to the other nodes' x / y */
   mouseMove: (mouseX: number, mouseY: number, snap?: boolean) => void
   mouseUp: (evt: MouseEvent, element?: Element | null, mouseX?: number, mouseY?: number) => { keep: boolean, element?: Element | null } | void
+  /** A node drag was rolled back (core/gesture-session.ts): forget it, and show the grips where the path now has its nodes. */
+  endDrag: () => void
   clear: (keepSelection?: boolean) => void
   canDeleteNodes?: boolean
   closed_subpath?: boolean
@@ -1210,6 +1212,23 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
       // going into pathedit mode
       } else {
         this.#currentPath = target
+      }
+    }
+
+    endDrag (): void {
+      this.#hasMoved = false
+      this.#downOnPath = false
+      this.#snappedDuringDrag = false
+      this.#snapOffset = { x: 0, y: 0 }
+      svgCanvas.showPathNodeGuides?.(null)
+      if (!path) return
+      path.dragging = false
+      path.dragctrl = false
+      if (!path.elem.isConnected) return
+      try {
+        path.init().show(true)
+      } catch (e) {
+        logWarn('svgedit: path.init().show(true) failed after a rolled-back node drag; continuing', e, 'path-actions')
       }
     }
 
