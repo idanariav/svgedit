@@ -482,6 +482,19 @@ with its rules tested together. Size: M.
 - Curvature finishing through `deactivate`.
 The extension hook that was never dispatched is already gone.
 
+**Status (2026-11-24): done.**
+- **Clipboard:** paste, copy, cut and delete run their commands from every source. `Editor.paste` is the one paste: the
+  context menu pastes where it was opened, everything else in the centre of the view. An external SVG paste is one undo
+  step.
+- **Click versus drag:** `core/pointer-intent.ts`, with `ToolEvent.dragging`, is the one test (4 screen px measured
+  straight, sticky). The path tool's curve-on-drag keeps its own 6 px, for a documented reason.
+- **Tolerances:** `CLOSE_TOL` serves the 27 `parseAnchors` callers that fold a near-close, with a unit test guarding it.
+- **Press target:** `core/press-target.ts` holds the press rules, in a 17-row combination table; `targetRule` is in the
+  debug log.
+- **Curvature** finishes through the registry's `deactivate`. That also fixes another editor's tool switch finishing this
+  one's session.
+- **Guard:** `tests/e2e/entry-points.spec.js`.
+
 ### R11. The editor's own state stays out of the drawing
 
 **Today.** Group dimming (`opacity="0.33"`, `pointer-events: none`) leaked into undo snapshots and saved files (5a3d78d6);

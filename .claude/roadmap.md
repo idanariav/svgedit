@@ -18,6 +18,12 @@ short: details belong in the area files.
 - **Drawing tools use `svgCanvas.registerTool`** (document-space events, one undo step per gesture, `options()` for an
   options bar). No new legacy mouse hooks.
 - **Undo goes through `svgCanvas.transact(label, fn)`.** Never construct a `ChangeElementCommand` before its mutation.
+- **One entry point per intent** ([R10](roadmap/rearchitecture.md#r10-one-entry-per-intent)): an intent is a command,
+  and every source runs it. The keys, the menus, the context menu and the native events all run the same command (a native
+  event only supplies what it alone has, such as the clipboard's text). Click versus drag is `core/pointer-intent.ts`
+  (`isDrag`, `DRAG_PX`; tools read `ev.dragging`), not a threshold of the site's own. A path's close tolerance is
+  `CLOSE_TOL`. What a select-mode press is on is a rule in `core/press-target.ts` `PRESS_RULES`, added to its combination
+  table.
 - **A gesture owns its state** ([R9](roadmap/rearchitecture.md#r9-a-gesture-owns-its-state)): a press-to-release gesture runs
   on the gesture session (`svgCanvas.beginGesture(kind, { state, label, onCancel })`, `core/gesture-session.ts`). Its state
   lives on the gesture, not on a new `GestureState` field, canvas slot or module `let`. Its undo step is the session's
@@ -87,7 +93,7 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 | R8 | A change to the drawing is announced once, from the history (`documentChanged`), not by 90 `call('changed')` sites | S, then M | — |
 | R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract (done 2026-11-24) | L | — |
-| R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver | M | — |
+| R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver (done 2026-11-24) | M | — |
 | R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing | M | — |
 | R12 | One placement policy and one set of coordinate frames for every gesture and tool | L | R1 (matrix math on the model) |
 | R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) | S–M | — |

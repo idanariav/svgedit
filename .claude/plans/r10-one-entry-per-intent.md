@@ -1,6 +1,6 @@
 # R10 plan: one entry point per user intent
 
-Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–3 done** (2026-11-24); step 4 (press target resolver) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **done** (2026-11-24): steps 0–6.
 
 ## The problem, measured (2026-11-24)
 
@@ -189,7 +189,19 @@ Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Statu
    - **The guard:** `tests/unit/close-tolerance.test.js` fails on a numeric `parseAnchors` tolerance.
    - **`HIT_PX`** went into `pointer-intent.ts` with step 2.
 4. **Press target resolver** (target 4).
+   **Done (2026-11-24).**
+   - **`core/press-target.ts`:** `PRESS_RULES` (`prefer-selected`, `stroke-near`, `area-text`, `selection-box`) and
+     `resolvePressTarget`, with the DOM behind `probes`. `event.ts` calls it once, in place of the four blocks.
+   - **Same order and conditions as before,** proved by a 17-row combination table (`tests/unit/press-target.test.js`).
+     It records one interaction as it is: a stroke within reach beats a preferred selection and drops the click's
+     `clickSelect`.
+   - **`pointer-up`** in the debug log carries `targetRule`.
 5. **Curvature** (target 5).
+   **Done (2026-11-24).**
+   - **Curvature's `deactivate`** (the registry's per-canvas mode-change hook) finishes the session with `finalize(false)`
+     in a `transact`. The document-wide `modeChange` listener and its hand-added `InsertElementCommand` are gone.
+   - **Fixed on the way:** that listener heard every editor on the page, so another drawing's tool switch finished this
+     one's session. The unit test covers it.
 6. **Docs:**
    - `roadmap.md` guideline: an intent is a command, every source runs it; thresholds and tolerances come from
      `pointer-intent.ts` / `anchor-path.ts`;
