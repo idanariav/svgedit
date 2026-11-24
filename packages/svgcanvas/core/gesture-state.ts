@@ -20,23 +20,12 @@ export interface AreaResize {
 }
 
 export interface GestureState {
-  /** Centre of a multi-selection being rotated (set on press, `null` at rest). */
-  groupRotateCenter: { x: number, y: number } | null
-  /** The matrices the elements of a rotated group started from. */
-  groupRotateStart: Map<Element, SVGMatrix> | null
-  groupRotateBBox: BBox | null
   /** A drag or rotate has recorded its start transforms. */
   hasDragStartTransform: boolean
   dragStartTransforms: Map<Element, string> | null
   /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
   dragPlan: Map<Element, import('./model-commands.ts').DragEntry> | null
   /** the geometry box of the element a resize shown through the model began from */
-  /** a rotation shown through the model (core/model-commands.ts `rotationPlan`) */
-  rotationPlan: { id: string, cx: number, cy: number } | null
-  /** a rotation of the whole selection shown through the model (`rotationGroupPlan`): each element's transform before it */
-  groupRotationPlan: Map<Element, import('./model-commands.ts').Affine> | null
-  /** the rotation plan was decided for this gesture (it may be null) */
-  rotationShown: boolean
   resizeStartBox: { x: number, y: number, width: number, height: number } | null
   hasResizeStartTransform: boolean
   groupResizeStart: Map<Element, SVGMatrix> | null
@@ -61,15 +50,9 @@ export interface GestureState {
 }
 
 export const createGestureState = (): GestureState => ({
-  groupRotateCenter: null,
-  groupRotateStart: null,
-  groupRotateBBox: null,
   hasDragStartTransform: false,
   dragStartTransforms: null,
   dragPlan: null,
-  rotationPlan: null,
-  groupRotationPlan: null,
-  rotationShown: false,
   resizeStartBox: null,
   hasResizeStartTransform: false,
   groupResizeStart: null,

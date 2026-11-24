@@ -113,8 +113,6 @@ const EXITS = {
  */
 const allExits = (gesture, why) => Object.fromEntries(Object.keys(EXITS).map((e) => [`${gesture} › ${e}`, why]))
 const NOT_YET = {
-  ...allExits('rotate', 'step 2: rotate on the gesture session'),
-  ...allExits('group rotate', 'step 2: rotate on the gesture session'),
   ...allExits('resize', 'step 3: resize on the gesture session'),
   ...allExits('group resize', 'step 3: resize on the gesture session'),
   // a release leaves resizeStartBox / hasResizeStartTransform set (the class of e6f50f31)

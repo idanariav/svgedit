@@ -297,9 +297,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.gesture.altCloneArmed = false
       svgCanvas.gesture.groupResizeStart = null
       svgCanvas.stretch.cancel()
-      svgCanvas.gesture.groupRotateStart = null
-      svgCanvas.gesture.groupRotateCenter = null
-      svgCanvas.gesture.groupRotateBBox = null
       svgCanvas.setStartTransform(null)
     } finally {
       // A release always ends the gesture (core/gesture-session.ts): one its handler did not commit is rolled back. A right-button
@@ -433,9 +430,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     svgCanvas.gesture.hasDragStartTransform = false
     svgCanvas.gesture.dragStartTransforms = null
     svgCanvas.gesture.groupResizeStart = null
-    svgCanvas.gesture.groupRotateStart = null
-    svgCanvas.gesture.groupRotateCenter = null
-    svgCanvas.gesture.groupRotateBBox = null
 
     /**
 * The main (left) mouse button is released (anywhere).
@@ -758,6 +752,9 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
   }
 
   const mouseDownEventImpl = (evt: MouseEvent): void => {
+    // A gesture still on is one whose release never came (it landed outside the window): it is rolled back before this
+    // press is read, so the press sees the drawing, the selection and the mode as they were before it (core/gesture-session.ts)
+    svgCanvas.cancelGesture('new press')
     const dataStorage = svgCanvas.getDataStorage()
     const selectedElements = svgCanvas.getSelectedElements()
     const zoom = svgCanvas.getZoom()

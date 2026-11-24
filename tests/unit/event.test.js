@@ -397,16 +397,17 @@ describe('event', () => {
     errSpy.mockRestore()
   })
 
-  it('mouseUpEvent() resets drag state instead of leaving it stuck when the mode dispatch throws', () => {
-    // event-rotate.js's up() reaches svgCanvas.undoMgr.finishUndoableChange(),
-    // which this mock canvas doesn't provide, so it throws mid-dispatch —
-    // before the group-rotate/-resize state below would normally be cleared.
+  it('mouseUpEvent() rolls the gesture back instead of leaving it stuck when the mode dispatch throws', () => {
+    // event-rotate.js's up() reaches svgCanvas.commitTransforms(), which this mock canvas doesn't provide, so it throws
+    // mid-dispatch, before the rotation would be committed.
     canvas.setCurrentMode('rotate')
     canvas.setStarted(true)
-    canvas.gesture.groupResizeStart = { stale: true }
-    canvas.gesture.groupRotateStart = { stale: true }
-    canvas.gesture.groupRotateCenter = { stale: true }
-    canvas.gesture.groupRotateBBox = { stale: true }
+    const cancelled = vi.fn()
+    canvas.beginGesture('rotate', {
+      state: { elems: [], startTransforms: new Map(), group: null, plan: null, groupPlan: null, planned: false },
+      onCancel: cancelled
+    })
+    canvas.gesture.groupResizeStart = { stale: true } // not on the session yet (R9 step 3): still reset by hand
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -420,11 +421,10 @@ describe('event', () => {
       })
     }).not.toThrow()
 
+    expect(cancelled).toHaveBeenCalledWith('error')
+    expect(canvas.activeGesture()).toBeNull()
     expect(canvas.getStarted()).toBe(false)
     expect(canvas.gesture.groupResizeStart).toBe(null)
-    expect(canvas.gesture.groupRotateStart).toBe(null)
-    expect(canvas.gesture.groupRotateCenter).toBe(null)
-    expect(canvas.gesture.groupRotateBBox).toBe(null)
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })

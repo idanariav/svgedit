@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–1 done** (2026-11-24); step 2 (rotate) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–2 done** (2026-11-24); step 3 (resize) next.
 
 ## The problem, measured
 
@@ -192,6 +192,21 @@ lifecycle, not the registration.
   - `event-rotate.ts`'s module `startTransforms`.
 - The hand-built `BatchCommand` becomes the session's transaction. Keep the undo label.
 - Escape mid-rotate now rolls back, so those acceptance tests turn green.
+
+**Done (2026-11-24).**
+- **The `rotate` gesture's state** lives on the gesture (`RotateState` in `event-rotate.ts`). Gone from `GestureState`:
+  `groupRotateCenter`, `groupRotateStart`, `groupRotateBBox`, `rotationPlan`, `groupRotationPlan`, `rotationShown`, and the
+  module's `startTransforms`.
+- **Undo:** the session's transaction (`Rotate`) replaces `beginUndoableChange` / `finishUndoableChange` and the
+  hand-added batch.
+- **`onCancel`** puts the mode back to select, clears `started` and refreshes the selection boxes.
+- **`mouseDownEventImpl` now starts with `cancelGesture('new press')`,** so a press that follows a lost release sees the
+  drawing as it was.
+- **Found on the way:**
+  - The shared press prelude merges an element's transform list into one matrix *before* the gesture begins, so that DOM
+    write is outside the gesture's transaction (it folds into the previous state). It doesn't change how the element looks
+    and it isn't new. Step 4 begins the gesture at the press, before the prelude.
+  - A preview open at cancel time is closed by the session (step 1's last change).
 
 ### 3. Resize, plain and area text
 
