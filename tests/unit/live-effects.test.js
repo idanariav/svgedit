@@ -373,6 +373,17 @@ describe('live-effects', function () {
       assert.ok(byId('r1').getAttribute('d').startsWith('M45,60'))
     })
 
+    it('counts d as current when the source closes a hair short of its start', function () {
+      // The closing anchor sits 0.01 from the start: both sides must fold it the same way, or every edit
+      // takes the effect's output as a new source and the effect compounds.
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      const src = 'M191.87,265.16 L287.5,296.09 L278.91,228.12 L191.88,265.16 L191.87,265.16 Z'
+      el.setAttribute(FX_SOURCE_ATTR, src)
+      el.setAttribute(FX_ATTR, 'fxshift(dx=4,dy=0)')
+      el.setAttribute('d', computeFxD(src, parseFxStack('fxshift(dx=4,dy=0)')))
+      assert.equal(isFxCurrent(el), true)
+    })
+
     it('leaves d alone when the stack names an unregistered effect', function () {
       const el = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       el.setAttribute(FX_SOURCE_ATTR, 'M0,0 L10,0')

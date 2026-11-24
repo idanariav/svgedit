@@ -317,6 +317,25 @@ test.describe('Distort tool: a group', () => {
     expect(b.x1).toBeCloseTo(300, 0)
   })
 
+  test('a member that closes a hair short of its start keeps its source through the drag', async ({ page }) => {
+    // Drawn paths often end `…L191.88,265.16 L191.87,265.16 z`: every pointer move must distort the original,
+    // not the previous move's output (the member would drift off the rest of the group).
+    await page.evaluate(() => {
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      p.id = 'h'
+      p.setAttribute('d', 'M250,150 L300,150 L300,200 L250.01,200 L250,200 L250,150.01 L250,150 Z')
+      document.getElementById('grp').append(p)
+      window.svgEditor.svgCanvas.selectOnly([document.getElementById('grp')], true)
+    })
+    await drag(page, { x: 300, y: 200 }, { x: 340, y: 240 })
+    expect(await page.evaluate(() => document.getElementById('h').getAttribute('se:fx-d')))
+      .toBe('M250,150 L300,150 L300,200 L250.01,200 L250,200 L250,150.01 L250,150 Z')
+    // Its far corner is the group's far corner: under the pointer, with `b`'s.
+    const h = await docBox(page, 'h')
+    expect(h.x1).toBeCloseTo(340, 0)
+    expect(h.y1).toBeCloseTo(240, 0)
+  })
+
   test('a shape distorted on its own keeps that distortion under the group\'s', async ({ page }) => {
     await page.evaluate(() => {
       const c = window.svgEditor.svgCanvas

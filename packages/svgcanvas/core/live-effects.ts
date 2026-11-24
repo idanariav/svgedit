@@ -255,7 +255,8 @@ const normalizeD = (d: string): string => anchorsToD(parseAnchors(d))
  * Whether `d` is the regenerated output of `se:fx-d` + `se:fx`. Compared as
  * geometry within a small tolerance, because the saver rewrites `d` as
  * relative commands rounded to 2 decimals — a reloaded drawing must still
- * count as unedited.
+ * count as unedited. Both sides fold their closing segments with the same tolerance: a source whose last anchor
+ * sits a hair short of its start (`…L191.88,265.16 L191.87,265.16 Z`) would otherwise fold on one side only.
  * Stacks naming an unregistered effect cannot be verified and count as current.
  */
 export const isFxCurrent = (elem: Element): boolean => {
@@ -265,7 +266,7 @@ export const isFxCurrent = (elem: Element): boolean => {
   if (unknown) return true
   const expected = computeFxD(src, stack)
   return expected !== null &&
-    sameAnchorGeometry(parseAnchors(expected), parseAnchors(elem.getAttribute('d') || '', ROUNDING_TOL))
+    sameAnchorGeometry(parseAnchors(expected, ROUNDING_TOL), parseAnchors(elem.getAttribute('d') || '', ROUNDING_TOL))
 }
 
 /**
