@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.21
+- UI: shapes saved to the shape library can have aliases ("rock, boulder" for "stone"). The library search and filter match them, the save dialog's name suggestions match them too, and a saved shape's ⋮ menu has *Edit aliases…*.
+
 ## 7.4.1-fork.20
 - UI: dragging a rotated group moves it the whole way (it used to barely move, turning about a shifted pivot), and its rotation stays editable.
 
