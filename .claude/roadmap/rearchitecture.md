@@ -427,6 +427,14 @@ registered tools already have (`registerTool`: begin → preview → commit / ca
 state is created at the press and dropped with the gesture, so nothing can outlive it. Size: L (the shared drag code every
 tool uses).
 
+**Plan (2026-11-24).** [`.claude/plans/r9-gesture-lifecycle.md`](../plans/r9-gesture-lifecycle.md): one `ActiveGesture` union
+(per kind, as VectorCraft's `select.rs` `State`) under a shared gesture session lifted out of the tool registry; every exit
+(release, Escape, mode switch, a second press, window blur, context menu, a throw) ends it; a rest check after every e2e
+test guards the class. Eight steps: the guard, the session, then rotate, resize, move + marquee, `startTransform` as an
+argument, path edit, cleanup. Step 0 is in: `svgCanvas.gestureLeftovers()` after every e2e test, with a
+shrinking list of today's known leaks, and `gesture-lifecycle.spec.js` (37 expected failures, each marked with the step that
+fixes it).
+
 ### R10. One entry point per user intent
 
 **Today.** The same intent goes through different code depending on how it was asked. Paste from the menu read the

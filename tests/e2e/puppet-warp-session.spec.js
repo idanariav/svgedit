@@ -65,6 +65,7 @@ test.describe('puppet warp session', () => {
   })
 
   test('a closed hand shows while a pin is dragged, and goes when it is let go', async ({ page }) => {
+    test.info().annotations.push({ type: 'allow-gesture-in-progress', description: 'the warp session holds its transaction across gestures by design (ownsUndo)' })
     await warp(page)
     const cursor = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
     expect(await cursor()).toEqual({ hint: null, cursor: 'crosshair' })

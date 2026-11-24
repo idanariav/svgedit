@@ -276,6 +276,9 @@ exist on `SvgCanvas`, or arguments its signature rejects) and `check-editor-stri
 Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
 (`tests/e2e/fixtures.js`) and fails on structural corruption; opt out with
 `test.info().annotations.push({ type: 'allow-corrupt-drawing', description })`.
+It also asserts `svgCanvas.gestureLeftovers()` is empty, which fails a test that leaves gesture state behind (roadmap R9; the
+fixture's `KNOWN_GESTURE_LEAKS` list only shrinks). A test that ends mid-gesture on purpose opts out with
+`{ type: 'allow-gesture-in-progress', description }`.
 `tests/e2e/command-sweep.spec.js` runs every non-interactive command against
 every round-trip fixture (`SWEEP=full` for the larger matrix), and fails a command that changes the drawing
 without announcing it (`documentChanges.pending()`: a host would never mark the drawing dirty).

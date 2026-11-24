@@ -175,6 +175,7 @@ test.describe('Pen continues and joins open paths', () => {
   })
 
   test('the cursor says what a press on an end does: continue, or join while drawing; the Pen\'s own cursor elsewhere', async ({ page }) => {
+    test.info().annotations.push({ type: 'allow-gesture-in-progress', description: 'a path is still being drawn when the test ends (a multi-click drawing session, not a gesture)' })
     const move = (x, y) => page.evaluate(([px, py]) => window.svgEditor.automation.pointer([{ kind: 'move', x: px, y: py, mods: { shift: true } }]), [x, y])
     const state = () => page.evaluate(() => ({ hint: window.svgEditor.svgCanvas.getCursorHint(), cursor: window.svgEditor.workarea.style.cursor }))
     await pen(page)

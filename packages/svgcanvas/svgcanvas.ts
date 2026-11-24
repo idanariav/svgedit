@@ -100,7 +100,7 @@ import type { TaperStrokeApi } from './core/taper-stroke.ts'
 import { createObjectState } from './core/object-state.ts'
 import type { ObjectStateApi } from './core/object-state.ts'
 import { createDrawSnap } from './core/draw-snap.ts'
-import { createGestureState } from './core/gesture-state.ts'
+import { createGestureState, gestureLeftovers } from './core/gesture-state.ts'
 import { createGuides } from './core/guides.ts'
 import type { GuidesApi } from './core/guides.ts'
 import { createDashFit } from './core/dash-fit.ts'
@@ -456,6 +456,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare documentChanges: import('./core/document-changes.ts').DocumentChanges
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
   declare checkDrawing: () => Array<{ code: string, message: string, id?: string }>
+  /** What a finished gesture left behind: `[]` when no gesture state outlived its gesture (core/gesture-state.ts, roadmap R9). */
+  declare gestureLeftovers: () => string[]
   // Canvas properties
   declare contentW: number
   declare contentH: number
@@ -696,6 +698,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     attachApi(this, 'toolRegistry', createToolRegistry(this), initGuardRegistry)
     /** Structural health check of the current drawing (empty = healthy); see core/drawing-invariants.js. */
     this.checkDrawing = () => checkDrawing(this.getSvgContent())
+    this.gestureLeftovers = () => gestureLeftovers(this)
     attachApi(this, 'selection', createSelection(this), initGuardRegistry)
 
     this.nsMap = getReverseNS()
