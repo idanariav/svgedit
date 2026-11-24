@@ -60,9 +60,18 @@ const translatePoints = (pointsStr: string, tx: number, ty: number): string => p
  * @param canvas - The SVG canvas object
  */
 /** The members `recalculate.ts` gives its canvas. */
+/** What the caller of `recalculateDimensions` knows about the transform being baked. */
+export interface RecalculateOptions {
+  /** the element's transform before the gesture that changed it: what its undo command records (default: the transform it has now) */
+  startTransform?: string | null
+  /** the scale of the element's transform before the gesture, which a bake of the whole transform keeps in the stroke (default:
+   * none, the bake leaves the stroke alone) */
+  bakeStrokeScale?: number | null
+}
+
 export interface RecalculateApi {
   updateClipPath(attr: string, tx: number, ty: number, elem?: Element | undefined): string | undefined
-  recalculateDimensions(selected: Element): Command | null
+  recalculateDimensions(selected: Element, options?: RecalculateOptions): Command | null
 }
 
 export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
@@ -154,10 +163,12 @@ export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
   /**
  * Recalculates the dimensions and transformations of a selected element.
  * @param selected - The DOM element to recalculate
+ * @param options - the transform before the gesture, and the stroke scale a bake keeps (`RecalculateOptions`)
  * @returns Undo command object with the resulting change, or null if no change
  */
-  const recalculateDimensions = (selected: Element): Command | null => {
+  const recalculateDimensions = (selected: Element, options: RecalculateOptions = {}): Command | null => {
     if (!selected) return null
+    const startTransform = options.startTransform ?? selected.getAttribute('transform') ?? ''
 
     // Don't recalculate dimensions for groups - this would push their transforms down to children
     // Groups should maintain their transform attribute on the group element itself
@@ -314,7 +325,7 @@ export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
       if (!selected.hasAttribute(attr)) initial[attr] = null
     }
     // Save the start transform value
-    initial.transform = svgCanvas.getStartTransform() || ''
+    initial.transform = startTransform || ''
     // The cached source geometry of live features is rewritten by the bake too: undo restores it with the rest.
     for (const attr of remapSourceAttrs()) {
       if (selected.hasAttribute(attr)) initial[attr] = selected.getAttribute(attr)
@@ -521,7 +532,7 @@ export const createRecalculate = (canvas: SvgCanvas): RecalculateApi => {
       // Remap other elements normally
         remapWith(m)
         // The whole transform is now in the geometry: a gesture that asked for it keeps the stroke's look (undone with the rest)
-        const keep = svgCanvas.gesture?.bakeStrokeScale
+        const keep = options.bakeStrokeScale
         const stroke = keep ? strokeForBake(selected, { a: keep, d: keep, e: 0, f: 0 })['stroke-width'] : undefined
         if (stroke) {
           initial['stroke-width'] = selected.getAttribute('stroke-width')

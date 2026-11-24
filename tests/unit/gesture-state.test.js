@@ -5,7 +5,6 @@ import { createGestureState, gestureLeftovers } from '../../packages/svgcanvas/c
 const fakeCanvas = (over = {}) => ({
   gesture: createGestureState(),
   getStarted: () => false,
-  getStartTransform: () => null,
   getJustSelected: () => null,
   getRubberBox: () => null,
   stretch: { isActive: () => false },
@@ -17,12 +16,6 @@ const fakeCanvas = (over = {}) => ({
 describe('gestureLeftovers (the gesture rest check)', () => {
   it('is empty when every gesture slot is at rest', () => {
     expect(gestureLeftovers(fakeCanvas())).toEqual([])
-  })
-
-  it('names a per-gesture field that outlived its gesture', () => {
-    const c = fakeCanvas()
-    c.gesture.bakeStrokeScale = 2
-    expect(gestureLeftovers(c)).toEqual(['gesture.bakeStrokeScale'])
   })
 
   it('ignores the fields that outlive a gesture on purpose', () => {
@@ -37,15 +30,13 @@ describe('gestureLeftovers (the gesture rest check)', () => {
     const box = { getAttribute: () => 'inline' }
     const c = fakeCanvas({
       getStarted: () => true,
-      getStartTransform: () => 'matrix(1 0 0 1 5 5)',
       getJustSelected: () => ({}),
       getRubberBox: () => box,
       stretch: { isActive: () => true },
       inTransaction: () => true,
       snapshotHistory: { previewing: true }
     })
-    expect(gestureLeftovers(c)).toEqual(['started', 'startTransform', 'justSelected', 'rubberBox shown', 'stretch',
-      'transaction open', 'preview open'])
+    expect(gestureLeftovers(c)).toEqual(['started', 'justSelected', 'rubberBox shown', 'stretch', 'transaction open', 'preview open'])
   })
 
   it('names an active gesture', () => {

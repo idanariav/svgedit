@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–4 done** (2026-11-24); step 5 (`startTransform` as an argument) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–5 done** (2026-11-24); step 6 (path edit) next.
 
 ## The problem, measured
 
@@ -271,6 +271,18 @@ lifecycle, not the registration.
 - `getStartTransform` and `setStartTransform` are removed from `SvgCanvas`.
   - Check `hostApi.d.ts` and the plugin first: no outside caller today.
   - `check-canvas-calls` catches any that remain.
+
+**Done (2026-11-24).**
+- **`recalculateDimensions(elem, { startTransform, bakeStrokeScale })`.** With no start transform given, the undo command
+  records the element's transform at the bake, not whatever the last press left in the slot. Undo is model snapshots, so
+  this changes only the command's content, not what undo does.
+- **Gone:**
+  - `getStartTransform` / `setStartTransform`, the `startTransform` canvas state and its four resets;
+  - `GestureState.bakeStrokeScale`;
+  - the save, overwrite and restore dance in `selected-elem.ts` and `scratch-bake.ts`;
+  - the per-element set in the release's multi-select loop.
+- **The rest check:** `GestureState` holds only what outlives a gesture on purpose, so its field loop is gone. The fixture's
+  `KNOWN_GESTURE_LEAKS` list is empty, and gone too.
 
 ### 6. Path edit
 

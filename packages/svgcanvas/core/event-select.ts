@@ -597,26 +597,13 @@ export const init = (canvas: SvgCanvas): {
             tlist.appendItem(newTransform)
           }
 
-          // For non-group elements, bake the transform into geometry via recalculateDimensions.
-          // recalculateDimensions() reads svgCanvas.getStartTransform() (a single
-          // shared slot, not keyed per element) to know what "old" transform to
-          // record on the undo command. mousedown only ever set it once, for the
-          // element under the cursor — so without this, every OTHER selected
-          // element in a multi-select drag got that same clicked element's
-          // pre-drag transform baked into its own undo command, snapping it to
-          // the wrong place on undo. Set it to this element's own captured value
-          // right before calling it.
-          svgCanvas.setStartTransform(oldTransform)
+          // For non-group elements, bake the transform into geometry via recalculateDimensions, with this element's own
+          // pre-drag transform (each selected element has its own: a multi-select drag once gave every element the clicked one's).
           // A bake that folds the element's pre-gesture transform into its geometry (a move, a group resize) keeps its stroke's
           // look: recalculateDimensions scales the stroke by this, in the same undo command. Only when the start is known.
           const was = drag?.startTransforms?.has(elem) ? parseMatrix(oldTransform) : null
-          svgCanvas.gesture.bakeStrokeScale = was ? Math.sqrt(Math.abs(was[0] * was[3] - was[1] * was[2])) : null
-          let cmd
-          try {
-            cmd = svgCanvas.recalculateDimensions(elem)
-          } finally {
-            svgCanvas.gesture.bakeStrokeScale = null
-          }
+          const bakeStrokeScale = was ? Math.sqrt(Math.abs(was[0] * was[3] - was[1] * was[2])) : null
+          const cmd = svgCanvas.recalculateDimensions(elem, { startTransform: oldTransform, bakeStrokeScale })
           if (cmd) {
             batchCmd.addSubCommand(cmd)
           } else {

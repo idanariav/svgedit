@@ -293,7 +293,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.cancelGesture('error')
       svgCanvas.setStarted(false)
       svgCanvas.stretch.cancel()
-      svgCanvas.setStartTransform(null)
     } finally {
       // A release always ends the gesture (core/gesture-session.ts): one its handler did not commit is rolled back. A right-button
       // release is not the gesture's own (it began with the primary button) and leaves it be.
@@ -363,10 +362,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     // Resize must be flattened via recalculateDimensions (which bakes the scale into
     // real attributes like width/height/font-size), not consolidated into a matrix.
     const operationMode = svgCanvas.getCurrentMode()
-    if (svgCanvas.toolPointerUp?.(evt)) {
-      svgCanvas.setStartTransform(null)
-      return
-    }
+    if (svgCanvas.toolPointerUp?.(evt)) return
     switch (svgCanvas.getCurrentMode()) {
     // intentionally fall-through to select here (handled inside eventSelect.up)
       case 'resize':
@@ -572,7 +568,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         svgCanvas.call('changed', [created])
       }, aniDur * 1000)
     }
-    svgCanvas.setStartTransform(null)
   }
 
   const dblClickEvent = (evt: MouseEvent): void => {
@@ -953,8 +948,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       }
       mouseTarget = selectedElements[0]
     }
-
-    svgCanvas.setStartTransform(mouseTarget.getAttribute('transform'))
 
     const tlist = getTransformList(mouseTarget)
 

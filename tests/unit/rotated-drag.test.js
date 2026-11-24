@@ -57,7 +57,6 @@ describe('dragging a rotated element (event-select.js up handler)', () => {
   // left it mid-drag) is `translate(dx dy) matrix(1 0 0 1 0 0) rotate(...)`.
   const finishDrag = (elem) => {
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.gesture.dragStartTransforms = new Map([[elem, '']])
     svgCanvas.setCurrentMode('select')
     up({}, {
       // realX/realY: anything != getRStartX/Y so the "was dragged" branch runs
@@ -66,7 +65,11 @@ describe('dragging a rotated element (event-select.js up handler)', () => {
       selectedElements: [elem],
       operationMode: 'select',
       pendingMove: null,
-      tempJustSelected: null
+      tempJustSelected: null,
+      moved: true,
+      clickSelect: null,
+      // the move gesture's start transforms (event-select.ts MoveState): the element had none before the drag
+      drag: { startTransforms: new Map([[elem, '']]), plan: null }
     })
   }
 

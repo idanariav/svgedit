@@ -26,10 +26,8 @@ export const bakeInScratch = (svgCanvas: SvgCanvas, el: Element): Record<string,
   copy.removeAttribute('id') // the copy is not the element: nothing may find it by id
   scratch.append(copy)
   parent.append(scratch)
-  const startTransform = svgCanvas.getStartTransform()
   try {
-    svgCanvas.setStartTransform(el.getAttribute('transform') || '')
-    svgCanvas.recalculateDimensions(copy)
+    svgCanvas.recalculateDimensions(copy, { startTransform: el.getAttribute('transform') || '' })
     const changes: Record<string, string | null> = {}
     for (const { name, value } of Array.from(copy.attributes)) {
       if (name !== 'id' && el.getAttribute(name) !== value) changes[name] = value
@@ -39,7 +37,6 @@ export const bakeInScratch = (svgCanvas: SvgCanvas, el: Element): Record<string,
     }
     return changes
   } finally {
-    svgCanvas.setStartTransform(startTransform)
     scratch.remove()
   }
 }

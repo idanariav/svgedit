@@ -58,7 +58,6 @@ export interface CanvasState {
   history: { curCommand: BatchCommand | null }
   drawing: {
     started: boolean
-    startTransform: string | null
     currentMode: string
     toolLocked: boolean
     textFreshCreate: boolean

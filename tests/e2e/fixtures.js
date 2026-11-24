@@ -24,13 +24,6 @@ const collectCoverage = (known) => {
   return Object.fromEntries(Object.entries(cov).map(([file, e]) => [file, known.includes(file) ? { s: e.s, f: e.f, b: e.b } : e]))
 }
 
-// Gesture state that still outlives its gesture today, with the step of .claude/plans/r9-gesture-lifecycle.md that moves it
-// onto the gesture. The rest check skips these until then; delete an entry when its step lands (the list only shrinks).
-const KNOWN_GESTURE_LEAKS = {
-  // set on every press, cleared only on the releases that reach the end of mouseUp (not select / resize)
-  startTransform: 'step 5: the start transform becomes an argument of recalculateDimensions'
-}
-
 // Playwright fixtures: the drawing health check, the gesture rest check and the coverage capture.
 export const test = base.extend({
   // eslint-disable-next-line no-empty-pattern
@@ -66,10 +59,9 @@ export const test = base.extend({
     // be left behind for the next gesture to read. A test that deliberately ends mid-gesture opts out with
     //   test.info().annotations.push({ type: 'allow-gesture-in-progress', description: 'why' })
     if (testInfo.status === 'passed' && !testInfo.annotations.some((a) => a.type === 'allow-gesture-in-progress')) {
-      const leftovers = (await page
+      const leftovers = await page
         .evaluate(() => window.svgEditor?.svgCanvas?.gestureLeftovers?.() ?? [])
-        .catch((err) => (page.isClosed() ? [] : [`check failed: ${err}`])))
-        .filter((name) => !(name in KNOWN_GESTURE_LEAKS))
+        .catch((err) => (page.isClosed() ? [] : [`check failed: ${err}`]))
       expect(leftovers, `gesture state left behind after "${testInfo.title}"`).toEqual([])
     }
 

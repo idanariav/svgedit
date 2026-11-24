@@ -4,15 +4,14 @@ import { init as initEventSelect } from '../../packages/svgcanvas/core/event-sel
 // Regression test: undoing a drag of multiple ungrouped selected elements
 // used to distort every element except the one the mouse actually went down
 // on. event-select.js's mouseUp handler bakes each dragged element's move
-// into geometry via recalculateDimensions(), which records the undo command's
-// "old transform" from svgCanvas.getStartTransform() — a single shared slot
-// set once at mousedown to the clicked element's own pre-drag transform (see
-// event.js's mouseDownEvent). For every OTHER selected element in the drag,
-// that slot held the wrong element's original transform, so undo overwrote
-// their `transform` attribute with it instead of their own original value —
-// e.g. wiping out a pre-existing rotation. The fix threads each element's own
-// captured pre-drag transform (svgCanvas.gesture.dragStartTransforms) through
-// setStartTransform() right before recalculateDimensions() runs for it.
+// into geometry via recalculateDimensions(), which used to record the undo
+// command's "old transform" from a single shared slot set once at mousedown to
+// the clicked element's own pre-drag transform. For every OTHER selected
+// element in the drag, that slot held the wrong element's original transform,
+// so undo overwrote their `transform` attribute with it instead of their own
+// original value — e.g. wiping out a pre-existing rotation. Each element's own
+// captured pre-drag transform (the move gesture's `startTransforms`) is now
+// passed to recalculateDimensions() for it (roadmap R9: no shared slot left).
 describe('undoing a multi-element drag (event-select.js up handler)', () => {
   let svgCanvas
   let up
@@ -61,8 +60,7 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
 
   it('restores each element\'s own original transform, not the clicked element\'s', () => {
     // rect1 has no pre-existing transform; rect2 is pre-rotated. Only rect1
-    // is the mousedown target (mirrors event.js setting getStartTransform()
-    // from the single clicked element).
+    // is the mousedown target.
     const rect1 = svgCanvas.addSVGElementsFromJson({
       element: 'rect',
       attr: { id: 'rect1', x: 50, y: 50, width: 40, height: 40, fill: '#f00' }
@@ -81,9 +79,6 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
     })
 
     svgCanvas.selectOnly([rect1, rect2], true)
-    // Mousedown lands on rect1 only — svgCanvas.getStartTransform() gets set
-    // from just this one element (mirrors event.js's mouseDownEvent).
-    svgCanvas.setStartTransform(rect1.getAttribute('transform'))
     svgCanvas.setStartX(70)
     svgCanvas.setStartY(70)
     svgCanvas.setRStartX(70)
@@ -99,22 +94,32 @@ describe('undoing a multi-element drag (event-select.js up handler)', () => {
       x: 70,
       y: 70
     }
+    // The press on rect1 begins the move gesture (as event-select's down() does).
     // First move: inserts the dummy drag transform and snapshots each
-    // element's pre-drag transform into svgCanvas.gesture.dragStartTransforms via
+    // element's pre-drag transform into the gesture's startTransforms via
     // the live transform-list API (as a real drag would).
     svgCanvas.undoMgr.snapshots.baseline() // what was set up outside any command is where the step starts from
+    const gesture = svgCanvas.beginGesture('move', {
+      label: 'position',
+      state: { clone: false, clickSelect: null, begun: false, startTransforms: null, plan: null, startBBox: null, moved: false, pending: null, snapTargets: null }
+    })
     move({}, moveCtx)
     // Second move: drags the selection by (60, 40) using the same live API.
     move({}, { ...moveCtx, x: 130, y: 110 })
 
+    gesture.detach()
     up({}, {
       realX: 130,
       realY: 110,
       selectedElements: [rect1, rect2],
       operationMode: 'select',
       pendingMove: null,
-      tempJustSelected: null
+      tempJustSelected: null,
+      moved: true,
+      clickSelect: null,
+      drag: gesture.state
     })
+    gesture.commit()
 
     svgCanvas.undoMgr.undo()
 

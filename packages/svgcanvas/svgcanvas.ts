@@ -623,7 +623,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
       },
       drawing: {
         started: false, // Boolean indicating whether or not a draw action has been started
-        startTransform: null, // String with an element's initial transform attribute value
         currentMode: 'select', // String indicating the current editor mode
         toolLocked: false, // Boolean: keep the active draw tool selected after each object (lock mode)
         textFreshCreate: false, // Boolean: the current text was just placed via the text tool (vs editing an existing one)
@@ -1032,14 +1031,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
   getGridShape () {
     return this.curConfig.gridShape || 'square'
-  }
-
-  getStartTransform () {
-    return this.state.drawing.startTransform
-  }
-
-  setStartTransform (transform: string | null) {
-    this.state.drawing.startTransform = transform
   }
 
   getZoom () {
