@@ -24,7 +24,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
-import { parseAnchors, sameAnchorGeometry } from './anchor-path.ts'
+import { parseAnchors, sameAnchorGeometry, CLOSE_TOL } from './anchor-path.ts'
 import { registerElementCheck } from './drawing-invariants.ts'
 
 /** Read-only attribute access: an element, or an element with some attributes overridden. */
@@ -167,10 +167,10 @@ export const commitPlan = (elem: Element, plan: StackPlan): void => {
  * 0.003 per point, as a random walk): the tolerance grows with the square root of the anchor count.
  */
 const sameShape = (a: string, b: string): boolean => {
-  const pa = parseAnchors(a, TOL)
+  const pa = parseAnchors(a, CLOSE_TOL)
   const count = pa.reduce((n, sp) => n + sp.anchors.length, 0)
   const tol = TOL + 0.01 * Math.sqrt(count)
-  return sameAnchorGeometry(pa, parseAnchors(b, TOL), tol)
+  return sameAnchorGeometry(pa, parseAnchors(b, CLOSE_TOL), tol)
 }
 
 /**

@@ -27,7 +27,7 @@
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
-import { parseAnchors, anchorsToD, sameAnchorGeometry } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, sameAnchorGeometry, CLOSE_TOL } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { ART_DEFAULTS, PATTERN_DEFAULTS, artAlongPath, patternAlongPath } from './art-brush.ts'
@@ -135,7 +135,7 @@ const matrixToContent = (el: Element): SVGMatrix | null => {
 export const applyMatrix = (d: string, m: Matrix | null): string => {
   if (!m) return d
   const map = (pt: Pt): Pt => ({ x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f })
-  return anchorsToD(parseAnchors(d, 0.1).map((sp) => ({
+  return anchorsToD(parseAnchors(d, CLOSE_TOL).map((sp) => ({
     closed: sp.closed,
     anchors: sp.anchors.map((a) => ({ p: map(a.p), hIn: map(a.hIn), hOut: map(a.hOut) }))
   })))
@@ -196,8 +196,8 @@ const sameArt = (container: Element, paths: ArtPath[]): boolean => {
   const kids = [...container.children]
   if (kids.length !== paths.length) return false
   return kids.every((el, i) => {
-    const have = parseAnchors(el.getAttribute('d') ?? '', 0.1)
-    const want = parseAnchors(paths[i].d, 0.1)
+    const have = parseAnchors(el.getAttribute('d') ?? '', CLOSE_TOL)
+    const want = parseAnchors(paths[i].d, CLOSE_TOL)
     const count = want.reduce((n, sp) => n + sp.anchors.length, 0)
     return sameAnchorGeometry(have, want, 0.1 + 0.01 * Math.sqrt(count))
   })

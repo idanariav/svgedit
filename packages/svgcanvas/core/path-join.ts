@@ -9,7 +9,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
-import { parseAnchors, anchorsToD } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, CLOSE_TOL } from './anchor-path.ts'
 import { joinSubpaths } from './path-edit.ts'
 import { getTransformList, transformListToTransform, matrixMultiply, transformPoint } from './math.ts'
 
@@ -58,14 +58,14 @@ export const createPathJoin = (canvas: SvgCanvas): PathJoinApi => {
     if (!canJoinPaths(selected)) return null
     const { BatchCommand, ChangeElementCommand, RemoveElementCommand } = svgCanvas.history
     const [first, second] = selected
-    const subpaths = parseAnchors(first.getAttribute('d') || '', 0.1)
+    const subpaths = parseAnchors(first.getAttribute('d') || '', CLOSE_TOL)
     if (second) {
       // Bring the second path into the first one's coordinate system.
       const m1 = matrixOf(first)
       const m2 = matrixOf(second)
       const toFirst = m1 && m2 ? matrixMultiply(m1.inverse(), m2) : (m2 || (m1 ? m1.inverse() : null))
       const map = (pt: { x: number, y: number }): { x: number, y: number } => (toFirst ? transformPoint(pt.x, pt.y, toFirst) : pt)
-      for (const sp of parseAnchors(second.getAttribute('d') || '', 0.1)) {
+      for (const sp of parseAnchors(second.getAttribute('d') || '', CLOSE_TOL)) {
         subpaths.push({
           closed: sp.closed,
           anchors: sp.anchors.map((a) => ({ p: map(a.p), hIn: map(a.hIn), hOut: map(a.hOut) }))

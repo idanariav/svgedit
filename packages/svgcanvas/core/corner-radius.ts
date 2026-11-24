@@ -47,7 +47,7 @@ import { registerGeometryRemap } from './geometry-remap-registry.ts'
 import type { RemapPoint, RemapScale } from './geometry-remap-registry.ts'
 import { registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan } from './live-stack.ts'
 import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
-import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry } from './anchor-path.ts'
+import { parseAnchors, hasIn, hasOut, isLineSegment, sameAnchorGeometry, CLOSE_TOL } from './anchor-path.ts'
 import type { Anchor, Pt, SubPath } from './anchor-path.ts'
 
 export const CORNER_RADIUS_ATTR = 'se:corner-radius'
@@ -338,7 +338,7 @@ export const expectedCornerD = (elem: Element): string | null => {
 export const isCornerStateCurrent = (elem: Element): boolean => {
   const expected = expectedCornerD(elem)
   if (expected == null) return false
-  return sameAnchorGeometry(parseAnchors(expected, 0.1), parseAnchors(elem.getAttribute('d') || '', 0.1))
+  return sameAnchorGeometry(parseAnchors(expected, CLOSE_TOL), parseAnchors(elem.getAttribute('d') || '', CLOSE_TOL))
 }
 
 /**

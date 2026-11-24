@@ -1,6 +1,6 @@
 # R10 plan: one entry point per user intent
 
-Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–2 done** (2026-11-24); step 3 (tolerances) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Status: **steps 0–3 done** (2026-11-24); step 4 (press target resolver) next.
 
 ## The problem, measured (2026-11-24)
 
@@ -182,6 +182,12 @@ Plan for `.claude/roadmap/rearchitecture.md` › R10 (written 2026-11-24). Statu
    - **Kept on purpose:** the path tool's curve-on-drag stays at 6 px, now documented. It must agree with its press's own
      point tolerance, and a stray curve costs more than a missed one.
 3. **Tolerances** (target 3), with the literal guard.
+   **Done (2026-11-24).**
+   - **`CLOSE_TOL`** (`anchor-path.ts`, documented with the 184f99ae case) replaces 27 tolerance arguments in 12 files:
+     the literal `0.1`, live-stack's close `TOL` and live-effects' `ROUNDING_TOL`, now gone.
+   - **Left as they were:** live-stack's `TOL` (its geometry match tolerance) and the exact-default callers.
+   - **The guard:** `tests/unit/close-tolerance.test.js` fails on a numeric `parseAnchors` tolerance.
+   - **`HIT_PX`** went into `pointer-intent.ts` with step 2.
 4. **Press target resolver** (target 4).
 5. **Curvature** (target 5).
 6. **Docs:**

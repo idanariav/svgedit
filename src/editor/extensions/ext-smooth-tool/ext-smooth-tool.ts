@@ -19,7 +19,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD, type SubPath } from '@svgedit/svgcanvas/core/anchor-path.ts'
+import { parseAnchors, anchorsToD, type SubPath, CLOSE_TOL } from '@svgedit/svgcanvas/core/anchor-path.ts'
 import { markAnchorsNear, smoothRegion } from '@svgedit/svgcanvas/core/path-fit.ts'
 import { LIVE_ATTRS } from '@svgedit/svgcanvas/core/path-join.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
@@ -74,7 +74,7 @@ export default defineFeature({
       const det = ctm ? ctm.a * ctm.d - ctm.b * ctm.c : 0
       if (!ctm || !Number.isFinite(det) || det === 0) return null
       const d0 = el.getAttribute('d') || ''
-      const subpaths = parseAnchors(d0, 0.1)
+      const subpaths = parseAnchors(d0, CLOSE_TOL)
       if (!subpaths.length) return null
       return {
         el,

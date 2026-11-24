@@ -31,7 +31,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
-import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, segCubic, splitCubic, cubicLength, evalCubic, isLineSegment, segmentCount, CLOSE_TOL } from './anchor-path.ts'
 import type { Anchor, Cubic, Pt, SubPath } from './anchor-path.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
@@ -161,7 +161,7 @@ const isPathTag = (elem: Element): boolean => elem.tagName === 'path'
 /** The element's current geometry as one open subpath, or null. */
 const readSubpath = (elem: Element, attr?: string | null): SubPath | null => {
   if (isPathTag(elem)) {
-    const sps = parseAnchors(attr ?? elem.getAttribute('d') ?? '', 0.1)
+    const sps = parseAnchors(attr ?? elem.getAttribute('d') ?? '', CLOSE_TOL)
     return sps.length === 1 && !sps[0].closed && sps[0].anchors.length >= 2 ? sps[0] : null
   }
   const pts = elem.tagName === 'line'

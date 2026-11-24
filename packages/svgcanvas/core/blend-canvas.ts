@@ -41,7 +41,7 @@
 
 import { NS } from './namespaces.ts'
 import { getPathDFromElement } from './path-utils.ts'
-import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry, CLOSE_TOL } from './anchor-path.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
 import { localMatrix, applyMatrix } from './art-brush-canvas.ts'
 import { tracksOf, frameAt } from './art-brush.ts'
@@ -128,7 +128,7 @@ export interface Spine { d: string, track: Track, sub: SubPath }
  */
 export const parseSpine = (d: string | null | undefined): Spine | null => {
   if (!d) return null
-  const [first] = parseAnchors(d, 0.1)
+  const [first] = parseAnchors(d, CLOSE_TOL)
   if (!first || first.anchors.length < 2) return null
   const [track] = tracksOf(anchorsToD([first]))
   return track && track.length > 1e-9 ? { d: anchorsToD([first]), track, sub: first } : null
@@ -191,7 +191,7 @@ const svgNS = (doc: Document, tag: string): Element => doc.createElementNS(NS.SV
 /** The key's path in its parent's coordinates. */
 const keyGeometry = (key: Element): SubPath[] => {
   const d = getPathDFromElement(key)
-  return d ? parseAnchors(applyMatrix(d, localMatrix(key)), 0.1) : []
+  return d ? parseAnchors(applyMatrix(d, localMatrix(key)), CLOSE_TOL) : []
 }
 
 const keyStyle = (key: Element): Record<string, string> => {
@@ -270,8 +270,8 @@ const sameSteps = (container: Element, steps: Step[]): boolean => {
   if (kids.length !== steps.length) return false
   return kids.every((el, i) => {
     const want = steps[i]
-    const have = parseAnchors(el.getAttribute('d') ?? '', 0.1)
-    const wanted = parseAnchors(want.d, 0.1)
+    const have = parseAnchors(el.getAttribute('d') ?? '', CLOSE_TOL)
+    const wanted = parseAnchors(want.d, CLOSE_TOL)
     const count = wanted.reduce((n, sp) => n + sp.anchors.length, 0)
     if (!sameAnchorGeometry(have, wanted, 0.1 + 0.01 * Math.sqrt(count))) return false
     // Only the interpolated attributes count: the loader adds others (`style="pointer-events: inherit;"`).

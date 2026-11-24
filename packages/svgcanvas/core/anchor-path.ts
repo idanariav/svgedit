@@ -27,6 +27,14 @@ export interface SubPath { closed: boolean, anchors: Anchor[] }
 export interface Cubic { p0: Pt, p1: Pt, p2: Pt, p3: Pt }
 
 const EPS = 1e-9
+
+/**
+ * A closing anchor this near its start is the start (roadmap R10: the one close tolerance). Drawn paths often end a hair short
+ * of where they began (`…L191.88,265.16 L191.87,265.16 z`), and path data written with two decimals moves a point by up to
+ * 0.005. Two sides of one comparison must fold with the same tolerance, or the one that folds and the one that does not
+ * differ by an anchor (184f99ae: a group's distortion then compounded on every move).
+ */
+export const CLOSE_TOL = 0.1
 const round6 = (n: number): number => Math.round(n * 1e6) / 1e6
 
 const same = (a: Pt, b: Pt): boolean => Math.abs(a.x - b.x) < EPS && Math.abs(a.y - b.y) < EPS
@@ -44,7 +52,7 @@ const makeAnchor = (x: number, y: number): Anchor => ({ p: { x, y }, hIn: { x, y
  * folded into the closed subpath instead of producing a duplicate anchor.
  * @param closeTol - How close the closing segment's end must be to
  *   the start to count as "returns to the first anchor" (default: exact).
- *   Path data re-serialised with rounding needs a looser value.
+ *   Path data re-serialised with rounding, or drawn by hand, needs `CLOSE_TOL`.
  */
 export const parseAnchors = (d: string, closeTol = EPS): SubPath[] => {
   let segments: Array<[string, ...number[]]>

@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorBBox } from './anchor-path.ts'
+import { parseAnchors, anchorBBox, CLOSE_TOL } from './anchor-path.ts'
 import { flatten } from './width-outline.ts'
 import type { Pt } from './anchor-path.ts'
 
@@ -92,7 +92,7 @@ export const makeTrack = (input: Pt[], closedIn: boolean): Track | null => {
 /** The tracks (one per subpath) of path data. */
 export const tracksOf = (d: string, tol = TRACK_TOL): Track[] => {
   const out: Track[] = []
-  for (const sp of parseAnchors(d || '', 0.1)) {
+  for (const sp of parseAnchors(d || '', CLOSE_TOL)) {
     if (sp.anchors.length < 2) continue
     const t = makeTrack(flatten(sp, tol).pts, sp.closed)
     if (t) out.push(t)
@@ -198,7 +198,7 @@ export const orientArt = (art: ArtPath[], dir: string, flipAlong: boolean, flipA
   let minY = Infinity
   let maxY = -Infinity
   for (const piece of art) {
-    const subs = parseAnchors(piece.d || '', 0.1)
+    const subs = parseAnchors(piece.d || '', CLOSE_TOL)
     if (!subs.length) continue
     const box = anchorBBox(subs)
     const tol = Math.min(0.25, Math.max(0.01, 0.02 * Math.max(box.width, box.height)))

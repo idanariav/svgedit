@@ -46,7 +46,7 @@ import { registerAttrValidator, registerElementCheck, pathDataValidator } from '
 import { warn } from '../common/logger.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
-import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, anchorBBox, sameAnchorGeometry, CLOSE_TOL } from './anchor-path.ts'
 import type { SubPath } from './anchor-path.ts'
 import {
   registerLiveStage, stackSource, canAddStage, planStack, removalSet, commitPlan, reconcileStack, isStacked
@@ -65,13 +65,6 @@ export const FX_SOURCE_ATTR = 'se:fx-d'
 export const FX_STYLE_ATTR = 'se:fx-style'
 
 const STYLE_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']
-
-/**
- * Slack (px) when comparing a re-serialised `d` against the regenerated one:
- * the saver rounds to 2 decimals as *relative* commands, so a closed curve's
- * final point can miss its start by the accumulated rounding.
- */
-const ROUNDING_TOL = 0.1
 
 /** Total anchor budget per element, to keep the DOM responsive. */
 export const MAX_FX_ANCHORS = 20000
@@ -266,7 +259,7 @@ export const isFxCurrent = (elem: Element): boolean => {
   if (unknown) return true
   const expected = computeFxD(src, stack)
   return expected !== null &&
-    sameAnchorGeometry(parseAnchors(expected, ROUNDING_TOL), parseAnchors(elem.getAttribute('d') || '', ROUNDING_TOL))
+    sameAnchorGeometry(parseAnchors(expected, CLOSE_TOL), parseAnchors(elem.getAttribute('d') || '', CLOSE_TOL))
 }
 
 /** How far a saved `d` may have drifted from its effect's output by rounding alone (see `fxRoundingDrift`). */
@@ -283,8 +276,8 @@ export const fxRoundingDrift = (src: string, fx: string, d: string): string | nu
   if (unknown || !stack.length) return null
   const expected = computeFxD(src, stack)
   if (expected === null) return null
-  const want = parseAnchors(expected, ROUNDING_TOL)
-  if (sameAnchorGeometry(want, parseAnchors(d, ROUNDING_TOL))) return null
+  const want = parseAnchors(expected, CLOSE_TOL)
+  if (sameAnchorGeometry(want, parseAnchors(d, CLOSE_TOL))) return null
   return sameAnchorGeometry(parseAnchors(expected, DRIFT_TOL), parseAnchors(d, DRIFT_TOL), DRIFT_TOL) ? expected : null
 }
 

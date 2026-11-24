@@ -24,7 +24,7 @@
 
 import type SvgCanvas from '../svgcanvas.ts'
 import { registerAttrValidator } from './drawing-invariants.ts'
-import { parseAnchors, segCubic, segmentCount, cubicLength, polyline } from './anchor-path.ts'
+import { parseAnchors, segCubic, segmentCount, cubicLength, polyline, CLOSE_TOL } from './anchor-path.ts'
 import type { Pt, SubPath } from './anchor-path.ts'
 import { startTangent, endTangent } from './bezier-fit.ts'
 import { TAPER_ATTR } from './width-profile.ts'
@@ -86,7 +86,7 @@ const outlineOf = (elem: Element): SubPath | null => {
   const num = (name: string): number => parseFloat(elem.getAttribute(name) ?? '') || 0
   switch (elem.tagName.toLowerCase()) {
     case 'path': {
-      const subpaths = parseAnchors(elem.getAttribute('d') || '', 0.1)
+      const subpaths = parseAnchors(elem.getAttribute('d') || '', CLOSE_TOL)
       return subpaths.length === 1 ? subpaths[0] : null
     }
     case 'line':
@@ -263,7 +263,7 @@ export const createDashFit = (canvas: SvgCanvas): DashFitApi => {
     }
     const length = (elem as SVGGeometryElement).getTotalLength()
     const closed = ['circle', 'ellipse', 'rect', 'polygon'].includes(elem.tagName) ||
-      (elem.tagName === 'path' && Boolean(parseAnchors(elem.getAttribute('d') || '', 0.1)[0]?.closed))
+      (elem.tagName === 'path' && Boolean(parseAnchors(elem.getAttribute('d') || '', CLOSE_TOL)[0]?.closed))
     const fit = fitDashes(pattern, length, closed)
     if (!fit) return false
     elem.setAttribute(DASH_FIT_ATTR, pattern.join(','))

@@ -9,7 +9,7 @@
  * @license MIT
  */
 
-import { parseAnchors, anchorsToD } from './anchor-path.ts'
+import { parseAnchors, anchorsToD, CLOSE_TOL } from './anchor-path.ts'
 import { joinEnds, joinSubpaths, reversedSubpath } from './path-edit.ts'
 import { LIVE_ATTRS } from './path-join.ts'
 import { getTransformList, transformListToTransform, isIdentity } from './math.ts'
@@ -36,7 +36,7 @@ const openSubpath = (elem: Element): SubPath | null => {
   const d = elem.getAttribute('d') || ''
   let hit = parsed.get(elem)
   if (!hit || hit.d !== d) {
-    const subpaths = parseAnchors(d, 0.1)
+    const subpaths = parseAnchors(d, CLOSE_TOL)
     hit = { d, subpath: subpaths.length === 1 && !subpaths[0].closed ? subpaths[0] : null }
     parsed.set(elem, hit)
   }
@@ -146,7 +146,7 @@ const lone = (p: Pt): SubPath => ({ closed: false, anchors: [{ p, hIn: { ...p },
  * parser drops.
  */
 export const drawnSubpath = (d: string): SubPath | null => {
-  const [sp] = parseAnchors(d || '', 0.1)
+  const [sp] = parseAnchors(d || '', CLOSE_TOL)
   if (sp) return sp
   const m = /M\s*(-?[\d.e+-]+)[\s,]+(-?[\d.e+-]+)/i.exec(d || '')
   return m ? lone({ x: Number(m[1]), y: Number(m[2]) }) : null

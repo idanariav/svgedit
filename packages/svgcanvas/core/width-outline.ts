@@ -16,7 +16,7 @@
  * @license MIT
  */
 
-import { parseAnchors, segCubic, segmentCount, isLineSegment } from './anchor-path.ts'
+import { parseAnchors, segCubic, segmentCount, isLineSegment, CLOSE_TOL } from './anchor-path.ts'
 import type { Cubic, Pt, SubPath } from './anchor-path.ts'
 import { profileAround } from './width-profile.ts'
 import type { WidthPoint } from './width-profile.ts'
@@ -288,7 +288,7 @@ const f = (n: number): string => String(Math.round(n * 1000) / 1000)
 export const widthOutline = (d: string, width: number, profile: ReadonlyArray<WidthPoint>, options: OutlineOptions = {}): string | null => {
   if (!(width > 0) || !profile?.length) return null
   const o: Required<OutlineOptions> = { cap: 'butt', join: 'miter', miterLimit: 4, tol: 0.1, ...options }
-  const rings = parseAnchors(d || '', 0.1).flatMap((sp) => (sp.anchors.length > 1 ? outlineSubpath(sp, width, profile, o) : []))
+  const rings = parseAnchors(d || '', CLOSE_TOL).flatMap((sp) => (sp.anchors.length > 1 ? outlineSubpath(sp, width, profile, o) : []))
   const out = rings.filter((r) => r.length > 2).map((r) => `M${r.map((p) => `${f(p.x)},${f(p.y)}`).join(' L')} Z`)
   return out.length ? out.join(' ') : null
 }
@@ -327,7 +327,7 @@ export interface Centerline {
  * @returns null when there is no line to follow
  */
 export const centerline = (d: string, tol = 0.2): Centerline | null => {
-  const sp = parseAnchors(d || '', 0.1)[0]
+  const sp = parseAnchors(d || '', CLOSE_TOL)[0]
   if (!sp || sp.anchors.length < 2) return null
   const { pts } = flatten(sp, tol)
   if (pts.length < 2) return null
