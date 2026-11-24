@@ -452,8 +452,9 @@ fixes it).
 - **Left, with reasons in the plan:**
   - node edit's tracked path (a mode session, with the `requirePath()` rework);
   - the press prelude's transform merge before any gesture begins (R12);
-  - the live readouts the panels read (`dragLiveMoveDelta` / `dragLiveResizeBox`);
-  - the plugin's double teardown on close, which belongs in the plugin repo.
+  - the live readouts the panels read (`dragLiveMoveDelta` / `dragLiveResizeBox`).
+- **The plugin's double teardown on close** was the same pattern at the view level, and is already fixed: plugin 19ffc7c
+  (1.0.70) shares one teardown between `onClose()` and `onunload()`, with a test.
 
 ### R10. One entry point per user intent
 

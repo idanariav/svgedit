@@ -323,10 +323,10 @@ lifecycle, not the registration.
   - `techdebt.md`: remove the entries this closes.
 - `npm run file-map` for the new file.
 
-### Plugin side (separate, small)
+### Plugin side
 
-The double teardown on close (`onClose` + `onunload`) is the same bug at the view level. Give the view an idempotent
-`dispose()` that both call. It goes in `../obsidian-svgedit-plugin`, with its own test, and is independent of the steps above.
+The double teardown on close (`onClose` + `onunload`) was the same bug at the view level. It was already fixed before this
+plan: plugin 19ffc7c (1.0.70) has both hooks await one shared teardown, tested in `tests/view/SvgView-multi-instance.test.ts`.
 
 ## Risks and how each step checks them
 
