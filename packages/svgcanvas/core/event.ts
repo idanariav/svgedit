@@ -34,6 +34,7 @@ import type SvgCanvas from '../svgcanvas.ts'
 import type { DrawSnapOptions } from './draw-snap.ts'
 import type { GestureStartedPayload, GestureMovedPayload, GestureReleasedPayload } from './extension-hooks.ts'
 import { HIT_PX } from './pointer-intent.ts'
+import { resolvePressTarget } from './press-target.ts'
 
 const {
   InsertElementCommand
@@ -74,6 +75,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
    * host turned the debug log on.
    */
   let press: { down: object, moves: number, undoSize: number } | null = null
+  /** the press rule that chose the last press's target (core/press-target.ts), for the debug log */
+  let pressRule: string | null = null
 
   const logPress = (kind: 'pointer-down' | 'pointer-up', evt: MouseEvent): void => {
     if (!svgCanvas._debugEventSink) return
@@ -90,10 +93,12 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       }
       if (kind === 'pointer-down') {
         press = { down: detail, moves: 0, undoSize: detail.undoSize }
+        pressRule = null // set by the press itself, after this entry (which shows the selection before it)
         svgCanvas.logDebugEvent(kind, detail)
       } else {
-        // `noPress`: the press began outside the canvas (a panel, a scrollbar…) and only the release reached it
-        svgCanvas.logDebugEvent(kind, { ...detail, moves: press?.moves ?? 0, undoSizeAtDown: press?.undoSize, ...(press ? {} : { noPress: true }) })
+        // `noPress`: the press began outside the canvas (a panel, a scrollbar…) and only the release reached it;
+        // `targetRule`: the press rule that chose what the press was on (core/press-target.ts)
+        svgCanvas.logDebugEvent(kind, { ...detail, moves: press?.moves ?? 0, undoSizeAtDown: press?.undoSize, targetRule: pressRule, ...(press ? {} : { noPress: true }) })
         press = null
       }
     } catch { /* logging must never break input */ }
@@ -824,80 +829,34 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       mouseTarget = svgCanvas.getMouseTarget(evt)
     }
 
-    // Prefer an already-selected element under the cursor over the topmost one
-    // (matches Excalidraw), so a drag that starts over a covered selection moves
-    // it. Skipped for grips, shift-click (additive) and right-click.
-    // A press that never becomes a drag is a click, and a click means "this one":
-    // `clickSelect` is what the release selects when the pointer did not move
-    // (event-select.ts `up`) — the topmost element the selection was preferred
-    // over, or the member of a multi-selection that was clicked.
-    let clickSelect: Element | null = null
-    if (
-      svgCanvas.getCurrentMode() === 'select' && !evt.shiftKey && !rightClick &&
-    mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
-    ) {
-      const sel = selectedElements.filter(Boolean)
-      if (sel.length && !sel.includes(mouseTarget)) {
-      // elementsFromPoint is ordered top→bottom; pick the topmost element that
-      // is (or contains) a currently-selected element.
-        const stack = document.elementsFromPoint(evt.clientX, evt.clientY)
-        for (const node of stack) {
-          const hit = sel.find((s) => s === node || s.contains(node))
-          if (hit) {
-            if (mouseTarget !== svgRoot) clickSelect = mouseTarget
-            mouseTarget = hit
-            break
-          }
-        }
-      } else if (sel.length > 1 && sel.includes(mouseTarget)) {
-        clickSelect = mouseTarget
+    // What the press is on: the native hit, ranked by the press rules (core/press-target.ts: prefer a selected element under
+    // it, a stroke within reach, an area text's empty box, the selection's box). `clickSelect` is what the release selects
+    // when the press never became a drag (event-select.ts `up`).
+    const press = resolvePressTarget({
+      mode: svgCanvas.getCurrentMode(),
+      hit: mouseTarget,
+      root: svgRoot,
+      grips: svgCanvas.selectorManager.selectorParentGroup,
+      selected: selectedElements.filter(Boolean),
+      shift: evt.shiftKey,
+      rightClick,
+      probes: {
+        elementsAt: () => document.elementsFromPoint(evt.clientX, evt.clientY),
+        strokeNear: (current) => findStrokeElementNearPoint(evt, current),
+        areaTextAt: () => {
+          const text = areaTextAtPoint(svgRoot, evt.clientX, evt.clientY)
+          return text ? svgCanvas.getMouseTargetFromNode(text) : null
+        },
+        inSelectionBox: (sel) => {
+          const bb = svgCanvas.getStrokedBBoxDefaultVisible(sel)
+          return Boolean(bb && x >= bb.x && x <= bb.x + bb.width && y >= bb.y && y <= bb.y + bb.height)
+        },
+        isOpenPath: isOpenPathElement
       }
-    }
-
-    // Make fill-less elements (freedraw lines, paths, hollow shapes) easy to grab:
-    // when the click landed on a filled shape or empty canvas, prefer a stroke-only
-    // element within HIT_TOLERANCE px of the cursor. Runs last so it has final say
-    // over the plain native hit-test. Skipped for right-click and selector grips.
-    if (
-      svgCanvas.getCurrentMode() === 'select' && !rightClick &&
-    mouseTarget !== svgCanvas.selectorManager.selectorParentGroup
-    ) {
-      const strokeHit = findStrokeElementNearPoint(evt, mouseTarget)
-      if (strokeHit) { mouseTarget = strokeHit; clickSelect = null }
-    }
-
-    // The empty part of an area text's box is part of the text: a click there selects it (only its glyphs are hit
-    // natively). Only where the native hit-test found nothing, so a shape drawn under or over the box still wins.
-    if (svgCanvas.getCurrentMode() === 'select' && !rightClick && mouseTarget === svgRoot) {
-      const text = areaTextAtPoint(svgRoot, evt.clientX, evt.clientY)
-      const target = text && svgCanvas.getMouseTargetFromNode(text)
-      if (target && target !== svgRoot) { mouseTarget = target }
-    }
-
-    // Treat the whole selection bbox as a move handle: when a click that would
-    // otherwise hit empty canvas (and start a rubber-band) lands inside the
-    // current selection's bounding box, keep the selection and drag it instead.
-    // This makes fill-less shapes (whose interior is empty canvas) and the gaps
-    // between a shape and its bbox edges grab-able. A click on a real element is
-    // left alone so you can still select something inside the bbox.
-    // Skipped for a single open line/path: it has no enclosed interior, so its
-    // bbox is mostly empty space with nothing conceptually "inside" it —
-    // treating the whole rectangle as the shape meant a click clearly away from
-    // a diagonal line's actual stroke (but still inside its bbox corner-to-corner)
-    // silently kept it selected instead of deselecting. A near-miss on the
-    // stroke itself is still caught above by findStrokeElementNearPoint.
-    if (
-      svgCanvas.getCurrentMode() === 'select' && !rightClick && !evt.shiftKey &&
-    mouseTarget === svgRoot
-    ) {
-      const sel = selectedElements.filter(Boolean)
-      if (sel.length && !(sel.length === 1 && isOpenPathElement(sel[0]))) {
-        const bb = svgCanvas.getStrokedBBoxDefaultVisible(sel)
-        if (bb && x >= bb.x && x <= bb.x + bb.width && y >= bb.y && y <= bb.y + bb.height) {
-          mouseTarget = sel[0]
-        }
-      }
-    }
+    })
+    mouseTarget = press.target
+    const clickSelect = press.clickSelect
+    pressRule = press.rule
 
     // realX/y ignores grid-snap value
     const realX = x

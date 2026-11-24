@@ -107,6 +107,7 @@
 | `path.ts` | Path functionality |
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
 | `pointer-intent.ts` | What a press means, decided in one place (roadmap R10): a press that moves less than `DRAG_PX` screen pixels from where it went down is a click; one that gets that far is a drag, and stays one |
+| `press-target.ts` | What a select-mode press is on, decided by one ranked list of rules (roadmap R10) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
 | `recalculate.ts` | Recalculate dimensions and transformations of SVG elements |
 | `recolor.ts` | Recolor Artwork: the colour maths and the DOM walk behind the Recolor dialog (`ext-recolor`) |
