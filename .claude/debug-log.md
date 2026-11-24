@@ -17,7 +17,7 @@ Every detail carries `seq` (1, 2, 3… from switch-on) and `t` (ms since switch-
 | `pointer-down` / `pointer-up` | mouse press / release on the canvas | `mode`, `target`, `button`, `mods`, `client`, `doc` (document coordinates, from the screen matrix read at that moment), `selected`, `undoSize`; `pointer-up` adds `moves` (mouse-moves in between) and `undoSizeAtDown`, or `noPress: true` when the press began outside the canvas (a panel, a scrollbar) and only the release reached it. Mouse-moves are counted, not logged |
 | `set-mode` | tool changed | `from`, `to` |
 | `selection` | selection changed | `elems`, `mode` |
-| `tool-gesture` | a `registerTool` gesture | `tool`, `phase` (`begin` / `commit` / `cancel`), `at`, `created`, `why` |
+| `gesture` | a gesture on the gesture session (`core/gesture-session.ts`; registered tools are `kind: tool:<id>`) | `kind`, `phase` (`begin` / `commit` / `cancel`), `at`, `created`, `why` (`escape`, `mode switch`, `undo`, `new press`, `focus lost`, `context menu`, `error`, `not committed`, …) |
 | `history-push` | a command landed on the undo stack | `text`, `type`, `undoSize`, `elemIds` (the elements the step changed: from the renderer for a model step, from the command for a DOM one; first 20). A shape drawn by a drag is pushed shortly **after** its `pointer-up` |
 | `history-apply` | undo / redo applied | `direction`, `cmdType`, `text`, `elemIds`, `mode`, `refreshedInPlace` (by snapshot: `direction: 'snapshot'`, `elemIds` of the elements the step changed, no `cmdType`) |
 | `path-*`, `pathedit-*` | node selection, enter / exit path edit, open / close subpath, node delete, commits | see `path-actions.js`, `path-method.js` |
@@ -33,7 +33,7 @@ result *after* the action, so the first `ok: false` names the step that corrupte
 ## Reading a log for a bug
 
 1. Find the first `debug-snapshot` with a `stale: true` entry (or the first `drawing.ok: false`).
-2. Walk **back** from it: the `pointer-*`, `key`, `action`, `tool-gesture` and `history-*` entries before it are the
+2. Walk **back** from it: the `pointer-*`, `key`, `action`, `gesture` and `history-*` entries before it are the
    sequence that produced it; `mode` on each says which tool was active, `selected` what was selected.
 3. `undo: "n->n"` on a command that should edit means it changed nothing; `n->n+1` is one undo step.
 

@@ -13,8 +13,10 @@
  *  - **Automatic undo.** A gesture runs inside an undo transaction
  *    ({@link module:transaction}): `pointerDown` opens it, `pointerUp` commits
  *    it as ONE step (labelled `undoLabel`) or rolls everything back when it
- *    returns `'cancel'`. Escape and switching modes mid-gesture roll back too,
- *    and so does a handler that throws. Tools never touch `addCommandToHistory`.
+ *    returns `'cancel'`. Every other way out rolls back too (Escape, a mode switch,
+ *    undo, a new press, a lost focus, a context menu, a handler that throws): the
+ *    gesture runs on the canvas's gesture session ({@link module:gesture-session}),
+ *    which owns those exits. Tools never touch `addCommandToHistory`.
  *  - **Overlays** (`ctx.addOverlay`) live outside `#svgcontent`, so previews
  *    and guides are never recorded or saved.
  *
@@ -35,6 +37,7 @@
  */
 
 import type SvgCanvas from '../svgcanvas.ts'
+import type { Gesture, GestureEndReason } from './gesture-session.ts'
 import type { SVGElementJSON } from '../svgcanvas.ts'
 import { cleanupElement } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
@@ -198,18 +201,23 @@ export interface ToolRegistryApi {
   /** Offer a key to the active registered tool; true when it was handled (the caller should preventDefault). */
   toolKeyDown(evt: KeyboardEvent): boolean
   toolModeChanged(prev: string, next: string): void
-  cancelToolGesture(): void
 }
 
-/** Stands in for a gesture's transaction when the tool owns its undo (`ToolDef.ownsUndo`). */
-const NO_TRANSACTION = { commit: (): void => {}, cancel: (): void => {} }
+/** A registered tool's gesture on the session: the tool and the press that began it. */
+interface ToolGestureState { tool: ToolDef, start: ToolEvent }
+
+const TOOL_KIND = 'tool:'
 
 export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const svgCanvas = canvas
 
   const tools = new Map<string, ToolDef>()
 
-  let gesture: { tool: ToolDef, tx: { commit: () => unknown, cancel: () => void }, start: ToolEvent } | null = null
+  /** The active gesture when it is a registered tool's. */
+  const current = (): Gesture<ToolGestureState> | null => {
+    const g = svgCanvas.activeGesture()
+    return g?.kind.startsWith(TOOL_KIND) ? g as Gesture<ToolGestureState> : null
+  }
   let overlay: SVGSVGElement | null = null
   /** The press of the gesture whose `pointerUp` is running (the gesture itself is already closed). */
   let endingStart: ToolEvent | null = null
@@ -308,7 +316,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   const ctx: ToolContext = {
     canvas: svgCanvas,
     get zoom () { return svgCanvas.getZoom() },
-    get start () { return gesture?.start ?? endingStart ?? undefined },
+    get start () { return current()?.state.start ?? endingStart ?? undefined },
     snap: (pt) => (svgCanvas.getCurConfig().gridSnapping ? svgCanvas.snapPointToGrid(pt.x, pt.y) : pt),
     addOverlay: (el) => { ensureOverlay().append(el) },
     clearOverlays,
@@ -317,54 +325,51 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
 
   // ---- gesture lifecycle ----------------------------------------------------
 
-  /** Roll the open gesture back (no-op without one). */
-  const cancelGesture = (): void => {
-    if (!gesture) return
-    const { tool, tx } = gesture
-    gesture = null
-    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'cancel', why: 'rolled back (Escape, mode switch, new press or error)' })
+  /** What a rolled-back tool gesture puts back besides the drawing: its overlays, the started flag, the tool's own state. */
+  const toolCancelled = (tool: ToolDef) => (why: GestureEndReason): void => {
+    if (why === 'declined') return // the tool turned the press down: it has nothing to reset
     clearOverlays()
-    try {
-      tx.cancel()
-    } finally {
-      svgCanvas.setStarted(false)
-      try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
-    }
+    svgCanvas.setStarted(false)
+    try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
   }
 
   /** @returns whether a registered tool handled the press */
   const toolPointerDown = (evt: MouseEvent): boolean => {
     const tool = tools.get(svgCanvas.getCurrentMode())
     if (!tool) return false
-    cancelGesture() // a previous press that never saw its mouseup
     const start = toToolEvent(evt, undefined, tool)
-    const tx = tool.ownsUndo ? NO_TRANSACTION : svgCanvas.beginTransaction(tool.undoLabel ?? tool.id)
-    gesture = { tool, tx, start }
+    // a gesture still open (its release never came) is cancelled by the session as a 'new press'
+    const gesture = svgCanvas.beginGesture<ToolGestureState>(TOOL_KIND + tool.id, {
+      state: { tool, start },
+      label: tool.undoLabel ?? tool.id,
+      ownsUndo: tool.ownsUndo,
+      onCancel: toolCancelled(tool),
+      log: { at: [start.x, start.y] }
+    })
     let declined: boolean
     try {
       declined = tool.pointerDown(ctx, start) === false
     } catch (err) {
-      cancelGesture()
+      gesture.cancel('error')
       throw err
     }
     if (declined) {
-      gesture = null
-      tx.cancel()
+      gesture.cancel('declined')
       return false
     }
     svgCanvas.setStarted(true)
-    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'begin', at: [start.x, start.y] })
     return true
   }
 
   /** @returns whether a registered tool handled the move */
   const toolPointerMove = (evt: MouseEvent): boolean => {
+    const gesture = current()
     if (!gesture) return false
-    const { tool, start } = gesture
+    const { tool, start } = gesture.state
     try {
       tool.pointerMove?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
     } catch (err) {
-      cancelGesture()
+      gesture.cancel('error')
       throw err
     }
     return true
@@ -373,7 +378,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   /** Hover (no press): only tools that asked for it. */
   const toolHover = (evt: MouseEvent): void => {
     const tool = tools.get(svgCanvas.getCurrentMode())
-    if (!tool?.wantsHover || gesture || !refreshRootSctm()) return
+    if (!tool?.wantsHover || current() || !refreshRootSctm()) return
     try {
       const ev = toToolEvent(evt)
       // A tool that opted in with `snap` sees the point a press would land on, as the guides show.
@@ -388,41 +393,35 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
 
   /** @returns whether a registered tool handled the release */
   const toolPointerUp = (evt: MouseEvent): boolean => {
+    const gesture = current()
     if (!gesture) return false
-    const { tool, tx, start } = gesture
-    gesture = null // closed before anything below can call setMode()
+    const { tool, start } = gesture.state
+    gesture.detach() // before anything below can call setMode(), which would cancel it
     svgCanvas.setStarted(false)
     let result: ReturnType<NonNullable<ToolDef['pointerUp']>>
     endingStart = start
     try {
       result = tool.pointerUp?.(ctx, toToolEvent(evt, { x: start.screenX, y: start.screenY }, tool))
     } catch (err) {
-      clearOverlays()
-      tx.cancel()
-      svgCanvas.setStarted(false)
-      try { tool.cancel?.(ctx) } catch (e) { logError(`Tool "${tool.id}" cancel() failed`, e, LOG) }
+      gesture.cancel('error')
       throw err
     } finally {
       endingStart = null
     }
-    if (!tool.keepOverlays || result === 'cancel') clearOverlays()
     if (result === 'cancel') {
-      tx.cancel()
-      svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'cancel', why: 'the tool declined on release' })
-      try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
+      gesture.cancel('the tool declined on release')
       return true
     }
+    if (!tool.keepOverlays) clearOverlays()
     let created = result && typeof result === 'object' ? result.created : undefined
     if (result && typeof result === 'object' && result.create) {
       created = svgCanvas.insertElementFromJson(result.create) ?? undefined
       if (!created) {
-        tx.cancel()
-        try { tool.cancel?.(ctx) } catch (err) { logError(`Tool "${tool.id}" cancel() failed`, err, LOG) }
+        gesture.cancel('the element could not be created')
         return true
       }
     }
-    tx.commit()
-    svgCanvas.logDebugEvent?.('tool-gesture', { tool: tool.id, phase: 'commit', created: created?.id })
+    gesture.commit({ created: created?.id })
     if (created) finishCreated(created, evt, { keepOpacity: tool.keepOpacity })
     return true
   }
@@ -433,7 +432,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   /** @returns whether the key was handled (the caller should preventDefault) */
   const toolKeyDown = (evt: KeyboardEvent): boolean => {
     if (evt.key === 'Escape') {
-      cancelGesture()
+      svgCanvas.cancelGesture('escape')
       return false
     }
     // The editor has two keydown listeners (the shortcut dispatcher and the canvas one) and either may run
@@ -454,7 +453,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   /** Called by `setMode()`. */
   const toolModeChanged = (prev: string, next: string): void => {
     if (prev === next) return
-    cancelGesture()
+    svgCanvas.cancelGesture('mode switch')
     const out = tools.get(prev)
     const into = tools.get(next)
     try { out?.deactivate?.(ctx) } catch (err) { logError(`Tool "${prev}" deactivate() failed`, err, LOG) }
@@ -472,14 +471,14 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     }
     if (tools.has(def.id)) {
       warn(`Tool "${def.id}" is already registered; replacing it`, undefined, LOG)
-      cancelGesture()
+      if (current()?.state.tool.id === def.id) svgCanvas.cancelGesture('replaced')
     }
     tools.set(def.id, def)
   }
 
   /** @returns whether a tool was removed */
   const unregisterTool = (id: string): boolean => {
-    if (gesture?.tool.id === id) cancelGesture()
+    if (current()?.state.tool.id === id) svgCanvas.cancelGesture('replaced')
     return tools.delete(id)
   }
 
@@ -509,12 +508,6 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     }
   }
 
-  // A release outside the window / an alt-tab mid-drag never delivers a mouseup:
-  // roll the gesture back instead of leaving its transaction open (which would
-  // silently swallow every other edit's undo step).
-  const signal = svgCanvas.destroyAbort?.signal
-  window.addEventListener('blur', cancelGesture, signal ? { signal } : undefined)
-
   return {
     registerTool,
     getToolOptions,
@@ -529,7 +522,6 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     toolHover,
     activeToolSnaps: () => Boolean(tools.get(svgCanvas.getCurrentMode())?.snap),
     toolKeyDown,
-    toolModeChanged,
-    cancelToolGesture: cancelGesture
+    toolModeChanged
   }
 }

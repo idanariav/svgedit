@@ -9,7 +9,7 @@
  *                     shape (elements by tag, layers) and its `checkDrawing` findings
  *  - `action`         every command run (id, params, source, outcome, undo size before / after,
  *                     drawing health after)
- *  - `key`, `pointer-down`, `pointer-up`, `selection`, `set-mode`, `tool-gesture`, `history-push`,
+ *  - `key`, `pointer-down`, `pointer-up`, `selection`, `set-mode`, `gesture`, `history-push`,
  *    `history-apply` and the path-editing events come from the canvas (`svgCanvas.logDebugEvent`)
  *
  * Every event carries a `seq` (1, 2, 3… per switch-on) and `t` (ms since switch-on) so order survives a host that

@@ -145,7 +145,7 @@ for (const file of fs.readdirSync(FIXTURES).filter((f) => f.endsWith('.svg')).so
             openedDialog.add(id)
             outcome = 'dialog'
           }
-          c.cancelToolGesture?.()
+          c.cancelGesture?.()
           if (outcome !== 'ran') continue
           ran.add(id)
           // Every change to the drawing is announced (a step, or `changed` outside one): left unannounced, a host never marks

@@ -125,7 +125,7 @@ describe('tool registry (registerTool)', () => {
       canvas.registerTool(snapping.tool)
       canvas.setMode('plain')
       canvas.toolPointerDown(mouse('mousedown', 13, 27))
-      canvas.cancelToolGesture()
+      canvas.cancelGesture()
       expect(snapped).not.toHaveBeenCalled()
       canvas.setMode('snappy')
       canvas.toolPointerDown(mouse('mousedown', 13, 27))
@@ -454,6 +454,30 @@ describe('tool registry (registerTool)', () => {
       expect(rects()).toBe(0)
       expect(canvas.inTransaction()).toBe(false)
       expect(t.calls).toContain('cancel')
+    })
+
+    it('a context menu rolls the gesture back (it swallows the mouseup)', () => {
+      const t = makeTool()
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      gesture([10, 10], [60, 50])
+      window.dispatchEvent(new Event('contextmenu'))
+      expect(rects()).toBe(0)
+      expect(canvas.inTransaction()).toBe(false)
+      expect(canvas.activeGesture()).toBeNull()
+      expect(t.calls).toContain('cancel')
+    })
+
+    it('the gesture is the session\'s active one, with the tool and its press as its state', () => {
+      const t = makeTool()
+      canvas.registerTool(t.tool)
+      canvas.setMode('dragrect')
+      gesture([10, 10], [60, 50])
+      const g = canvas.activeGesture()
+      expect(g.kind).toBe('tool:dragrect')
+      expect(g.state.tool).toBe(t.tool)
+      expect(release(60, 50)).toBe(true)
+      expect(canvas.activeGesture()).toBeNull()
     })
 
     it('undo during a gesture goes through the tool (cancel() runs; a late mouseup does nothing)', () => {

@@ -97,6 +97,8 @@ const SESSION_FIELDS: ReadonlySet<keyof GestureState> = new Set(['spaceKey', 'ad
  */
 export const gestureLeftovers = (canvas: SvgCanvas): string[] => {
   const out: string[] = []
+  const active = canvas.activeGesture?.()
+  if (active) out.push(`active gesture: ${active.kind}`)
   const rest = createGestureState() as unknown as Record<string, unknown>
   const now = canvas.gesture as unknown as Record<string, unknown>
   for (const key of Object.keys(rest)) {

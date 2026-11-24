@@ -137,7 +137,7 @@ test.describe('Smooth tool', () => {
       { kind: 'down', x: 200, y: 100 }, { kind: 'move', x: 260, y: 100 }
     ]))
     expect((await xs(page, 'a')).length).toBeLessThan(before.length)
-    await page.evaluate(() => window.svgEditor.svgCanvas.cancelToolGesture())
+    await page.evaluate(() => window.svgEditor.svgCanvas.cancelGesture())
     expect(await xs(page, 'a')).toEqual(before)
   })
 })

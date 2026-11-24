@@ -216,9 +216,9 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
   for (const method of (['undo', 'redo'] as const)) {
     const raw = undoMgr[method].bind(undoMgr)
     undoMgr[method] = () => {
-      // A registered tool's gesture owns the session: let it cancel itself so
-      // its own state resets and a later mouseup does not "finish" a dead gesture.
-      svgCanvas.cancelToolGesture?.()
+      // An open gesture is rolled back first (core/gesture-session.ts), so its own state resets and a later mouseup does
+      // not "finish" a dead gesture.
+      svgCanvas.cancelGesture?.('undo')
       if (session) {
         try { abort(true) } catch (err) { error('failed to cancel transaction before undo/redo', err, LOG) }
       }

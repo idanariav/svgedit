@@ -23,6 +23,8 @@ import { createTransaction } from './core/transaction.ts'
 import type { TransactionApi } from './core/transaction.ts'
 import { checkDrawing } from './core/drawing-invariants.ts'
 import { describeElement } from './core/debug-events.ts'
+import { createGestureSession } from './core/gesture-session.ts'
+import type { GestureSessionApi } from './core/gesture-session.ts'
 import { createToolRegistry } from './core/tool-registry.ts'
 import type { ToolRegistryApi } from './core/tool-registry.ts'
 import { createSelection } from './core/selection.ts'
@@ -334,6 +336,7 @@ type ModuleApis =
   ObjectStateApi &
   DomUtilsApi &
   TextAttrsApi &
+  GestureSessionApi &
   ToolRegistryApi &
   ElemGetSetApi &
   LayerOpsApi &
@@ -695,6 +698,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     attachApi(this, 'select', createSelect(this), initGuardRegistry)
     attachApi(this, 'undo', createUndo(this), initGuardRegistry)
     attachApi(this, 'transaction', createTransaction(this), initGuardRegistry)
+    attachApi(this, 'gestureSession', createGestureSession(this), initGuardRegistry)
     attachApi(this, 'toolRegistry', createToolRegistry(this), initGuardRegistry)
     /** Structural health check of the current drawing (empty = healthy); see core/drawing-invariants.js. */
     this.checkDrawing = () => checkDrawing(this.getSvgContent())
@@ -1524,8 +1528,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
    * @param name String with the new mode to change to
    */
   setMode (name: string): void {
-    // A registered tool's open gesture is rolled back by any mode change (core/tool-registry.js).
-    this.cancelToolGesture?.()
+    // The open gesture is rolled back by any mode change (core/gesture-session.ts).
+    this.cancelGesture?.('mode switch')
     const previousMode = this.state.drawing.currentMode
     // Tear down any in-progress path/text edit before switching. These run
     // FIRST because clear() inspects the *current* (outgoing) mode to know what

@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **step 0 done** (2026-11-24); step 1 next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–1 done** (2026-11-24); step 2 (rotate) next.
 
 ## The problem, measured
 
@@ -168,6 +168,20 @@ lifecycle, not the registration.
   - a second begin cancels the first;
   - a throwing handler cancels;
   - every exit ends the gesture.
+
+**Done (2026-11-24).**
+- **`core/gesture-session.ts`** (`beginGesture`, `activeGesture`, `cancelGesture`) carries the registry's gestures:
+  - the gesture's kind is `tool:<id>`;
+  - its state is the tool and the press;
+  - the registry's own blur listener, `NO_TRANSACTION` and `cancelToolGesture` are gone (callers now use
+    `cancelGesture(why)`).
+- **Exits it owns:** Escape, mode switch, undo / redo, a new press, blur and a hidden page, a context menu, destroy, a throw
+  in `mouseUpEvent`, and a release that did not commit.
+- **What changed in behaviour for registered tools:** a context menu or a hidden page now rolls their gesture back, and so
+  does a release whose `pointerUp` never ran.
+- **Debug log:** `tool-gesture` is now `gesture { kind, phase, why }`.
+- `mouseUpEvent`'s ten hand resets stay until their fields move (steps 2–5); it now also cancels the session.
+- The rest check names an active gesture.
 
 ### 2. Rotate
 

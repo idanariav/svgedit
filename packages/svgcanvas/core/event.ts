@@ -290,6 +290,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     } catch (err) {
       logPress('pointer-up', evt)
       logError('mouseUpEvent failed; resetting drag state', err, 'event')
+      svgCanvas.cancelGesture('error')
       svgCanvas.setStarted(false)
       svgCanvas.gesture.hasDragStartTransform = false
       svgCanvas.gesture.dragStartTransforms = null
@@ -300,6 +301,10 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.gesture.groupRotateCenter = null
       svgCanvas.gesture.groupRotateBBox = null
       svgCanvas.setStartTransform(null)
+    } finally {
+      // A release always ends the gesture (core/gesture-session.ts): one its handler did not commit is rolled back. A right-button
+      // release is not the gesture's own (it began with the primary button) and leaves it be.
+      if (evt.button !== 2) svgCanvas.cancelGesture('not committed')
     }
     svgCanvas.call('gestureEnded', { mode, event: evt } satisfies GestureEndedDetail)
   }

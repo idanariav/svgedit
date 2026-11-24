@@ -3,6 +3,7 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { createEvent as initEvent } from '../../packages/svgcanvas/core/event.ts'
 import { attachUnits } from './unitsMock.js'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
+import { createGestureSession } from '../../packages/svgcanvas/core/gesture-session.ts'
 
 const createSvgElement = (name) => {
   return document.createElementNS(NS.SVG, name)
@@ -164,6 +165,9 @@ describe('event', () => {
     }
 
     attachUnits(canvas)
+    // the gesture session, with a transaction that records nothing (the history is not under test here)
+    canvas.beginTransaction = () => ({ commit () {}, cancel () {} })
+    Object.assign(canvas, createGestureSession(canvas))
     Object.assign(canvas, initEvent(canvas))
   })
 

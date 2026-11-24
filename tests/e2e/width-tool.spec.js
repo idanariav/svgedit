@@ -146,7 +146,7 @@ test.describe('Width tool', () => {
     await tool(page)
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 300, y: 200 }, { kind: 'move', x: 300, y: 170 }]))
     expect(await profile(page, 'ln')).not.toBeNull()
-    await page.evaluate(() => window.svgEditor.svgCanvas.cancelToolGesture())
+    await page.evaluate(() => window.svgEditor.svgCanvas.cancelGesture())
     expect(await page.evaluate(() => document.getElementById('ln').tagName)).toBe('line')
   })
 

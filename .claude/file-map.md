@@ -68,6 +68,7 @@
 | `event.ts` | Pointer and wheel dispatch for the canvas: press, move, release and double-click are routed to the per-mode `event-*` handlers, with the debug log and the creation epilogue |
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
+| `gesture-session.ts` | The lifecycle every pointer gesture on the canvas shares: a press begins one (and opens its undo transaction), the release commits it, and every other way out rolls it back (roadmap R9,… |
 | `gesture-state.ts` | The state a pointer gesture parks on the canvas between mouse events (rotate / resize / drag starts, the armed alt-clone, the pending new element…), one object per canvas (`svgCanvas.gesture`) instead of fourteen loose… |
 | `gradient-edit.ts` | Gradient editing maths and DOM helpers for the on-canvas gradient tool (`ext-gradient-tool`) |
 | `group-detach.ts` | Helpers for detaching content from group nesting so it becomes independent top-level content (used by Duplicate and Paste) while staying in the same visual position |
