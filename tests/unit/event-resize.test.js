@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { init as eventResizeInit } from '../../packages/svgcanvas/core/event-resize.ts'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
+import { createGestureSession } from '../../packages/svgcanvas/core/gesture-session.ts'
 
 // Regression coverage for the "redundant matrix" bug: clicking a resize grip
 // without dragging used to leave 3 stray identity `matrix(1 0 0 1 0 0)`
@@ -26,8 +27,9 @@ describe('event-resize', () => {
     svgRoot.append(rect)
 
     let startX = 0; let startY = 0
-    let initBbox = null
     svgCanvas = {
+      destroyAbort: new AbortController(),
+      beginTransaction: () => ({ commit () {}, cancel () {}, relabel () {} }), // the history is not under test here
       dragPlan: () => null, // no model here: the transforms are put on the element
       gesture: createGestureState(),
       stretch: { isActive: () => false, isEligible: () => false, begin () {}, preview () {}, commit () {}, cancel () {} }, // no Alt-drag stretch here
@@ -36,8 +38,9 @@ describe('event-resize', () => {
       setStartY: vi.fn((v) => { startY = v }),
       getStartX: vi.fn(() => startX),
       getStartY: vi.fn(() => startY),
-      setInitBbox: vi.fn((v) => { initBbox = v }),
-      getInitBbox: vi.fn(() => initBbox),
+      setCurrentMode: vi.fn(),
+      updateGroupSelector: vi.fn(),
+      getStrokedBBoxDefaultVisible: vi.fn(() => ({ x: 100, y: 100, width: 250, height: 100 })),
       $id: vi.fn(() => rect),
       getCurConfig: vi.fn(() => ({ gridSnapping: false })),
       getCurrentResizeMode: vi.fn(() => 'se'),
@@ -45,10 +48,12 @@ describe('event-resize', () => {
       call: vi.fn()
     }
 
+    Object.assign(svgCanvas, createGestureSession(svgCanvas))
     handlers = eventResizeInit(svgCanvas)
   })
 
   afterEach(() => {
+    svgCanvas.destroyAbort.abort()
     document.body.textContent = ''
   })
 
@@ -91,5 +96,34 @@ describe('event-resize', () => {
     handlers.move({ shiftKey: false }, ctxMove({ x: 250, y: 160 }))
 
     expect(rect.transform.baseVal.numberOfItems).toBe(3)
+  })
+
+  it('a press begins a resize gesture that holds the resize\'s state', () => {
+    handlers.down({}, ctxDown())
+    const g = handlers.current()
+    expect(g.kind).toBe('resize')
+    expect(g.state).toMatchObject({ elems: [rect], groupStart: null, begun: false, area: null })
+    expect(g.state.initBox).toEqual({ x: 100, y: 100, width: 100, height: 100 }) // the selection box at zoom 1
+  })
+
+  it('a cancelled resize puts the mode back and drops its state with it', () => {
+    handlers.down({}, ctxDown())
+    handlers.move({ shiftKey: false }, ctxMove())
+    svgCanvas.cancelGesture('escape')
+    expect(handlers.current()).toBeNull()
+    expect(svgCanvas.setCurrentMode).toHaveBeenCalledWith('select')
+    expect(svgCanvas.setStarted).toHaveBeenLastCalledWith(false)
+    handlers.move({ shiftKey: false }, ctxMove({ x: 300, y: 300 })) // a late move after the cancel does nothing
+    expect(rect.transform.baseVal.numberOfItems).toBe(3)
+  })
+
+  it('a resize of one element reads nothing of an earlier group resize (e6f50f31)', () => {
+    const other = document.createElementNS(NS.SVG, 'rect')
+    svgRoot.append(other)
+    handlers.down({}, ctxDown({ selectedElements: [rect, other] }))
+    expect(handlers.current().state.groupStart.size).toBe(2)
+    handlers.current().commit()
+    handlers.down({}, ctxDown())
+    expect(handlers.current().state.groupStart).toBeNull()
   })
 })

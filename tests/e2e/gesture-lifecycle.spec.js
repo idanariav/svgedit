@@ -99,10 +99,14 @@ const GESTURES = {
 const EXITS = {
   Escape: (page) => page.keyboard.press('Escape'),
   'a mode switch': (page) => page.evaluate(() => window.svgEditor.commands.run('tool_rect')),
-  // the mouseup of the first press never arrived (released outside the window): the next event is a new press
-  'a second press': (page, { to }) => page.evaluate(([x, y]) => {
-    document.elementFromPoint(x, y).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }))
-  }, [to.x, to.y]),
+  // the mouseup of the first press never arrived (released outside the window): the next event is a new press, on empty
+  // canvas (on a grip or a shape it would begin a gesture of its own, which the release then rightly commits)
+  'a second press': async (page) => {
+    const empty = await at(page, 'r3', 0, 1, -30, 30)
+    await page.evaluate(([x, y]) => {
+      document.elementFromPoint(x, y).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }))
+    }, [empty.x, empty.y])
+  },
   'the window losing focus': (page) => page.evaluate(() => window.dispatchEvent(new Event('blur')))
 }
 
@@ -113,11 +117,6 @@ const EXITS = {
  */
 const allExits = (gesture, why) => Object.fromEntries(Object.keys(EXITS).map((e) => [`${gesture} › ${e}`, why]))
 const NOT_YET = {
-  ...allExits('resize', 'step 3: resize on the gesture session'),
-  ...allExits('group resize', 'step 3: resize on the gesture session'),
-  // a release leaves resizeStartBox / hasResizeStartTransform set (the class of e6f50f31)
-  'resize › release': 'step 3: resize state on the resize gesture',
-  'group resize › release': 'step 3: resize state on the resize gesture',
   ...allExits('move', 'step 4: move on the gesture session'),
   ...allExits('multi-move', 'step 4: move on the gesture session'),
   ...allExits('alt-clone', 'step 4: move on the gesture session'),

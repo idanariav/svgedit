@@ -295,7 +295,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       svgCanvas.gesture.hasDragStartTransform = false
       svgCanvas.gesture.dragStartTransforms = null
       svgCanvas.gesture.altCloneArmed = false
-      svgCanvas.gesture.groupResizeStart = null
       svgCanvas.stretch.cancel()
       svgCanvas.setStartTransform(null)
     } finally {
@@ -385,7 +384,20 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     }
     switch (svgCanvas.getCurrentMode()) {
     // intentionally fall-through to select here (handled inside eventSelect.up)
-      case 'resize':
+      case 'resize': {
+        // The resize gesture (event-resize.ts) is detached while the shared release body runs (it may switch modes) and
+        // committed after it: what the body bakes is the gesture's one step.
+        const gesture = eventResize.current()
+        gesture?.detach()
+        try {
+          eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect })
+        } catch (err) {
+          gesture?.cancel('error')
+          throw err
+        }
+        gesture?.commit()
+        return
+      }
       case 'multiselect':
       case 'select':
         eventSelect.up(evt, { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect })
@@ -429,7 +441,6 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     // Reset drag flag after any mouseUp
     svgCanvas.gesture.hasDragStartTransform = false
     svgCanvas.gesture.dragStartTransforms = null
-    svgCanvas.gesture.groupResizeStart = null
 
     /**
 * The main (left) mouse button is released (anywhere).

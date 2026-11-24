@@ -71,8 +71,6 @@ export interface CanvasState {
     startY: number
     rStartX: number
     rStartY: number
-    /** The box a resize started from (the stroked bounding box of the selection). */
-    initBbox: BBox
     sumDistance: number
     controllPoint1: XY
     controllPoint2: XY

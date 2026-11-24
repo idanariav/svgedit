@@ -23,9 +23,9 @@ describe('gestureLeftovers (the gesture rest check)', () => {
 
   it('names a per-gesture field that outlived its gesture', () => {
     const c = fakeCanvas()
-    c.gesture.groupResizeStart = new Map()
+    c.gesture.dragStartTransforms = new Map()
     c.gesture.altCloneArmed = true
-    expect(gestureLeftovers(c)).toEqual(['gesture.groupResizeStart', 'gesture.altCloneArmed'])
+    expect(gestureLeftovers(c)).toEqual(['gesture.dragStartTransforms', 'gesture.altCloneArmed'])
   })
 
   it('ignores the fields that outlive a gesture on purpose', () => {

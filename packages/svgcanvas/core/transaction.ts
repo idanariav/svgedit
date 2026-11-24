@@ -44,6 +44,8 @@ export interface Transaction {
   commit: () => BatchCommand | null
   /** Revert the drawing and restore the selection. */
   cancel: () => void
+  /** Change the undo-menu text of the step (the outermost transaction's; a gesture learns what it is after its press). */
+  relabel: (label: string) => void
 }
 
 export interface TransactionOptions {
@@ -76,7 +78,7 @@ export interface TransactionApi {
    * Nested calls join the outermost transaction. `commit()` returns the pushed
    * batch, or null when nothing net-changed; `cancel()` restores the drawing and selection.
    */
-  beginTransaction(label: string, options?: { selection?: boolean, onAbort?: () => void }): { label: string, commit(): HistoryCommand | null, cancel(): void }
+  beginTransaction(label: string, options?: { selection?: boolean, onAbort?: () => void }): { label: string, commit(): HistoryCommand | null, cancel(): void, relabel(label: string): void }
   /** Run `fn` as one undo step; a throw rolls the drawing back and rethrows. `fn` must be synchronous. */
   transact<T>(label: string, fn: () => T): T
   inTransaction(): boolean
@@ -178,6 +180,9 @@ export const createTransaction = (canvas: SvgCanvas): TransactionApi => {
         owner.doomed = true
         if (--owner.depth > 0) return
         doCancel()
+      },
+      relabel (next: string) {
+        if (!done && !owner.closed) owner.label = next
       }
     }
   }

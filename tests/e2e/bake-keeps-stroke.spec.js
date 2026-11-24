@@ -117,7 +117,8 @@ test.describe('resize and Pen regressions', () => {
       '<rect id="r3" x="300" y="200" width="80" height="40" fill="green"/>')
     await select(page, 'a', 'b')
     await dragGrip(page, 'se', 40, 40)
-    expect(await page.evaluate(() => window.svgEditor.svgCanvas.gesture.groupResizeStart)).toBeNull()
+    // the group resize ended with its release: its state went with it (R9: it lived on the gesture)
+    expect(await page.evaluate(() => window.svgEditor.svgCanvas.activeGesture())).toBeNull()
     const groups = [await box(page, 'a'), await box(page, 'b')]
     const r3 = await box(page, 'r3')
     await select(page, 'r3')

@@ -407,7 +407,7 @@ describe('event', () => {
       state: { elems: [], startTransforms: new Map(), group: null, plan: null, groupPlan: null, planned: false },
       onCancel: cancelled
     })
-    canvas.gesture.groupResizeStart = { stale: true } // not on the session yet (R9 step 3): still reset by hand
+    canvas.gesture.altCloneArmed = true // not on the session yet (R9 step 4): still reset by hand
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(() => {
@@ -424,7 +424,7 @@ describe('event', () => {
     expect(cancelled).toHaveBeenCalledWith('error')
     expect(canvas.activeGesture()).toBeNull()
     expect(canvas.getStarted()).toBe(false)
-    expect(canvas.gesture.groupResizeStart).toBe(null)
+    expect(canvas.gesture.altCloneArmed).toBe(false)
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })

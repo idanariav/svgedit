@@ -645,7 +645,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
         startY: 0,
         rStartX: 0,
         rStartY: 0,
-        initBbox: { x: 0, y: 0, width: 0, height: 0 },
         sumDistance: 0,
         controllPoint1: { x: 0, y: 0 },
         controllPoint2: { x: 0, y: 0 },
@@ -1206,10 +1205,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     return this.state.drawing.rStartY
   }
 
-  getInitBbox () {
-    return this.state.drawing.initBbox
-  }
-
   getCurrentResizeMode () {
     return this.state.drawing.currentResizeMode
   }
@@ -1352,10 +1347,6 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
   getCurBBoxes () {
     return this.state.selection.bboxes
-  }
-
-  setInitBbox (value: import('./core/bbox-utils.ts').BBoxObject) {
-    this.state.drawing.initBbox = value
   }
 
   setRootSctm (value: DOMMatrix | null) {

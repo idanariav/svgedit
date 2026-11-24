@@ -10,29 +10,15 @@
 import type SvgCanvas from '../svgcanvas.ts'
 import type { BBox } from '../svgcanvas.ts'
 
-/** An area-text box being resized: committed or cancelled as one transaction when the mouse is released. */
-export interface AreaResize {
-  elem: Element
-  box: BBox
-  fixedHeight: boolean
-  anchor: string
-  tx: { commit: () => unknown, cancel: () => unknown }
-}
-
 export interface GestureState {
   /** A drag or rotate has recorded its start transforms. */
   hasDragStartTransform: boolean
   dragStartTransforms: Map<Element, string> | null
   /** a drag shown through the model (core/model-commands.ts `dragPlan`): what each dragged element's transform amounts to */
   dragPlan: Map<Element, import('./model-commands.ts').DragEntry> | null
-  /** the geometry box of the element a resize shown through the model began from */
-  resizeStartBox: { x: number, y: number, width: number, height: number } | null
-  hasResizeStartTransform: boolean
-  groupResizeStart: Map<Element, SVGMatrix> | null
   /** set around one `recalculateDimensions` call: the scale of the element's transform before the gesture, which a bake of
    * the whole transform must keep in the stroke (`null` otherwise: a bake leaves the stroke alone) */
   bakeStrokeScale: number | null
-  areaResize: AreaResize | null
   /** Alt was down at the press: the drag clones instead of moving. */
   altCloneArmed: boolean
   dragStartBBox: BBox | null
@@ -53,11 +39,7 @@ export const createGestureState = (): GestureState => ({
   hasDragStartTransform: false,
   dragStartTransforms: null,
   dragPlan: null,
-  resizeStartBox: null,
-  hasResizeStartTransform: false,
-  groupResizeStart: null,
   bakeStrokeScale: null,
-  areaResize: null,
   altCloneArmed: false,
   dragStartBBox: null,
   moveSelectionThresholdReached: false,

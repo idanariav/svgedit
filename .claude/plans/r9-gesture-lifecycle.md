@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–2 done** (2026-11-24); step 3 (resize) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–3 done** (2026-11-24); step 4 (move and marquee) next.
 
 ## The problem, measured
 
@@ -213,6 +213,21 @@ lifecycle, not the registration.
 - **What moves** into the `resize` and `areaResize` variants: `resizeStartBox`, `hasResizeStartTransform`,
   `groupResizeStart`, `areaResize` (its own transaction folds into the session's) and `initBbox`.
 - `bakeStrokeScale` stays an argument-like value. It becomes a parameter of `recalculateDimensions` in step 5.
+
+**Done (2026-11-24).**
+- **The `resize` gesture's state** lives on the gesture (`ResizeState` in `event-resize.ts`). Gone from `GestureState` and
+  the canvas:
+  - `resizeStartBox`, `hasResizeStartTransform`, `groupResizeStart`, `areaResize` (and its `AreaResize` type);
+  - the canvas `initBbox` slot (`getInitBbox` / `setInitBbox`).
+- **Area text:** its own transaction is gone. It is the gesture's, labelled `Resize text box`, and decided at the press.
+- **Labels:** the gesture is relabelled `Stretch` when an Alt-stretch begins (`gesture.relabel`, a new
+  `Transaction.relabel`). A plain resize keeps today's label, `position`.
+- **The release** (`event.ts`) detaches the gesture, runs the shared release body (`event-select.ts` `up`), then commits it,
+  so the body's bake is the gesture's one step. The stale-session guards in `down` are gone, because a new press now rolls
+  the stale gesture back.
+- **Still on the legacy fields:** `dragPlan` and `dragStartTransforms`, which the shared release body reads, and which move
+  with step 4. `onCancel` resets them by hand until then.
+- The fixture's two resize leak entries are gone.
 
 ### 4. Move and marquee: the biggest step
 

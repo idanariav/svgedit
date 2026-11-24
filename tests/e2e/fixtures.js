@@ -28,10 +28,7 @@ const collectCoverage = (known) => {
 // onto the gesture. The rest check skips these until then; delete an entry when its step lands (the list only shrinks).
 const KNOWN_GESTURE_LEAKS = {
   // set on every press, cleared only on the releases that reach the end of mouseUp (not select / resize)
-  startTransform: 'step 5: the start transform becomes an argument of recalculateDimensions',
-  // never reset after a resize (the class of e6f50f31)
-  'gesture.hasResizeStartTransform': 'step 3: resize state on the resize gesture',
-  'gesture.resizeStartBox': 'step 3: resize state on the resize gesture'
+  startTransform: 'step 5: the start transform becomes an argument of recalculateDimensions'
 }
 
 // Playwright fixtures: the drawing health check, the gesture rest check and the coverage capture.

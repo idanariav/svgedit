@@ -337,12 +337,7 @@ export const init = (canvas: SvgCanvas): {
   const up = (evt: MouseEvent, ctx: UpContext): void => {
     const { realX, realY, selectedElements, operationMode, pendingMove, tempJustSelected, moved, clickSelect } = ctx
     const mode = svgCanvas.getCurrentMode()
-    if (mode === 'resize' && svgCanvas.gesture.areaResize) {
-      // an area text's box drag: its transaction is the undo step
-      svgCanvas.gesture.areaResize.tx.commit()
-      svgCanvas.gesture.areaResize = null
-    }
-    // an Alt-drag stretch: its transaction is the undo step, nothing is left to bake below
+    // an Alt-drag stretch: it applies the stretch (in the resize gesture's step), nothing is left to bake below
     const stretched = mode === 'resize' && svgCanvas.stretch.isActive()
     if (stretched) {
       svgCanvas.stretch.commit()
@@ -350,8 +345,6 @@ export const init = (canvas: SvgCanvas): {
     }
     const wasMarquee = mode === 'multiselect'
     if (mode === 'resize' || mode === 'multiselect') {
-      // The orchestrator returns straight after this function, past its own gesture reset: a group resize ends here.
-      svgCanvas.gesture.groupResizeStart = null
       if (svgCanvas.getRubberBox()) {
         svgCanvas.requireRubberBox().setAttribute('display', 'none')
         svgCanvas.setCurBBoxes([])

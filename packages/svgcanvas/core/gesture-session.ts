@@ -33,6 +33,8 @@ export interface Gesture<S = unknown> {
   commit(detail?: Record<string, unknown>): void
   /** End it and roll back what it did. */
   cancel(why: GestureEndReason): void
+  /** Change the undo-menu text of its step (a resize turns out to be a stretch at its first movement). */
+  relabel(label: string): void
   /**
    * Stop it being the active gesture without ending it: the caller commits or cancels it itself afterwards. A release runs
    * code that may switch modes (a finished path goes back to select); detached first, the switch does not cancel it.
@@ -62,7 +64,7 @@ export interface GestureSessionApi {
   cancelGesture(why?: GestureEndReason): void
 }
 
-const NO_TRANSACTION = { commit: (): unknown => null, cancel: (): void => {} }
+const NO_TRANSACTION = { commit: (): unknown => null, cancel: (): void => {}, relabel: (_label: string): void => {} }
 
 export const createGestureSession = (canvas: SvgCanvas): GestureSessionApi => {
   const svgCanvas = canvas
@@ -101,6 +103,9 @@ export const createGestureSession = (canvas: SvgCanvas): GestureSessionApi => {
         } finally {
           try { options.onCancel?.(why) } catch (err) { logError(`cancelling the ${kind} gesture failed`, err, LOG) }
         }
+      },
+      relabel (label) {
+        tx.relabel(label)
       },
       detach () {
         if (active === gesture) active = null
