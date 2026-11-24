@@ -435,6 +435,26 @@ argument, path edit, cleanup. Step 0 is in: `svgCanvas.gestureLeftovers()` after
 shrinking list of today's known leaks, and `gesture-lifecycle.spec.js` (37 expected failures, each marked with the step that
 fixes it).
 
+**Status (2026-11-24): done.**
+- **The gesture session** (`core/gesture-session.ts`) is shared by the registered tools and the built-in gestures (`move`,
+  `marquee`, `resize`, `rotate`, `pathNode`). Each keeps its state on the gesture, its undo step in one transaction, and is
+  rolled back by every way out.
+- **What went:** every per-gesture field of `GestureState` (18 of 21; what remains outlives a gesture on purpose), the canvas
+  `startTransform` / `initBbox` / `smartSnapTargets` / `pendingMoveDelta` slots, the module `let`s and the ten hand resets in
+  `mouseUpEvent`.
+- **Behaviour changes:**
+  - Escape, a mode switch, a second press and a lost focus now roll a built-in gesture back; before, they left it applied
+    and the release committed it.
+  - An Alt-drag clone is one undo step.
+  - A mode switch mid-marquee no longer leaves the rubber band on screen.
+- **Guards:** `svgCanvas.gestureLeftovers()` after every e2e test, and `tests/e2e/gesture-lifecycle.spec.js` (nine gestures ×
+  release, four exits and a repeat).
+- **Left, with reasons in the plan:**
+  - node edit's tracked path (a mode session, with the `requirePath()` rework);
+  - the press prelude's transform merge before any gesture begins (R12);
+  - the live readouts the panels read (`dragLiveMoveDelta` / `dragLiveResizeBox`);
+  - the plugin's double teardown on close, which belongs in the plugin repo.
+
 ### R10. One entry point per user intent
 
 **Today.** The same intent goes through different code depending on how it was asked. Paste from the menu read the
@@ -475,7 +495,10 @@ rotation decomposed or collapsed into a matrix) is decided in several places tha
 and the model's `affineEdit`. Bugs: a rotated group barely moved on a drag (efd2f3be); a turned curve was measured from its
 raw numbers and measuring added an empty `<path>` (2365847f); a font size went to ~0 after a rotation was collapsed.
 Coordinate frames (screen, document, layer, entered-group local, element-local) are plain numbers each tool converted on
-its own until `src/editor/toolSpace.ts`: 61569a3b, a2101f3b and 478dd235 fixed the same mistake in five tools.
+its own until `src/editor/toolSpace.ts`: 61569a3b, a2101f3b and 478dd235 fixed the same mistake in five tools. Found in R9:
+the press prelude in `event.ts` merges the transform list of whatever is under the pointer into one matrix, in every mode,
+before any gesture begins. The write changes no look, but it lands outside every gesture's step, folded into the previous
+state; the placement policy decides whether the merge is needed at all.
 
 **Target.** One placement policy on the model's matrix math (R1's named next step: flip / rotate / scale on the model) and
 one frame-conversion module every tool and gesture uses. Size: L.

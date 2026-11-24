@@ -1,6 +1,6 @@
 # R9 plan: a gesture owns its state
 
-Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **steps 0–5 done** (2026-11-24); step 6 (path edit) next.
+Plan for `.claude/roadmap/rearchitecture.md` › R9 (written 2026-11-24). Status: **done** (2026-11-24): steps 0–7. The tracked path of node edit is a separate follow-up (see step 6).
 
 ## The problem, measured
 
@@ -291,6 +291,24 @@ lifecycle, not the registration.
   - It is set on `pathedit`'s activate and cleared on deactivate.
   - It is also dropped when its element leaves the drawing, by a `documentChanged` check that the element is still
     connected. This is 8364dc73 and the background-click fix, structurally.
+
+**Done (2026-11-24).**
+- **A node or control-point drag in `pathedit` is a `pathNode` gesture** (`event-path-edit.ts`). It begins once
+  `pathActions.mouseDown` has armed the drag; selecting nodes is not a change of the drawing.
+- **Release:** `upPathEdit` detaches the gesture, runs `pathActions.mouseUp` and commits, so its `Move path point(s)` step is
+  the gesture's.
+- **Roll-back:** `pathActions.endDrag()` forgets the drag (its private `#hasMoved`, the snap offset, `path.dragging`) and shows
+  the grips where the restored path has its nodes.
+- **The lifecycle spec has no expected failures left,** and its `test.fail` machinery is gone.
+- **Not done here, a follow-up: the tracked path (`pathActions`' `path`).** It is node edit's *mode session*, spanning
+  gestures, and it stays set after leaving `pathedit`.
+  - Why it was left: the bugs this plan blamed on it (8364dc73 and the background-click fix) were the double-click arming
+    state (`#currentPath`), which `clear()` resets on every exit. A deleted element's session is already dropped
+    (`isConnected`).
+  - What it would take: clearing `path` on leaving `pathedit` touches every node command in `path-method.ts`, which reads
+    `getPathObj()`.
+  - Do it with the `requirePath()` rework that techdebt.md ("`path` in `path-actions.ts` is typed non-null") asks for, as
+    the mode's activate / deactivate.
 
 ### 7. Cleanup and docs
 

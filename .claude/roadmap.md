@@ -18,6 +18,13 @@ short: details belong in the area files.
 - **Drawing tools use `svgCanvas.registerTool`** (document-space events, one undo step per gesture, `options()` for an
   options bar). No new legacy mouse hooks.
 - **Undo goes through `svgCanvas.transact(label, fn)`.** Never construct a `ChangeElementCommand` before its mutation.
+- **A gesture owns its state** ([R9](roadmap/rearchitecture.md#r9-a-gesture-owns-its-state)): a press-to-release gesture runs
+  on the gesture session (`svgCanvas.beginGesture(kind, { state, label, onCancel })`, `core/gesture-session.ts`). Its state
+  lives on the gesture, not on a new `GestureState` field, canvas slot or module `let`. Its undo step is the session's
+  transaction, not a hand-built `BatchCommand` in an `event-*` file. A value for one call is an argument (`recalculateDimensions(el,
+  { startTransform })`), not a slot. Every way out (Escape, a mode switch, undo, a new press, a lost focus, a context menu, a
+  throw) rolls it back; `onCancel` resets what the transaction does not. The e2e suite fails a test that leaves gesture state
+  behind (`gestureLeftovers()`).
 - **A change to the drawing needs no `call('changed')`** ([R8](roadmap/rearchitecture.md#r8-a-change-to-the-drawing-is-announced-from-the-history-not-by-every-call-site)):
   the step it lands is announced (`documentChanged`, with the elements that differ), and the panels, derived data and the
   host follow from that. Call `changed` only to refresh the UI for something that is not a change of the drawing (a load,
@@ -79,7 +86,7 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R4 | Built-in features are not extensions; the extension API shrinks to what third parties need | L | — |
 | R6 | Bundle size and startup (deferred evaluation, chunks if the plugin can ship them, a budget) | M | plugin change for chunks |
 | R8 | A change to the drawing is announced once, from the history (`documentChanged`), not by 90 `call('changed')` sites | S, then M | — |
-| R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract | L | — |
+| R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract (done 2026-11-24) | L | — |
 | R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver | M | — |
 | R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing | M | — |
 | R12 | One placement policy and one set of coordinate frames for every gesture and tool | L | R1 (matrix math on the model) |

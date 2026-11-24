@@ -200,7 +200,9 @@ deliberate: text on accent buttons, colour-picker maths, danger red, grid defaul
 `toEditMode()` before any handler reads it, and typing it `PathObject | null` put ~85 guards into the mouse handlers.
 `svgCanvas.getPathObj()` is honest (`PathObject | null`). Make the handlers take the path from a `requirePath()` that
 throws (or pass it in from the session) when `PathActions` is next reworked; the same applies to the `Path` / `Segment`
-fields `cur_pt` and `dragctrl`, which only exist once a node is pressed.
+fields `cur_pt` and `dragctrl`, which only exist once a node is pressed. The same rework is where R9's follow-up lands:
+`path` is node edit's mode session and should be set on entering `pathedit` and dropped on leaving it
+(`.claude/plans/r9-gesture-lifecycle.md`, step 6).
 
 ## A group distortion's shared frame is not remapped when a member's geometry is baked (2026-11-18)
 
