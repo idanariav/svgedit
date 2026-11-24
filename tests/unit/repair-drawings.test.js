@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import LZString from 'lz-string'
 import { REPAIRS, repairSvg, repairMarkdown } from '../../scripts/repair-drawings.mjs'
+import { computeFxD, parseFxStack } from '../../packages/svgcanvas/core/live-effects.ts'
 
 const doc = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" id="svgcontent"><g class="layer"><title>L</title>${inner}</g></svg>`
 
@@ -11,7 +12,7 @@ const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
   it('ships only the current repairs (they are deleted once run)', () => {
-    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path', 'mask-feather-lost'])
+    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path', 'mask-feather-lost', 'fx-rounding-drift'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -114,5 +115,31 @@ describe('repair-drawings: mask-feather-lost', () => {
     expect(repairSvg(kept, [feather])).toEqual({ source: kept, applied: [] })
     const plain = doc('<rect id="a"/>')
     expect(repairSvg(plain, [feather])).toEqual({ source: plain, applied: [] })
+  })
+})
+
+describe('repair-drawings: fx-rounding-drift', () => {
+  const drift = REPAIRS.find((r) => r.name === 'fx-rounding-drift')
+  const fx = 'freeDistort(topLeftX=0.125,topLeftY=-0.2,topRightX=1,topRightY=0,bottomRightX=1.25,bottomRightY=1.4,bottomLeftX=0,bottomLeftY=1)'
+  const src = 'M60,60 L220,60 L220,160 L60,160 L60,60 Z'
+  const path = (d) => doc(`<path d="${d}" fill="#8ecae6" id="free" se:fx="${fx}" se:fx-d="${src}"/>`)
+
+  it('writes the effect output back over a d that drifted by rounding', () => {
+    // the output, with an error that grows along the path as the old relative rounding made it (0.13 by the end)
+    const out = computeFxD(src, parseFxStack(fx))
+    let k = 0
+    const drifted = out.replace(/-?\d*\.?\d+/g, (n) => (Number(n) + 0.13 * (k++ / 300)).toFixed(2))
+    const { source, applied } = repairSvg(path(drifted), [drift])
+    expect(applied).toEqual(['fx-rounding-drift'])
+    const d = /\sd="([^"]*)"/.exec(source)[1]
+    expect(d).not.toBe(drifted)
+    expect(repairSvg(source, [drift]).applied).toEqual([]) // current now
+  })
+
+  it('leaves a path that was really edited, or that carries another stage, alone', () => {
+    const edited = path('M10,10 L50,10 L50,50 Z')
+    expect(repairSvg(edited, [drift])).toEqual({ source: edited, applied: [] })
+    const stacked = doc(`<path d="M80,40 L180.12,60.05 Z" id="t" se:fx="${fx}" se:fx-d="${src}" se:taper-d="M0,0 L1,1"/>`)
+    expect(repairSvg(stacked, [drift])).toEqual({ source: stacked, applied: [] })
   })
 })

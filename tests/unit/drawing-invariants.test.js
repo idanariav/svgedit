@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import SvgCanvas from '../../packages/svgcanvas/svgcanvas.ts'
 import { checkDrawing } from '../../packages/svgcanvas/core/drawing-invariants.ts'
+import { computeFxD, parseFxStack } from '../../packages/svgcanvas/core/live-effects.ts'
 
 const FIXTURES = path.resolve(__dirname, '../e2e/fixtures/roundtrip')
 const parse = (xml) => new DOMParser().parseFromString(xml, 'image/svg+xml').documentElement
@@ -70,6 +71,18 @@ describe('checkDrawing', () => {
     expect(codes(masked(' style="fill: #ffffff"'))).toEqual(['mask-feather-lost'])
     expect(codes(masked(' style="fill: #ffffff !important; filter: blur(8px);"'))).toEqual([])
     expect(codes(wrap('<rect id="a" mask="url(#m)"/>', '<defs><mask id="m"><rect id="s"/></mask></defs>'))).toEqual([])
+  })
+
+  it('fx-rounding-drift (a live-effect path whose saved d drifted by rounding)', () => {
+    const fx = 'freeDistort(topLeftX=0.125,topLeftY=-0.2,topRightX=1,topRightY=0,bottomRightX=1.25,bottomRightY=1.4,bottomLeftX=0,bottomLeftY=1)'
+    const src = 'M60,60 L220,60 L220,160 L60,160 L60,60 Z'
+    const out = computeFxD(src, parseFxStack(fx))
+    let k = 0
+    const drifted = out.replace(/-?\d*\.?\d+/g, (n) => (Number(n) + 0.13 * (k++ / 300)).toFixed(2))
+    const path = (d) => wrap(`<path id="p" d="${d}" se:fx="${fx}" se:fx-d="${src}"/>`)
+    expect(codes(path(drifted))).toEqual(['fx-rounding-drift'])
+    expect(codes(path(out))).toEqual([])
+    expect(codes(path('M0,0 L10,0 L10,10 Z'))).toEqual([]) // edited: the next selection drops the effect on purpose
   })
 
   it('dimmed-leak (the in-group dimming left on a never-rendered element)', () => {

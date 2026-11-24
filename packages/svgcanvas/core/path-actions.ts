@@ -96,9 +96,15 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
   const convertPath = (pth: SVGPathElement, toRel: boolean): string => {
     const { pathSegList } = pth as PathElement
     const len = pathSegList.numberOfItems
+    // The current point. Written relative, it is the point a reader gets back by adding up the rounded deltas, and each
+    // delta is taken from there to the exact point (`ex`, `ey`): rounding each delta on its own let the error pile up along
+    // the path (fifty segments ended a closed path 0.13 short of its start, and a live effect read that as an edit).
     let curx = 0; let cury = 0
+    let ex = 0; let ey = 0
     let d = ''
-    let lastM = null
+    let lastM: number[] | null = null
+    let lastME = [0, 0]
+    const round = (v: number): number => (toRel ? Number(shortFloat(v)) : v)
 
     for (let i = 0; i < len; ++i) {
       const seg = pathSegList.getItem(i) as unknown as ConvertSeg
@@ -114,6 +120,17 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
       // const pathMap = svgCanvas.getPathMap();
       // let letter = pathMap[type][toRel ? 'toLowerCase' : 'toUpperCase']();
       let letter = seg.pathSegTypeAsLetter
+      const relIn = letter !== 'z' && letter !== 'Z' && letter === letter.toLowerCase()
+      const upper = letter.toUpperCase()
+      const end = upper === 'Z'
+        ? lastME
+        : [upper === 'V' ? ex : (relIn ? ex : 0) + x, upper === 'H' ? ey : (relIn ? ey : 0) + y]
+      if (toRel && relIn) {
+        // a relative segment is relative to the exact point: make it relative to the reconstructed one
+        const dx = ex - curx; const dy = ey - cury
+        x += dx; y += dy; x1 += dx; y1 += dy; x2 += dx; y2 += dy
+      }
+      if (upper === 'M') lastME = end
 
       switch (letter) {
         case 'z': // z,Z closepath (Z/z)
@@ -129,8 +146,9 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // Fallthrough
         case 'h': // relative horizontal line (h)
           if (toRel) {
-            y = 0
-            curx += x
+            y = ey - cury
+            curx += round(x)
+            cury += round(y)
             letter = 'l'
           } else {
             y = cury
@@ -146,8 +164,9 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // Fallthrough
         case 'v': // relative vertical line (v)
           if (toRel) {
-            x = 0
-            cury += y
+            x = ex - curx
+            curx += round(x)
+            cury += round(y)
             letter = 'l'
           } else {
             x = curx
@@ -168,8 +187,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         case 'm': // relative move (m)
         case 't': // relative smooth quad (t)
           if (toRel) {
-            curx += x
-            cury += y
+            curx += round(x)
+            cury += round(y)
             letter = letter.toLowerCase()
           } else {
             x += curx
@@ -188,8 +207,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // Fallthrough
         case 'c': // relative cubic (c)
           if (toRel) {
-            curx += x
-            cury += y
+            curx += round(x)
+            cury += round(y)
             letter = 'c'
           } else {
             x += curx; x1 += curx; x2 += curx
@@ -206,8 +225,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // Fallthrough
         case 'q': // relative quad (q)
           if (toRel) {
-            curx += x
-            cury += y
+            curx += round(x)
+            cury += round(y)
             letter = 'q'
           } else {
             x += curx; x1 += curx
@@ -224,8 +243,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // fallthrough
         case 'a': // relative elliptical arc (a)
           if (toRel) {
-            curx += x
-            cury += y
+            curx += round(x)
+            cury += round(y)
             letter = 'a'
           } else {
             x += curx
@@ -246,8 +265,8 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           // Fallthrough
         case 's': // relative smooth cubic (s)
           if (toRel) {
-            curx += x
-            cury += y
+            curx += round(x)
+            cury += round(y)
             letter = 's'
           } else {
             x += curx; x2 += curx
@@ -259,6 +278,7 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
           d += pathDSegment(letter, [[x2, y2], [x, y]])
           break
       } // switch on path segment type
+      ex = end[0]; ey = end[1]
     } // for each segment
     return d
   }

@@ -18,6 +18,14 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import LZString from 'lz-string'
 import { retracedLine } from '../packages/svgcanvas/core/drawing-invariants.ts'
+import { fxRoundingDrift } from '../packages/svgcanvas/core/live-effects.ts'
+import { init as liveEffectsDistortInit } from '../packages/svgcanvas/core/live-effects-distort.ts'
+import { init as warpInit } from '../packages/svgcanvas/core/warp.ts'
+import { init as distortInit } from '../packages/svgcanvas/core/distort.ts'
+import { init as rotate3dInit } from '../packages/svgcanvas/core/rotate3d.ts'
+
+// the live effects a drawing can name, registered as the canvas registers them
+for (const init of [liveEffectsDistortInit, warpInit, distortInit, rotate3dInit]) init()
 
 /**
  * Each entry is `{ name, run(source) => source }`, a narrow text rewrite of one SVG. The earlier
@@ -82,6 +90,22 @@ export const REPAIRS = [
         return open + fixed + close
       })
     }
+  },
+  {
+    // The saver wrote relative path commands rounding each delta on its own, so the error piled up along a long path; a
+    // live-effect path whose `d` drifted that way read as edited and the next selection dropped the effect (checkDrawing's
+    // `fx-rounding-drift`). Writes the effect's output back as `d` (2 decimals), for a path whose only stage is the
+    // effect and whose drift stays within a unit.
+    name: 'fx-rounding-drift',
+    run: (source) => source.replace(/<path\b[^>]*>/g, (tag) => {
+      const attr = (name) => new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+      const src = attr('se:fx-d')
+      if (!src || /\sse:(?!fx-d)[\w-]+-d="/.test(tag)) return tag
+      const out = fxRoundingDrift(src, attr('se:fx') ?? '', attr('d') ?? '')
+      if (!out) return tag
+      const d = out.replace(/-?\d*\.?\d+(?:e-?\d+)?/g, (n) => String(Number(Number(n).toFixed(2))))
+      return tag.replace(/(\sd=")[^"]*(")/, `$1${d}$2`)
+    })
   }
 ]
 

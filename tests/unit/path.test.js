@@ -274,6 +274,30 @@ describe('path', function () {
     assert.equal(convertPath(path, true), expected)
   })
 
+  it('Test convertPath to relative does not let the rounding pile up along the path', function () {
+    // 2 decimals, as the saver writes: each delta is taken to the exact point from the one a reader reconstructs
+    const canvas = attachUnits({ getRoundDigits: () => 2 })
+    canvas.pathActions = pathActionsInit(canvas)
+    const path = document.createElementNS(NS.SVG, 'path')
+    let d = 'M80,40'
+    for (let i = 1; i <= 60; i++) d += ` L${80 + i / 3},${40 + i * 2 / 3}`
+    path.setAttribute('d', d)
+    const rel = canvas.pathActions.convertPath(path, true)
+    // add the written deltas back up, as a reader does
+    const nums = rel.match(/-?\d*\.?\d+/g).map(Number)
+    let x = 0; let y = 0
+    for (let i = 0; i < nums.length; i += 2) { x += nums[i]; y += nums[i + 1] }
+    assert.closeTo(x, 100, 0.005)
+    assert.closeTo(y, 80, 0.005)
+    // a relative input is taken from the exact points too
+    const relPath = document.createElementNS(NS.SVG, 'path')
+    relPath.setAttribute('d', 'm0,0' + ' l0.333333,0.666667'.repeat(60))
+    const again = canvas.pathActions.convertPath(relPath, true).match(/-?\d*\.?\d+/g).map(Number)
+    let sx = 0
+    for (let i = 0; i < again.length; i += 2) sx += again[i]
+    assert.closeTo(sx, 20, 0.005)
+  })
+
   it('Test recalcRotatedPath preserves zero control points', function () {
     const svg = document.createElementNS(NS.SVG, 'svg')
     const path = document.createElementNS(NS.SVG, 'path')

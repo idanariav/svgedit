@@ -42,7 +42,7 @@
 import type SvgCanvas from '../svgcanvas.ts'
 import { NS } from './namespaces.ts'
 import { EPHEMERAL_ATTR } from './history.js'
-import { registerAttrValidator, pathDataValidator } from './drawing-invariants.ts'
+import { registerAttrValidator, registerElementCheck, pathDataValidator } from './drawing-invariants.ts'
 import { warn } from '../common/logger.ts'
 import { getPathDFromElement } from './path-utils.ts'
 import { registerGeometryRemap } from './geometry-remap-registry.ts'
@@ -269,6 +269,25 @@ export const isFxCurrent = (elem: Element): boolean => {
     sameAnchorGeometry(parseAnchors(expected, ROUNDING_TOL), parseAnchors(elem.getAttribute('d') || '', ROUNDING_TOL))
 }
 
+/** How far a saved `d` may have drifted from its effect's output by rounding alone (see `fxRoundingDrift`). */
+const DRIFT_TOL = 1
+
+/**
+ * The regenerated output of `se:fx-d` + `se:fx` when `d` differs from it by rounding drift only: more than the saver's
+ * rounding (`isFxCurrent` would call it an edit and the effect would be dropped on the next selection) and within
+ * `DRIFT_TOL`. The relative commands the saver writes used to round each delta on its own, so the error piled up along a
+ * long path (fixed in `convertPath`); drawings saved before carry it. Null when `d` is current or really was edited.
+ */
+export const fxRoundingDrift = (src: string, fx: string, d: string): string | null => {
+  const { stack, unknown } = parseFxRaw(fx)
+  if (unknown || !stack.length) return null
+  const expected = computeFxD(src, stack)
+  if (expected === null) return null
+  const want = parseAnchors(expected, ROUNDING_TOL)
+  if (sameAnchorGeometry(want, parseAnchors(d, ROUNDING_TOL))) return null
+  return sameAnchorGeometry(parseAnchors(expected, DRIFT_TOL), parseAnchors(d, DRIFT_TOL), DRIFT_TOL) ? expected : null
+}
+
 /**
  * Called from `remapElement` (coords.js) when a transform is baked into an
  * effect path: apply the affine map to the stored source and regenerate `d`.
@@ -400,6 +419,15 @@ export const createLiveEffects = (canvas: SvgCanvas): LiveEffectsApi => {
     const named = value.split(';').filter((part) => part.trim()).length
     return parseFxRaw(value).unknown === 0 && named > 0 ? true : 'names an unknown or malformed effect'
   })
+  // fx-rounding-drift: a live-effect path whose saved `d` drifted from the effect's output by rounding (the next selection
+  // would take it for an edit and drop the effect; scripts/repair-drawings.mjs puts the output back)
+  registerElementCheck('fx-rounding-drift', (elem) => {
+    const src = elem.getAttribute(FX_SOURCE_ATTR)
+    if (!src || isStacked(elem)) return []
+    return fxRoundingDrift(src, elem.getAttribute(FX_ATTR) ?? '', elem.getAttribute('d') ?? '')
+      ? ['has a d that drifted from its live effect by rounding (the next selection drops the effect)']
+      : []
+  })
 
   const getSelected = (): Element | null => {
     const elems = svgCanvas.getSelectedElements().filter(Boolean)
@@ -506,7 +534,6 @@ export const createLiveEffects = (canvas: SvgCanvas): LiveEffectsApi => {
 
   const finish = (elem: Element): Element => {
     svgCanvas.selectOnly([elem], true)
-    svgCanvas.call('changed', [elem])
     return elem
   }
 
