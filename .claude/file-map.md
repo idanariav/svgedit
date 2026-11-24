@@ -50,6 +50,7 @@
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
 | `distort.ts` | Free Distort and Perspective Distort live effects: the four corners of the shape's box move to new places and the geometry follows |
+| `document-changes.ts` | The announcer of changes to the drawing: raises `documentChanged` when, and only when, the drawing the DOM shows differs from the one last announced (roadmap R8) |
 | `dom-utils.ts` | DOM/element manipulation, lookup, and misc canvas-state utilities |
 | `draw-snap.ts` | Snapping while drawing: the point a drawing tool places (the corner of a rectangle, a line's end, a pen anchor, a polygon's centre) snaps to other objects' anchors, bounding-box corners / midpoints / centres and edge… |
 | `draw.ts` | The drawing: the layer list, element id minting and the nonce, plus the group-context (isolation) functions the canvas attaches |

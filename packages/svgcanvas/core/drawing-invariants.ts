@@ -117,6 +117,9 @@ const URL_RE = /url\(\s*['"]?#([^'")\s]+)/g
 const STACKED_TRANSLATE_RE = /translate\([^)]*\)[\s,]*translate\(/
 const BAD_NUMBER_RE = /(?:^|[^A-Za-z])(NaN|undefined|Infinity)(?![A-Za-z])/
 
+/** `url(#id)` → `id` */
+const refOf = (value: string): string => value.replace(/^url\(\s*['"]?#/, '').replace(/['"]?\s*\)$/, '')
+
 const idOf = (elem: Element): string | undefined => elem.getAttribute('id') || undefined
 
 /**
@@ -215,6 +218,17 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
     // retraced-path: a closed two-point line (the Pen once closed a path finished on its last point)
     if (tag === 'path' && retracedLine(el.getAttribute('d') ?? '')) {
       add('retraced-path', '<path> is a closed line that runs out and back over itself', el)
+    }
+
+    // mask-feather-lost: a feathered mask whose silhouette lost its blur. Saving once dropped every `style` that began with the
+    // editor's `pointer-events` state, and the feather is appended to exactly that style (clip-mask.ts `applyFeatherTo`; a load
+    // turns it into a `filter` attribute).
+    const feather = Number(el.getAttribute('data-feather') || 0)
+    if (feather && el.hasAttribute('mask')) {
+      const mask = svgContent.querySelector(`mask[id="${refOf(el.getAttribute('mask') as string)}"]`)
+      if (mask && Array.from(mask.children).some((child) => !/blur\(/.test(`${child.getAttribute('style') ?? ''} ${child.getAttribute('filter') ?? ''}`))) {
+        add('mask-feather-lost', `<${tag}> has data-feather="${feather}" but its mask silhouette is not blurred`, el)
+      }
     }
 
     // module-owned checks (se-stack, …): only elements with `se:` state are worth the call

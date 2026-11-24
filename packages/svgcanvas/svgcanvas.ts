@@ -452,6 +452,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare undoMgr: UndoManager
   /** Undo / redo by model snapshot (core/snapshot-history.ts). */
   declare snapshotHistory: import('./core/snapshot-history.ts').SnapshotHistory
+  /** Announces `documentChanged` once per real change to the drawing (core/document-changes.ts, roadmap R8). */
+  declare documentChanges: import('./core/document-changes.ts').DocumentChanges
   /** An undo / redo is restoring a snapshot (set while it announces `changed`, see core/snapshot-history.ts). */
   restoring = false
   /** Structural health check of the current drawing (core/drawing-invariants.js); an empty list means healthy. */
@@ -1662,6 +1664,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     }
     const evt = new CustomEvent<CallDetail>(ev, { detail: { arg } })
     this.dispatchEvent(evt)
+    // `changed` says an edit happened; whether the drawing really differs is the announcer's to tell (core/document-changes.ts)
+    if (ev === 'changed') this.documentChanges?.schedule()
     return evt.detail.result
   }
 

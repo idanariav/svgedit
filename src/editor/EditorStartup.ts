@@ -376,6 +376,9 @@ class EditorStartup {
     this.svgCanvas.bind('selected', this.selectedChanged.bind(this))
     this.svgCanvas.bind('transition', this.elementTransition.bind(this))
     this.svgCanvas.bind('changed', this.elementChanged.bind(this))
+    // Unsaved work is a change to the drawing, announced once from the history (core/document-changes.ts), not every
+    // `changed` call: a click or a drag that went nowhere leaves nothing to warn about.
+    this.svgCanvas.bind('documentChanged', () => { this.showSaveWarning = true })
     this.svgCanvas.bind('elementInserted', this.elementInserted.bind(this))
     this.svgCanvas.bind('exported', this.exportHandler.bind(this))
     this.svgCanvas.bind('zoomed', this.zoomChanged.bind(this))

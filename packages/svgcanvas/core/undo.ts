@@ -5,6 +5,7 @@
  * @license MIT
  * @copyright 2011 Jeff Schiller
  */
+import { createDocumentChanges } from './document-changes.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { HistoryCommand } from '../svgcanvas.ts'
 import * as hstry from './history.js'
@@ -293,13 +294,16 @@ export const createUndo = (canvas: SvgCanvas): UndoApi => {
           svgCanvas.restoring = true
           try { svgCanvas.call('changed', touched) } finally { svgCanvas.restoring = false }
         }
+        svgCanvas.documentChanges?.check('history')
       }
     })
     svgCanvas.snapshotHistory = history
     const mgr = svgCanvas.undoMgr
     const prevPush = mgr.onPush
-    mgr.onPush = (cmd) => { prevPush?.(cmd); history.pushed(mgr.getUndoStackSize()) }
-    mgr.onReset = () => history.reset()
+    // A change to the drawing is announced from here, once per real difference (R8: core/document-changes.ts)
+    svgCanvas.documentChanges = createDocumentChanges(svgCanvas, history)
+    mgr.onPush = (cmd) => { prevPush?.(cmd); history.pushed(mgr.getUndoStackSize()); svgCanvas.documentChanges.check('step') }
+    mgr.onReset = () => { history.reset(); svgCanvas.documentChanges.reset() }
     mgr.snapshots = history
   }
 

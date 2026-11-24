@@ -25,11 +25,32 @@ import type { ModelElement, ModelNode } from './model/node.ts'
 /** Content-root attributes that follow the view (scroll, zoom), not the drawing. */
 const VIEW_ATTRS = new Set(['x', 'y', 'width', 'height'])
 
+/** The editor's own `pointer-events` declaration at the head of a value, with the separator after it. */
+const EDITOR_STATE_RE = /^pointer-events\s*:[^;]*;?\s*/
+
+/**
+ * An attribute value without the editor's interaction state: the `pointer-events` style the editor puts first on layers (the
+ * current one takes presses) and on the elements it creates. Only that declaration goes; what follows it is the drawing's
+ * (a mask silhouette's paint and feather blur are appended to that same `style`). Empty when nothing else is left. Saving
+ * writes this (`svgToString` in `svg-exec.ts`), and the history's model holds it too: setting or clearing the state is not a
+ * change.
+ */
+export const withoutEditorState = (value: string): string =>
+  value.startsWith('pointer-events') ? value.replace(EDITOR_STATE_RE, '') : value
+
 const strip = (node: ModelNode, isRoot: boolean): ModelNode | null => {
   if (node.kind !== 'element') return node
   if (node.attrs.some((a) => a.name === EPHEMERAL_ATTR)) return null
   const children = node.children.map((c) => strip(c, false)).filter((c): c is ModelNode => c !== null)
-  return { ...node, attrs: isRoot ? node.attrs.filter((a) => !VIEW_ATTRS.has(a.name)) : node.attrs, children }
+  let changed = false
+  const attrs = node.attrs.flatMap((a) => {
+    if (isRoot && VIEW_ATTRS.has(a.name)) { changed = true; return [] }
+    const value = withoutEditorState(a.value)
+    if (value === a.value) return [a]
+    changed = true
+    return value ? [{ ...a, value }] : []
+  })
+  return { ...node, attrs: changed ? attrs : node.attrs, children }
 }
 
 /** The drawing as a snapshot holds it. */
@@ -251,6 +272,16 @@ export class SnapshotHistory {
       node = parent
     }
     return node === content ? path : undefined
+  }
+
+  /**
+   * The model of the drawing being shown, with what changed outside the history folded in (as `baseline` does): a new
+   * object exactly when the drawing differs from the last time it was asked (`core/document-changes.ts`). Undefined before
+   * the first reset.
+   */
+  revision (): ModelElement | undefined {
+    this.baseline()
+    return this.states[this.at]
   }
 
   /** The drawing as the DOM shows it now, sharing what it has in common with the state being shown; nothing is recorded. */

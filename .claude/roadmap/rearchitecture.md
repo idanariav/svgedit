@@ -376,6 +376,21 @@ back to `changed` on an older bundle). (2) The editor's own document-level consu
 extensions' `elementChanged`) move too. (3) The `call('changed')` sites that exist only to say "something changed" go;
 the ones that refresh a panel stay. Size: S for (1), M for the rest.
 
+**Status (2026-11-24).** Step (1) is in: `core/document-changes.ts` and `snapshotHistory.revision()`, `documentChanged` in
+`hostApi.d.ts`, the plugin's dirty flag on it. On the way: `loadSvgString` resets the undo stack after the load's own
+bookkeeping (the `viewBox` and layer ids were drift announced as a first edit), and the model leaves out the editor's
+leading `pointer-events` declaration as the serializer does (`withoutEditorState`), so the click that strips one is no
+change — the 2026-11-24 log's "svg-changed after a drag that went nowhere". Step (2) has started: the unsaved-work warning
+(`showSaveWarning`) is armed by `documentChanged` and cleared by `loadSvgString`.
+
+The derived-data extensions are **not** moved yet, and should not be moved as they are: they need what `documentChanged`
+does not carry. `elementChanged` hands them the elements (`{ elems, restored }`), runs synchronously inside the edit (a
+re-derive lands in the same step, rule (1) of the snapshot history), and `restored` tells them an undo brought their data
+back. The way through: `documentChanged` carries the changed set, computed from the two models it already compares (`share`
+keeps identity per subtree, so the diff walks only the changed paths) and `restored` becomes `cause === 'history'`; then each
+extension moves over and its re-derive is checked against the command sweep. Step (3) waits on that, because removing a
+`changed` call today also silences the re-derive behind it.
+
 ### R9. A gesture owns its state
 
 **Today.** Per-gesture state is loose fields on `GestureState` plus module slots (`getStartTransform`, `pathActions`'
@@ -409,8 +424,12 @@ with its rules tested together. Size: M.
 ### R11. The editor's own state stays out of the drawing
 
 **Today.** Group dimming (`opacity="0.33"`, `pointer-events: none`) leaked into undo snapshots and saved files (5a3d78d6);
-`addSVGElementsFromJson` (`core/json.ts`) stamps `style="pointer-events:inherit"` on every element it creates, which ends up
-in saved files and on the clipboard; the release of a drag strips `style` off the selected element; previews are
+`addSVGElementsFromJson` (`core/json.ts`) stamps `style="pointer-events:inherit"` on every element it creates, and later
+code appends the drawing's own declarations to that same `style`: the serializer dropped any style that *began* with
+`pointer-events`, so a feathered mask silhouette (`clip-mask.ts`, `pointer-events: inherit; fill: … !important; filter:
+blur(8px)`) was saved without its feather (fixed 2026-11-24 by dropping only the declaration, `withoutEditorState`, with
+checkDrawing's `mask-feather-lost` and a `repair-drawings` entry; the loader's style-to-attribute conversion also kept
+`!important` in attribute values, which would have painted the reloaded silhouette black); the release of a drag strips `style` off the selected element; previews are
 `data-se-ephemeral` nodes every reader filters out. R1 made the DOM a view of the model, but the editor still keeps
 interaction state on the same nodes, so readers compensate (`withContextUndimmed`, ephemeral filtering).
 

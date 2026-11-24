@@ -11,7 +11,7 @@ const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
   it('ships only the current repairs (they are deleted once run)', () => {
-    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path'])
+    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path', 'mask-feather-lost'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -92,5 +92,27 @@ describe('repair-drawings: retraced-path', () => {
   it('leaves real shapes, open lines and curves alone', () => {
     const clean = doc('<path d="M0 0 L10 0 L10 10 Z"/><path d="M0 0 L10 5"/><path d="M0 0 C5 5 5 5 10 0 L0 0 Z"/><rect d="M0 0 L1 1 Z"/>')
     expect(repairSvg(clean, [retraced])).toEqual({ source: clean, applied: [] })
+  })
+})
+
+describe('repair-drawings: mask-feather-lost', () => {
+  const [, , feather] = REPAIRS
+
+  it('gives a feathered mask\'s direct children back the feather style, from the masked element\'s data-feather', () => {
+    const bad = doc('<defs><mask id="m"><rect fill="#ffffff" id="s"/><g id="g" style="fill: red"><rect id="t"/></g></mask>' +
+      '<mask id="n"><ellipse id="e"/></mask></defs><rect data-feather="-4" id="a" mask="url(#m)"/><rect id="b" mask="url(#n)"/>')
+    const soft = 'fill-opacity: 1 !important; opacity: 1 !important; fill: #666666 !important; stroke: #ffffff !important; stroke-width: 4 !important; filter: blur(2.4px);'
+    expect(repairSvg(bad, [feather])).toEqual({
+      source: doc(`<defs><mask id="m"><rect fill="#ffffff" id="s" style="${soft}"/><g id="g" style="fill: red; ${soft}"><rect id="t"/></g></mask>` +
+        '<mask id="n"><ellipse id="e"/></mask></defs><rect data-feather="-4" id="a" mask="url(#m)"/><rect id="b" mask="url(#n)"/>'),
+      applied: ['mask-feather-lost']
+    })
+  })
+
+  it('leaves a mask that kept its feather, and drawings with no feathered mask, alone', () => {
+    const kept = doc('<defs><mask id="m"><rect id="s" style="fill: #ffffff !important; filter: blur(8px);"/></mask></defs><rect data-feather="8" id="a" mask="url(#m)"/>')
+    expect(repairSvg(kept, [feather])).toEqual({ source: kept, applied: [] })
+    const plain = doc('<rect id="a"/>')
+    expect(repairSvg(plain, [feather])).toEqual({ source: plain, applied: [] })
   })
 })

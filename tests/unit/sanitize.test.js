@@ -44,6 +44,17 @@ describe('sanitize', function () {
     assert.equal(rect.hasAttribute('vector-effect'), false)
   })
 
+  it('sanitizeSvg() leaves `!important` out of the attributes a style becomes (a mask silhouette\'s forced paint)', function () {
+    const rect = createSvgElement('rect')
+    rect.setAttribute('style', 'fill: rgb(255, 255, 255) !important; opacity: 1 !IMPORTANT; filter: blur(8px);')
+    svg.append(rect)
+    sanitize.sanitizeSvg(canvas, rect)
+
+    assert.equal(rect.getAttribute('fill'), 'rgb(255, 255, 255)')
+    assert.equal(rect.getAttribute('opacity'), '1')
+    assert.equal(rect.getAttribute('filter'), 'blur(8px)')
+  })
+
   it('sanitizeSvg() removes disallowed attributes but keeps data-*', function () {
     const rect = createSvgElement('rect')
     rect.setAttribute('onclick', 'alert(1)')

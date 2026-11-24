@@ -64,6 +64,14 @@ describe('checkDrawing', () => {
     expect(codes(wrap('<path id="p" d="M0 0 C5 5 5 5 10 0 L0 0 Z"/>'))).toEqual([])
   })
 
+  it('mask-feather-lost (a feathered mask whose silhouette is not blurred)', () => {
+    const masked = (style) => wrap('<rect id="a" mask="url(#m)" data-feather="8"/>', `<defs><mask id="m"><rect id="s"${style}/></mask></defs>`)
+    expect(codes(masked(''))).toEqual(['mask-feather-lost'])
+    expect(codes(masked(' style="fill: #ffffff"'))).toEqual(['mask-feather-lost'])
+    expect(codes(masked(' style="fill: #ffffff !important; filter: blur(8px);"'))).toEqual([])
+    expect(codes(wrap('<rect id="a" mask="url(#m)"/>', '<defs><mask id="m"><rect id="s"/></mask></defs>'))).toEqual([])
+  })
+
   it('dimmed-leak (the in-group dimming left on a never-rendered element)', () => {
     expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33">'))).toEqual(['dimmed-leak'])
     expect(codes(wrap('<rect id="a"/>', '<defs opacity="0.33"/>'))).toEqual(['dimmed-leak'])

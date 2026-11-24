@@ -11,7 +11,7 @@
  *
  * Each repair is a narrow text rewrite (the rest of the file is left byte-for-byte
  * as it was). When a repair has been run over every drawing you care about, delete
- * it from REPAIRS — this list is meant to shrink, not grow forever (it is empty now).
+ * it from REPAIRS — this list is meant to shrink, not grow forever (it is empty when every drawing is clean).
  */
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -47,6 +47,41 @@ export const REPAIRS = [
       const n = (v) => Number(v.toFixed(6))
       return line ? `${open}M${n(line[0][0])},${n(line[0][1])} L${n(line[1][0])},${n(line[1][1])}${close}` : whole
     }))
+  },
+  {
+    // Saving dropped every `style` that began with the editor's `pointer-events` state, and a feathered mask's silhouette
+    // keeps its feather in exactly such a style: the mask came back hard-edged (checkDrawing's `mask-feather-lost`). The
+    // masked element still says how much (`data-feather`), so its mask's children get the style `applyFeatherTo`
+    // (clip-mask.ts) gives them.
+    name: 'mask-feather-lost',
+    run: (source) => {
+      const feathers = new Map()
+      for (const [tag] of source.matchAll(/<[a-zA-Z][^>]*\sdata-feather="[^"]*"[^>]*>/g)) {
+        const px = Number(/\sdata-feather="([^"]*)"/.exec(tag)[1])
+        const id = /\smask="url\(\s*['"]?#([^'")\s]+)/.exec(tag)?.[1]
+        if (id && px) feathers.set(id, px)
+      }
+      if (!feathers.size) return source
+      return source.replace(/(<mask\b[^>]*>)([\s\S]*?)(<\/mask>)/g, (whole, open, content, close) => {
+        const px = feathers.get(/\sid="([^"]*)"/.exec(open)?.[1])
+        if (!px) return whole
+        const a = Math.abs(px)
+        const style = px < 0
+          ? `fill-opacity: 1 !important; opacity: 1 !important; fill: #666666 !important; stroke: #ffffff !important; stroke-width: ${a} !important; filter: blur(${(a * 0.6).toFixed(1)}px);`
+          : `fill: #ffffff !important; fill-opacity: 1 !important; opacity: 1 !important; stroke: none !important; filter: blur(${px}px);`
+        let depth = 0
+        const fixed = content.replace(/<(\/?)[a-zA-Z][^>]*?(\/?)>/g, (tag, end, selfClosing) => {
+          if (end) { depth--; return tag }
+          const direct = depth === 0
+          if (!selfClosing) depth++
+          if (!direct || /\sstyle="[^"]*blur\(/.test(tag)) return tag
+          return /\sstyle="/.test(tag)
+            ? tag.replace(/\sstyle="([^"]*)"/, (m, v) => ` style="${v.trim().replace(/;?$/, ';')} ${style}"`)
+            : tag.replace(/(\/?>)$/, ` style="${style}"$1`)
+        })
+        return open + fixed + close
+      })
+    }
   }
 ]
 

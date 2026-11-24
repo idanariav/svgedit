@@ -5,6 +5,7 @@
  * @copyright 2011 Jeff Schiller
  */
 
+import { withoutEditorState } from './snapshot-history.ts'
 import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.ts'
 import { text2xml, toXml, hashCode } from './encoding-utils.ts'
@@ -372,7 +373,9 @@ export const createSvgExec = (canvas: SvgCanvas): SvgExecApi => {
             }
           }
           if (attrVal !== '') {
-            if (attrVal.startsWith('pointer-events')) {
+            // the editor's pointer-events state goes; the rest of the value is the drawing's
+            attrVal = withoutEditorState(attrVal)
+            if (attrVal === '') {
               continue
             }
             if (attr.localName === 'class' && attrVal.startsWith('se_')) {

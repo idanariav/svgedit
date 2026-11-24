@@ -153,7 +153,6 @@ class Editor extends EditorStartup {
     // loaded, untouched document as having unsaved changes.
     const success = this.svgCanvas.setSvgString(str, true) !== false
     if (success) {
-      this.svgCanvas.undoMgr.resetUndoStack()
       this.updateCanvas()
       // Loading replaces the whole drawing without firing elementChanged, so
       // refresh the layers panel to match the loaded drawing's layers
@@ -162,6 +161,12 @@ class Editor extends EditorStartup {
       // ...and refresh the empty-canvas brand watermark to match the new content
       // (otherwise it lingers when a non-empty drawing is loaded).
       this.updateCanvasWatermark()
+      // Reset after the load's own bookkeeping (updateCanvas writes the viewBox, populateLayers gives each layer its id):
+      // the drawing as it settles is the undo baseline and the reference for documentChanged, so that bookkeeping is not
+      // announced as the first edit (core/document-changes.ts).
+      this.svgCanvas.undoMgr.resetUndoStack()
+      // ...and nothing in it is unsaved yet (the warning is armed again by the next documentChanged)
+      this.showSaveWarning = false
       // The stack was just reset: refresh the undo/redo buttons to match.
       this.topPanel.updateContextPanel()
       this.tabletShell?.syncHistory?.()
@@ -685,7 +690,6 @@ host restore) leave this false to avoid polluting history.
         })
       }],
       ['rightPanel.layerTree', () => this.rightPanel.layerTree.schedule()],
-      ['showSaveWarning', () => { this.showSaveWarning = true }],
       // we update the contextual panel with potentially new
       // positional/sizing information (we DON'T want to update the
       // toolbar here as that creates an infinite loop)

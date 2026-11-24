@@ -222,7 +222,8 @@ export const sanitizeSvg = (svgCanvas: Pick<SvgCanvas, 'getRefElem'>, node: Elem
         while (p--) {
           const [name, val] = props[p].split(':')
           const styleAttrName = (name || '').trim()
-          const styleAttrVal = (val || '').trim()
+          // an attribute has no priority: `fill: #fff !important` is `fill="#fff"` (kept, the value is invalid and paints black)
+          const styleAttrVal = (val || '').trim().replace(/\s*!important$/i, '')
           // Now check that this attribute is supported
           if (allowedAttrs.includes(styleAttrName)) {
             node.setAttribute(styleAttrName, styleAttrVal)

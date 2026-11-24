@@ -147,14 +147,16 @@ describe('undo', () => {
     canvas.undoMgr.addCommandToHistory(batch)
     logDebugEvent.mockClear() // the push above logs a history-push
 
+    // (an undo / redo also announces the change itself: `document-changed`, once per step too)
+    const applies = () => logDebugEvent.mock.calls.filter(([event]) => event === 'history-apply')
     canvas.undoMgr.undo()
-    expect(logDebugEvent).toHaveBeenCalledTimes(1)
+    expect(applies()).toHaveLength(1)
     expect(rectElem.getAttribute('width')).toBe('10')
     expect(rectElem.getAttribute('height')).toBe('10')
 
     logDebugEvent.mockClear()
     canvas.undoMgr.redo()
-    expect(logDebugEvent).toHaveBeenCalledTimes(1)
+    expect(applies()).toHaveLength(1)
     expect(rectElem.getAttribute('width')).toBe('5')
   })
 

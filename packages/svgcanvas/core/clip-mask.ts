@@ -95,6 +95,8 @@ const applyFeatherTo = (child: SVGElement, px: number): void => {
     child.style.setProperty('stroke', 'none', 'important')
     child.style.removeProperty('stroke-width')
     if (px > 0) child.style.setProperty('filter', `blur(${px}px)`)
+    // a reload turned an earlier feather into a `filter` attribute (sanitize.ts): the style has to say there is none
+    else if (child.hasAttribute('filter')) child.style.setProperty('filter', 'none')
     else child.style.removeProperty('filter')
   }
 }
