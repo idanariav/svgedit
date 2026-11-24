@@ -235,6 +235,13 @@ export const createFxComposer = (svgCanvas: import('@svgedit/svgcanvas').default
     setRegion(filter, elem, spec)
   }
 
+  // A loaded drawing gets every effect region from this formula, as part of the load: the load-time realignment in the core
+  // (`convertDropShadowFilters`, svg-defs.ts) pads only for drop shadows and outlines, so a glow came back clipped until
+  // the shape was selected, and that selection then rewrote the drawing outside any step.
+  svgCanvas.bind('sourcechanged', () => {
+    for (const el of Array.from(svgCanvas.getSvgContent().querySelectorAll('[filter]'))) refreshRegion(el)
+  })
+
   /** Assemble a fresh <filter> (with children) from the spec. Detached. */
   const buildFilter = (elem: Element, spec: FxSpec, filterId: string) => {
     const children: import('@svgedit/svgcanvas').SVGElementJSON[] = []
