@@ -1,5 +1,11 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.22
+- UI: distorting a group no longer pulls members off when a path in it closes a hair short of its start.
+- UI: a click on a shape above the selected one selects the shape clicked (a drag still moves the selection), so a double-click there opens node edit on that shape; a click on one member of a multi-selection selects just that member.
+- UI: a click on empty canvas that jitters a pixel deselects instead of selecting every shape whose box lies under the pointer (a marquee starts at 4 screen px).
+- UI: Cmd/Ctrl+V pastes shapes copied in another drawing in hosts such as Obsidian, where it used to do nothing while the menu's Paste worked. New debug-log events `clipboard-copy` / `clipboard-paste`.
+
 ## 7.4.1-fork.21
 - UI: shapes saved to the shape library can have aliases ("rock, boulder" for "stone"). The library search and filter match them, the save dialog's name suggestions match them too, and a saved shape's ⋮ menu has *Edit aliases…*.
 
