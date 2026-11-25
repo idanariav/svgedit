@@ -46,6 +46,8 @@ test.describe('Text tools', () => {
       texts: document.querySelectorAll('#svgcontent text').length
     }))
     expect(after).toEqual({ mode: 'textedit', selected: 'svg_1', texts: 1 })
+    // the caret sits where the press was (here between A and B): it must not take the release, which would end the edit
+    expect(await page.evaluate(() => getComputedStyle(document.getElementById('text_cursor')).pointerEvents)).toBe('none')
     await page.keyboard.press('End')
     await page.keyboard.type('C')
     await page.keyboard.press('Enter')

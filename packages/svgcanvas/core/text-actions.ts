@@ -122,7 +122,9 @@ export const createTextActions = (canvas: SvgCanvas): TextActionsApi => {
         assignAttributes(cursor, {
           id: 'text_cursor',
           stroke: '#333',
-          'stroke-width': 1
+          'stroke-width': 1,
+          // the caret is drawn where the press was: taking the release, it would read as a click off the text and end the edit
+          style: 'pointer-events:none'
         })
         const parentGroup = svgCanvas.getElement('selectorParentGroup') as Element
         parentGroup.append(cursor)
