@@ -1,6 +1,7 @@
 /**
  * Cutter (knife) tool: splits selected shapes along a cutting line, which may
- * be a single straight segment or an arbitrary open polyline (zigzag).
+ * be a single straight segment, an open polyline (zigzag) or an open Bézier
+ * path (vertices with handles, drawn like the pen tool).
  *
  * Both use the same exact boundary-splice construction (see `cutContour`
  * below): find every crossing of the cutting line/polyline with the shape's
@@ -47,6 +48,39 @@ const NON_PATH_TAGS = new Set(['text', 'tspan', 'image', 'use', 'symbol', 'g', '
 const CONTAINER_TAGS = new Set(['g', 'a'])
 
 type Pt = { x: number, y: number }
+/**
+ * A vertex of the cutting line. `handleIn` / `handleOut` are offsets from the
+ * vertex (paper.js's convention); a vertex without them is a corner, so a line
+ * of bare points is a polyline.
+ */
+export type CutPoint = Pt & { handleIn?: Pt, handleOut?: Pt }
+
+// Samples per curved stretch when a curved cut is flattened for `sideOfCut`.
+const CURVE_SAMPLES = 16
+
+/**
+ * The cutting line as a polyline: bare points as they are, each curved stretch
+ * (a handle on either end) sampled along its cubic. `sideOfCut` judges against it.
+ */
+export const flattenCut = (points: CutPoint[]): Pt[] => {
+  if (points.length === 0) return []
+  const out: Pt[] = [{ x: points[0].x, y: points[0].y }]
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]; const b = points[i]
+    if (!a.handleOut && !b.handleIn) {
+      out.push({ x: b.x, y: b.y })
+      continue
+    }
+    const c1 = { x: a.x + (a.handleOut?.x ?? 0), y: a.y + (a.handleOut?.y ?? 0) }
+    const c2 = { x: b.x + (b.handleIn?.x ?? 0), y: b.y + (b.handleIn?.y ?? 0) }
+    for (let k = 1; k <= CURVE_SAMPLES; k++) {
+      const t = k / CURVE_SAMPLES; const u = 1 - t
+      const w0 = u * u * u; const w1 = 3 * u * u * t; const w2 = 3 * u * t * t; const w3 = t * t * t
+      out.push({ x: w0 * a.x + w1 * c1.x + w2 * c2.x + w3 * b.x, y: w0 * a.y + w1 * c1.y + w2 * c2.y + w3 * b.y })
+    }
+  }
+  return out
+}
 /** A stretch of the shape's boundary between two crossings. */
 type GapEdge = { type: 'gap', segs: paper.Segment[] }
 /** A cutter stretch, by index (in a region's item list) or with its segments (once resolved). */
@@ -184,8 +218,8 @@ const applySplit = (root: ModelElement, split: GroupSplit): ModelElement =>
 const hasValidPiece = (p: { pathData?: string } | null | undefined): boolean => Boolean(p && p.pathData && p.pathData.length > 4)
 
 /**
- * Cut one simple closed contour along an open cutter polyline (2+ points,
- * already built as a paper.Path). Returns `null` if the cutter doesn't
+ * Cut one simple closed contour along an open cutter line (2+ vertices, straight
+ * or curved, already built as a paper.Path). Returns `null` if the cutter doesn't
  * cross this contour's boundary an even number of times ≥ 2, or if the
  * crossings don't form a simple non-crossing pairing — either way meaning
  * this contour should be left completely untouched.
@@ -240,7 +274,7 @@ const cutContour = (scope: paper.PaperScope, contourPath: paper.Path, cutterPath
   // `chordEndsAtB` comparison.
   const chordOpenIsA = chords.map(({ a, b }) => a.offset < b.offset)
 
-  // Slice each chord's own straight polyline stretch out of the cutter, in
+  // Slice each chord's own stretch (straight or curved) out of the cutter, in
   // the cutter's natural (a -> b) direction, then precompute both directed
   // copies: "open -> close" (used when a chord is referenced by the region
   // *around* it) and "close -> open" (used by the bite region it encloses).
@@ -308,8 +342,8 @@ const cutContour = (scope: paper.PaperScope, contourPath: paper.Path, cutterPath
 
   // Stitch an alternating chord/arc edge list into one closed path's
   // segments. A chord edge contributes all of its points (with its two
-  // endpoints' handles patched from the neighboring arc edges, since the
-  // chord's own straight-line handles are zero on both sides — otherwise
+  // endpoints' outer handles patched from the neighboring arc edges: the
+  // chord only knows the cutter's handles on its inner side — otherwise
   // the piece gets a flat/kinked seam right where the cut meets the
   // boundary instead of following its curve); an arc edge contributes only
   // its interior points (both its endpoints are already covered by the
@@ -344,7 +378,7 @@ const cutContour = (scope: paper.PaperScope, contourPath: paper.Path, cutterPath
 
 /**
  * Cut `shapePath` (a CompoundPath — one or more disjoint closed loops) along
- * an open cutter line/polyline (2+ points, straight segments).
+ * an open cutter line (2+ vertices, straight or with Bézier handles).
  *
  * Each loop is cut independently via `cutContour`: a loop the cutter
  * doesn't cross (an even number of times ≥ 2) is carried through into the
@@ -352,9 +386,10 @@ const cutContour = (scope: paper.PaperScope, contourPath: paper.Path, cutterPath
  * Both cutter endpoints must lie outside `shapePath` as a whole, checked
  * once up front.
  */
-const cutShapePath = (scope: paper.PaperScope, shapePath: paper.CompoundPath, points: Pt[]): paper.PathItem[] | null => {
+const cutShapePath = (scope: paper.PaperScope, shapePath: paper.CompoundPath, points: CutPoint[]): paper.PathItem[] | null => {
+  const handle = (h: Pt | undefined) => (h ? new scope.Point(h.x, h.y) : undefined)
   const cutterPath = new scope.Path({
-    segments: points.map((p) => new scope.Point(p.x, p.y)),
+    segments: points.map((p) => new scope.Segment(new scope.Point(p.x, p.y), handle(p.handleIn), handle(p.handleOut))),
     closed: false,
     insert: false
   })
@@ -445,11 +480,12 @@ const replaceWithPieces = (
 /**
  * Cut all selected elements along the given cutting line.
  *
- * @param points - 2+ points (SVG coordinates).
- *  Exactly 2 points cuts along a straight line; more points cut along the
- *  polyline they describe (straight segments, no curves).
+ * @param points - 2+ vertices (SVG coordinates).
+ *  Exactly 2 bare points cut along a straight line; more cut along the
+ *  polyline they describe; a vertex with `handleIn` / `handleOut` curves the
+ *  stretches on either side of it.
  */
-const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
+const cutShapes = (svgCanvas: SvgCanvas, points: CutPoint[]): void => {
   // Prefer selected elements; fall back to all shapes in the current layer
   // (mirrors Illustrator knife tool: selection scopes the cut, but is optional)
   let targets = svgCanvas.getSelectedElements().filter(Boolean)
@@ -465,9 +501,10 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
   const batchCmd = new BatchCommand('Cut shapes')
   const resultElems: Element[] = []
   const sides = new Map<Element, number>()
+  const line = flattenCut(points)
   const pieceSide = (piece: paper.PathItem): number => {
     const p = piece.interiorPoint
-    return sideOfCut(points, { x: p.x, y: p.y })
+    return sideOfCut(line, { x: p.x, y: p.y })
   }
 
   for (const elem of elems) {
@@ -493,7 +530,7 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
     let side = sides.get(el)
     if (side === undefined) {
       const c = contentCentre(svgCanvas, el)
-      side = c ? sideOfCut(points, c) : 1
+      side = c ? sideOfCut(line, c) : 1
       sides.set(el, side)
     }
     return new Set([side])
@@ -516,7 +553,7 @@ const cutShapes = (svgCanvas: SvgCanvas, points: Pt[]): void => {
 
 /** The members `cutter.ts` gives its canvas. */
 export interface CutterApi {
-  cutShapes(points: Array<{ x: number, y: number }>): void
+  cutShapes(points: CutPoint[]): void
 }
 
 export const createCutter = (canvas: SvgCanvas): CutterApi => {
@@ -524,6 +561,6 @@ export const createCutter = (canvas: SvgCanvas): CutterApi => {
 
   return {
     // one undo step: the pieces (written to the DOM) and a group split (stated on the model)
-    cutShapes: (points: Pt[]) => { svgCanvas.transact('Cut shapes', () => cutShapes(svgCanvas, points)) }
+    cutShapes: (points: CutPoint[]) => { svgCanvas.transact('Cut shapes', () => cutShapes(svgCanvas, points)) }
   }
 }

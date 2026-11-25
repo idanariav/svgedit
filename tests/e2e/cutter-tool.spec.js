@@ -169,6 +169,71 @@ test.describe('Cutter tool', () => {
     expect(Math.abs(totalArea - trueArea) / trueArea).toBeLessThan(0.001)
   })
 
+  test('a curved cut conserves the ellipse\'s area and leaves the seam curved', async ({ page }) => {
+    // An S-curve from left to right through the ellipse: one middle vertex with
+    // handles. A lost handle at the seam would facet it (less area / no curve).
+    const result = await page.evaluate(() => {
+      window.svgEditor.svgCanvas.selectOnly([document.querySelector('#svgcontent #svg_1')], true)
+      window.svgEditor.svgCanvas.cutShapes([
+        { x: 50, y: 150 },
+        { x: 200, y: 150, handleIn: { x: -60, y: -60 }, handleOut: { x: 60, y: 60 } },
+        { x: 350, y: 150 }
+      ])
+      const shoelaceArea = (p) => {
+        const len = p.getTotalLength()
+        const N = 2000
+        let area = 0
+        let prev = p.getPointAtLength(0)
+        for (let i = 1; i <= N; i++) {
+          const pt = p.getPointAtLength((i / N) * len)
+          area += (prev.x * pt.y - pt.x * prev.y)
+          prev = pt
+        }
+        return Math.abs(area / 2)
+      }
+      const paths = Array.from(document.querySelectorAll('#svgcontent g.layer > path'))
+      // the seam passes through (200,150), the vertex; a point the straight chord would miss lies on it too
+      const onSeam = (x, y) => paths.every((p) => {
+        const len = p.getTotalLength()
+        let best = Infinity
+        for (let i = 0; i <= 2000; i++) {
+          const pt = p.getPointAtLength((i / 2000) * len)
+          best = Math.min(best, Math.hypot(pt.x - x, pt.y - y))
+        }
+        return best < 1
+      })
+      return {
+        count: paths.length,
+        area: paths.reduce((sum, p) => sum + shoelaceArea(p), 0),
+        // the cubic at t = 0.75 from (50,150) with c1 = (50,150), c2 = (140,90), end (200,150):
+        // (151.25, 124.69), inside the ellipse and 25 units off the straight chord
+        throughCurve: onSeam(0.015625 * 50 + 0.140625 * 50 + 0.421875 * 140 + 0.421875 * 200, 0.015625 * 150 + 0.140625 * 150 + 0.421875 * 90 + 0.421875 * 150)
+      }
+    })
+    expect(result.count).toBe(2)
+    const trueArea = Math.PI * 100 * 80
+    expect(Math.abs(result.area - trueArea) / trueArea).toBeLessThan(0.001)
+    expect(result.throughCurve).toBe(true)
+  })
+
+  test('click, press-drag, click, Enter cuts along a curve drawn interactively', async ({ page }) => {
+    await page.evaluate(() => document.querySelector('#tool_cutter')?.click())
+    await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('cutter')
+
+    await click(page, { x: 50, y: 150 })
+    await fireMouse(page, 'mousedown', { x: 200, y: 150 })
+    await fireMouse(page, 'mousemove', { x: 260, y: 210 })
+    await fireMouse(page, 'mouseup', { x: 260, y: 210 })
+    const preview = await page.evaluate(() => document.querySelector('#cutter_preview_line')?.getAttribute('d'))
+    expect(preview).toMatch(/C/)
+    await click(page, { x: 350, y: 150 })
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(200)
+
+    await expect(page.locator('#svgcontent #svg_1')).toHaveCount(0)
+    await expect(page.locator('#svgcontent g.layer > path')).toHaveCount(2)
+  })
+
   test('a plain drag still performs an instant straight cut (legacy behavior)', async ({ page }) => {
     await page.evaluate(() => document.querySelector('#tool_cutter')?.click())
     await expect.poll(() => page.evaluate(() => window.svgEditor.svgCanvas.getMode())).toBe('cutter')

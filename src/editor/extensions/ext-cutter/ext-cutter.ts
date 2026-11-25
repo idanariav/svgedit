@@ -1,8 +1,8 @@
 /**
  * @file ext-cutter.ts
  *
- * Cutter (knife) tool — cut shapes along a straight line or a multi-point
- * zigzag line.
+ * Cutter (knife) tool — cut shapes along a straight line, a multi-point
+ * zigzag line or a curved line drawn like the pen tool.
  *
  * Behaviour mirrors Illustrator's knife tool, extended with a pen-tool-style
  * multi-point mode:
@@ -12,6 +12,10 @@
  *     multi-point line instead: click to add each further vertex, then
  *     press Enter or double-click to cut along the resulting zigzag.
  *     Backspace/Delete removes the last vertex; Escape cancels.
+ *   • In multi-point mode, press and drag when placing a vertex → pulls
+ *     out symmetric handles (pen-tool style), curving the stretches on
+ *     either side of it; Shift snaps the handle to 15°. A plain click
+ *     keeps the vertex a corner, so a cut is straight unless you drag.
  *   • If shapes are selected, only those shapes are cut.
  *   • If nothing is selected, every shape in the current layer that the
  *     cut line crosses is split.
@@ -24,6 +28,7 @@
  */
 
 import { snapToAngle } from '@svgedit/svgcanvas/core/math.ts'
+import type { CutPoint } from '@svgedit/svgcanvas/core/cutter.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'cutter'
@@ -45,7 +50,8 @@ export default defineFeature({
     let active = false // true from the first mousedown until finish/cancel
     let drawing = false // true once committed to multi-point mode
     let pendingStart: { x: number, y: number } | null = null // first click/drag-start point, while active && !drawing
-    let points: { x: number, y: number }[] = [] // committed vertices, once drawing
+    let points: CutPoint[] = [] // committed vertices, once drawing
+    let pulling: CutPoint | null = null // the vertex just placed, while its handles follow the pressed pointer
     // The selection when multi-point mode started, so it can be restored
     // right before the actual cut (cutShapes scopes to it) after being
     // cleared for the duration of the draw — see the `drawing` transition in
@@ -57,11 +63,19 @@ export default defineFeature({
 
     // ── Preview path helpers ─────────────────────────────────────────────────
 
-    const buildD = (pts: { x: number, y: number }[], tail: { x: number, y: number } | undefined) => {
+    /** One stretch from `a` to `b`: a line, or a cubic when either end has a handle. */
+    const stretch = (a: CutPoint, b: CutPoint) => {
+      if (!a.handleOut && !b.handleIn) return ` L${b.x},${b.y}`
+      const c1 = { x: a.x + (a.handleOut?.x ?? 0), y: a.y + (a.handleOut?.y ?? 0) }
+      const c2 = { x: b.x + (b.handleIn?.x ?? 0), y: b.y + (b.handleIn?.y ?? 0) }
+      return ` C${c1.x},${c1.y} ${c2.x},${c2.y} ${b.x},${b.y}`
+    }
+
+    const buildD = (pts: CutPoint[], tail: { x: number, y: number } | undefined) => {
       if (pts.length === 0) return ''
       let d = `M${pts[0].x},${pts[0].y}`
-      for (let i = 1; i < pts.length; i++) d += ` L${pts[i].x},${pts[i].y}`
-      if (tail) d += ` L${tail.x},${tail.y}`
+      for (let i = 1; i < pts.length; i++) d += stretch(pts[i - 1], pts[i])
+      if (tail) d += stretch(pts[pts.length - 1], tail)
       return d
     }
 
@@ -108,6 +122,7 @@ export default defineFeature({
       drawing = false
       pendingStart = null
       points = []
+      pulling = null
       selectionAtStart = []
     }
 
@@ -156,6 +171,26 @@ export default defineFeature({
       updateRubberBand(x, y)
     }
 
+    /**
+     * Pen-tool style: dragging from the vertex just placed pulls its handles,
+     * the out handle toward the pointer and the in handle mirrored. Back within
+     * `MIN_SEGMENT` of the vertex, it is a corner again.
+     */
+    const pullHandles = (vertex: CutPoint, ev: import('@svgedit/svgcanvas').ToolEvent) => {
+      let { x, y } = ev
+      if (ev.mods.shift) ({ x, y } = snapToAngle(vertex.x, vertex.y, x, y))
+      const dx = x - vertex.x
+      const dy = y - vertex.y
+      if (Math.hypot(dx, dy) < MIN_SEGMENT) {
+        delete vertex.handleIn
+        delete vertex.handleOut
+      } else {
+        vertex.handleOut = { x: dx, y: dy }
+        vertex.handleIn = { x: -dx, y: -dy }
+      }
+      updatePreviewPath()
+    }
+
     svgCanvas.registerTool({
       id: 'cutter',
       undoLabel: 'Cut shapes',
@@ -192,15 +227,22 @@ export default defineFeature({
           return
         }
 
-        points.push({ x: px, y: py })
+        pulling = { x: px, y: py }
+        points.push(pulling)
         updatePreviewPath()
       },
 
-      pointerMove (ctx, ev) { rubberBand(ev) },
+      pointerMove (ctx, ev) {
+        if (pulling) pullHandles(pulling, ev)
+        else rubberBand(ev)
+      },
 
       pointerUp (ctx, ev) {
         if (!active) return
-        if (drawing) return // vertices commit on mouseDown; nothing more to do per click
+        if (drawing) { // vertices commit on mouseDown; a release only ends a handle pull
+          pulling = null
+          return
+        }
         const start = pendingStart
         if (!start) return
 

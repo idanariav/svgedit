@@ -163,6 +163,52 @@ describe('ext-cutter', () => {
     ])
   })
 
+  it('press and drag while placing a vertex pulls symmetric handles, curving the cut', () => {
+    click(100, 100)
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(240, 70)) // still pressed: pulls the handles
+    tool.pointerUp(ctx, ev(240, 70))
+    expect(previewD()).toBe('M100,100 C100,100 160,130 200,100')
+
+    click(300, 100)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(svgCanvas.cutShapes).toHaveBeenCalledWith([
+      { x: 100, y: 100 },
+      { x: 200, y: 100, handleIn: { x: -40, y: 30 }, handleOut: { x: 40, y: -30 } },
+      { x: 300, y: 100 }
+    ])
+  })
+
+  it('after a curved vertex, the hover rubber band continues the curve', () => {
+    click(100, 100)
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(240, 70))
+    tool.pointerUp(ctx, ev(240, 70))
+    tool.pointerMove(ctx, ev(300, 120)) // hover
+    expect(previewD()).toBe('M100,100 C100,100 160,130 200,100 C240,70 300,120 300,120')
+  })
+
+  it('dragging back onto the vertex makes it a corner again', () => {
+    click(100, 100)
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(240, 70))
+    tool.pointerMove(ctx, ev(200.5, 100))
+    tool.pointerUp(ctx, ev(200.5, 100))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(svgCanvas.cutShapes).toHaveBeenCalledWith([{ x: 100, y: 100 }, { x: 200, y: 100 }])
+  })
+
+  it('Shift snaps a pulled handle to 15 degrees', () => {
+    click(100, 100)
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(250, 103, true))
+    tool.pointerUp(ctx, ev(250, 103, true))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    const [, curved] = svgCanvas.cutShapes.mock.calls[0][0]
+    expect(curved.handleOut.y).toBeCloseTo(0)
+    expect(curved.handleIn.x).toBeCloseTo(-curved.handleOut.x)
+  })
+
   it('Backspace removes the last vertex without finishing', () => {
     click(100, 100)
     click(150, 80)

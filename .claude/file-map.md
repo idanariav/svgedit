@@ -45,7 +45,7 @@
 | `coords.ts` | Manipulating coordinates |
 | `copy-elem.ts` | Copy handler |
 | `corner-radius.ts` | Live Corners: per-corner radius and kind (round, inverted round, chamfer) on the corners of any path — the anchors where two straight sides meet |
-| `cutter.ts` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment or an arbitrary open polyline (zigzag) |
+| `cutter.ts` | Cutter (knife) tool: splits selected shapes along a cutting line, which may be a single straight segment, an open polyline (zigzag) or an open Bézier path (vertices with handles, drawn like the pen tool) |
 | `dash-fit.ts` | Fitted dashes: stretch or squeeze a dash pattern so a whole number of periods fits the stroke's length, with a dash centred on both ends of an open path |
 | `dataStorage.ts` | A storage solution aimed at replacing jQuery's data function |
 | `debug-events.ts` | Helpers for the discrete debug-event channel (`svgCanvas.logDebugEvent`): compact, privacy-safe descriptions of elements and input, so a host log can be read — by a person or an LLM — as the sequence of things the user… |
@@ -340,6 +340,7 @@
 | `imagePropertiesDialog.ts` | Modal for image element properties |
 | `index.ts` | Imports every dialog element so that each registers itself |
 | `insertImage.ts` | `insertImageFromHref(href)` — inserts a centered `<image>` at natural size (used by the import dialog and ext-opensave); `insertSvgElements(svgString, { vaultLink, asPaths, fitTo })` — inserts a… |
+| `nativeClose.ts` | Listening to a `<dialog>`'s native `close` event without the stale-event race |
 | `positionContextMenu.ts` | Position a `position: fixed` context menu at the given viewport coordinates, keeping it inside the viewport |
 | `seAlertDialog.ts` | Alert dialog (OK only) |
 | `seConfirmDialog.ts` | Confirm dialog (OK / Cancel) |
@@ -415,7 +416,7 @@
 
 | File | What it is |
 |---|---|
-| `ext-cutter.ts` | Cutter (knife) tool — cut shapes along a straight line or a multi-point zigzag line |
+| `ext-cutter.ts` | Cutter (knife) tool — cut shapes along a straight line, a multi-point zigzag line or a curved line drawn like the pen tool |
 
 ### `src/editor/extensions/ext-distort-tool/`
 
