@@ -16,19 +16,23 @@
  *     out symmetric handles (pen-tool style), curving the stretches on
  *     either side of it; Shift snaps the handle to 15°. A plain click
  *     keeps the vertex a corner, so a cut is straight unless you drag.
+ *     The last vertex's handles show as lines with round tips, as the pen
+ *     tool shows a node's handles.
  *   • If shapes are selected, only those shapes are cut.
  *   • If nothing is selected, every shape in the current layer that the
  *     cut line crosses is split.
  *
- * The dashed red preview path is drawn inside svgcontent (canvas coordinate
- * space) and removed once the cut is committed or cancelled — it is never
- * added to undo history.
+ * The dashed red preview path (and the handle guide) is a tool overlay
+ * (`ctx.addOverlay`, document units, outside #svgcontent), removed once the
+ * cut is committed or cancelled — never saved, never in undo history.
  *
  * @license MIT
  */
 
 import { snapToAngle } from '@svgedit/svgcanvas/core/math.ts'
 import type { CutPoint } from '@svgedit/svgcanvas/core/cutter.ts'
+import type { ToolContext } from '@svgedit/svgcanvas/core/tool-registry.ts'
+import { overlayElement as mk } from '../../toolSpace.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'cutter'
@@ -59,9 +63,13 @@ export default defineFeature({
     // selected shape" hotkey would otherwise also fire on the same keypress
     // used here to remove the last vertex.
     let selectionAtStart: Element[] = []
-    let previewPath: SVGPathElement | null = null
+    let tail: { x: number, y: number } | null = null // where the rubber band ends (the pointer), between clicks
+    // The registry's context, kept for the key handlers: the preview is a tool
+    // overlay (outside #svgcontent, never saved or recorded), and the session
+    // spans several gestures, so the tool keeps and redraws it (`keepOverlays`).
+    let toolCtx: ToolContext | null = null
 
-    // ── Preview path helpers ─────────────────────────────────────────────────
+    // ── Preview ──────────────────────────────────────────────────────────────
 
     /** One stretch from `a` to `b`: a line, or a cubic when either end has a handle. */
     const stretch = (a: CutPoint, b: CutPoint) => {
@@ -71,48 +79,61 @@ export default defineFeature({
       return ` C${c1.x},${c1.y} ${c2.x},${c2.y} ${b.x},${b.y}`
     }
 
-    const buildD = (pts: CutPoint[], tail: { x: number, y: number } | undefined) => {
+    const buildD = (pts: CutPoint[], end: { x: number, y: number } | undefined) => {
       if (pts.length === 0) return ''
       let d = `M${pts[0].x},${pts[0].y}`
       for (let i = 1; i < pts.length; i++) d += stretch(pts[i - 1], pts[i])
-      if (tail) d += stretch(pts[pts.length - 1], tail)
+      if (end) d += stretch(pts[pts.length - 1], end)
       return d
     }
 
     /**
-     * Append a dashed red guide path directly to svgcontent so its coordinates
-     * match canvas space. It is removed on finish/cancel without touching history.
+     * Redraw the preview: the dashed red cut line (with the rubber band to the
+     * pointer) and, when the last vertex is curved, its handles as the pen tool
+     * shows a node's: a line from the in tip through the vertex to the out tip,
+     * a round grip on each tip.
      */
-    const createPreviewPath = (start: { x: number; y: number; }) => {
-      const svgNS = 'http://www.w3.org/2000/svg'
-      const path = document.createElementNS(svgNS, 'path')
-      path.setAttribute('d', buildD([start], undefined))
-      path.setAttribute('fill', 'none')
-      path.setAttribute('stroke', '#e00')
-      path.setAttribute('stroke-width', String(1.5 / svgCanvas.getZoom()))
-      path.setAttribute('stroke-dasharray', `${6 / svgCanvas.getZoom()},${4 / svgCanvas.getZoom()}`)
-      path.setAttribute('opacity', '0.85')
-      path.setAttribute('pointer-events', 'none')
-      path.setAttribute('id', 'cutter_preview_line')
-      path.setAttribute('data-se-ephemeral', '') // scaffolding: never part of a save or an undo step
-      // Append to svgcontent (not a layer) — uses canvas coordinates.
-      // Elements outside layer <g>s are not included in normal SVG exports.
-      svgCanvas.getSvgContent().appendChild(path)
-      previewPath = path
+    const drawPreview = () => {
+      if (!toolCtx) return
+      toolCtx.clearOverlays()
+      if (!active) return
+      const z = toolCtx.zoom
+      const committed = drawing ? points : (pendingStart ? [pendingStart] : [])
+      toolCtx.addOverlay(mk('path', {
+        id: 'cutter_preview_line',
+        d: buildD(committed, tail ?? undefined),
+        fill: 'none',
+        stroke: '#e00',
+        'stroke-width': 1.5 / z,
+        'stroke-dasharray': `${6 / z},${4 / z}`,
+        opacity: 0.85,
+        'pointer-events': 'none'
+      }))
+      const vertex = drawing ? points[points.length - 1] : undefined
+      if (!vertex?.handleIn || !vertex.handleOut) return
+      const inTip = { x: vertex.x + vertex.handleIn.x, y: vertex.y + vertex.handleIn.y }
+      const outTip = { x: vertex.x + vertex.handleOut.x, y: vertex.y + vertex.handleOut.y }
+      const grip = (p: { x: number, y: number }) => mk('circle', { cx: p.x, cy: p.y, r: 3 / z, fill: '#fff', stroke: '#e00', 'stroke-width': 1 / z })
+      toolCtx.addOverlay(mk('g', { id: 'cutter_preview_handles', 'pointer-events': 'none' }, [
+        mk('path', { d: `M${inTip.x},${inTip.y} L${vertex.x},${vertex.y} L${outTip.x},${outTip.y}`, fill: 'none', stroke: '#e00', 'stroke-width': 1 / z }),
+        grip(inTip),
+        grip(outTip)
+      ]))
     }
 
     const updateRubberBand = (x: number, y: number) => {
-      const committed = drawing ? points : (pendingStart ? [pendingStart] : [])
-      previewPath?.setAttribute('d', buildD(committed, { x, y }))
+      tail = { x, y }
+      drawPreview()
     }
 
     const updatePreviewPath = () => {
-      previewPath?.setAttribute('d', buildD(points, undefined))
+      tail = null
+      drawPreview()
     }
 
     const removePreviewPath = () => {
-      previewPath?.remove()
-      previewPath = null
+      tail = null
+      toolCtx?.clearOverlays()
     }
 
     // ── Drawing lifecycle ────────────────────────────────────────────────────
@@ -123,6 +144,7 @@ export default defineFeature({
       pendingStart = null
       points = []
       pulling = null
+      tail = null
       selectionAtStart = []
     }
 
@@ -195,20 +217,30 @@ export default defineFeature({
       id: 'cutter',
       undoLabel: 'Cut shapes',
       wantsHover: true, // the rubber band follows the pointer between clicks
+      keepOverlays: true, // the preview spans the clicks of a multi-point line; drawPreview / removePreviewPath manage it
       snap: true, // vertices and the rubber band snap to other objects
 
       // Leaving cutter mode by any route (Escape, switching tools) tears down an
       // in-progress line so no stale state or preview lingers.
-      deactivate () { if (active) cancel() },
-      cancel () { if (active) cancel() },
+      activate (ctx) { toolCtx = ctx },
+      deactivate (ctx) {
+        toolCtx = ctx
+        if (active) cancel()
+        removePreviewPath()
+      },
+      cancel (ctx) {
+        toolCtx = ctx
+        if (active) cancel()
+      },
 
       pointerDown (ctx, ev) {
+        toolCtx = ctx
         const { x, y } = ev
 
         if (!active) {
           active = true
           pendingStart = { x, y }
-          createPreviewPath(pendingStart)
+          updatePreviewPath()
           return
         }
 
@@ -233,11 +265,13 @@ export default defineFeature({
       },
 
       pointerMove (ctx, ev) {
+        toolCtx = ctx
         if (pulling) pullHandles(pulling, ev)
         else rubberBand(ev)
       },
 
       pointerUp (ctx, ev) {
+        toolCtx = ctx
         if (!active) return
         if (drawing) { // vertices commit on mouseDown; a release only ends a handle pull
           pulling = null

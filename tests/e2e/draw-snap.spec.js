@@ -92,10 +92,10 @@ test.describe('Snapping while drawing', () => {
   test('the cutter\'s first vertex and its rubber band snap', async ({ page }) => {
     await tool(page, 'tool_cutter')
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'down', x: 197, y: 198 }]))
-    const start = await page.evaluate(() => document.querySelector('[data-se-ephemeral]')?.getAttribute('d'))
+    const start = await page.evaluate(() => document.querySelector('#cutter_preview_line')?.getAttribute('d'))
     expect(start).toMatch(/200[ ,]+200/)
     await page.evaluate(() => window.svgEditor.automation.pointer([{ kind: 'up', x: 197, y: 198 }, { kind: 'move', x: 303, y: 302 }]))
-    const band = await page.evaluate(() => document.querySelector('[data-se-ephemeral]')?.getAttribute('d'))
+    const band = await page.evaluate(() => document.querySelector('#cutter_preview_line')?.getAttribute('d'))
     expect(band).toMatch(/300[ ,]+300/)
     await tool(page, 'tool_select') // leaving the tool tears the half-made cut down
   })

@@ -10,20 +10,28 @@ describe('ext-cutter', () => {
   let tool
   let workarea
 
-  // The registry hands tools document-space events (see tool-registry.js).
-  const ctx = {}
+  // The registry hands tools document-space events (see tool-registry.js) and
+  // a context whose overlays live outside #svgcontent.
+  let overlay
+  const ctx = {
+    zoom: 1,
+    addOverlay: (el) => overlay.append(el),
+    clearOverlays: () => overlay.replaceChildren()
+  }
   const ev = (x, y, shift = false) => ({ x, y, rawX: x, rawY: y, mods: { shift } })
   const click = (x, y) => {
     tool.pointerDown(ctx, ev(x, y))
     tool.pointerUp(ctx, ev(x, y))
   }
 
-  const previewD = () => svgContent.querySelector('#cutter_preview_line')?.getAttribute('d')
+  const previewD = () => overlay.querySelector('#cutter_preview_line')?.getAttribute('d')
 
   beforeEach(async () => {
     svgContent = document.createElementNS(NS.SVG, 'svg')
     svgContent.id = 'svgcontent'
     document.body.append(svgContent)
+    overlay = document.createElementNS(NS.SVG, 'svg')
+    document.body.append(overlay)
     workarea = document.createElement('div')
     document.body.append(workarea)
 
@@ -89,7 +97,7 @@ describe('ext-cutter', () => {
       { x: 250, y: 110 }
     ])
     expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalledTimes(1)
-    expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
+    expect(overlay.querySelector('#cutter_preview_line')).toBeNull()
   })
 
   it('cuts along the snapped endpoint when shift is held on a drag', () => {
@@ -141,7 +149,7 @@ describe('ext-cutter', () => {
       { x: 200, y: 130 }
     ])
     expect(svgEditor.leftPanel.clickSelect).toHaveBeenCalledTimes(1)
-    expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
+    expect(overlay.querySelector('#cutter_preview_line')).toBeNull()
   })
 
   it('double-click finishes the line without adding a stray duplicate point', () => {
@@ -188,6 +196,32 @@ describe('ext-cutter', () => {
     expect(previewD()).toBe('M100,100 C100,100 160,130 200,100 C240,70 300,120 300,120')
   })
 
+  it('shows the last vertex\'s handles as lines with tips, hidden for a corner and gone after the cut', () => {
+    const guide = () => overlay.querySelector('#cutter_preview_handles')
+    const shown = () => Boolean(guide())
+    click(100, 100)
+    expect(shown()).toBeFalsy()
+
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(240, 70))
+    expect(shown()).toBe(true)
+    const [line, inGrip, outGrip] = guide().children
+    expect(line.getAttribute('d')).toBe('M160,130 L200,100 L240,70')
+    expect([inGrip.getAttribute('cx'), inGrip.getAttribute('cy')]).toEqual(['160', '130'])
+    expect([outGrip.getAttribute('cx'), outGrip.getAttribute('cy')]).toEqual(['240', '70'])
+    tool.pointerUp(ctx, ev(240, 70))
+    tool.pointerMove(ctx, ev(300, 120)) // hover: still the last vertex's handles
+    expect(shown()).toBe(true)
+
+    click(300, 100) // a corner becomes the last vertex
+    expect(shown()).toBe(false)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' })) // the curved vertex is last again
+    expect(shown()).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(guide()).toBeNull()
+  })
+
   it('dragging back onto the vertex makes it a corner again', () => {
     click(100, 100)
     tool.pointerDown(ctx, ev(200, 100))
@@ -232,7 +266,7 @@ describe('ext-cutter', () => {
     tool.deactivate(ctx) // the registry calls this when the mode changes away from 'cutter'
 
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
-    expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
+    expect(overlay.querySelector('#cutter_preview_line')).toBeNull()
 
     // A stray Enter afterwards must not resurrect the cancelled line.
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
@@ -244,14 +278,18 @@ describe('ext-cutter', () => {
     click(150, 80)
     tool.cancel(ctx)
 
-    expect(svgContent.querySelector('#cutter_preview_line')).toBeNull()
+    expect(overlay.querySelector('#cutter_preview_line')).toBeNull()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(svgCanvas.cutShapes).not.toHaveBeenCalled()
   })
 
-  it('the preview line is scaffolding: marked ephemeral so it is never saved or recorded', () => {
+  it('the preview is a tool overlay, never in the drawing', () => {
     click(100, 100)
-    expect(svgContent.querySelector('#cutter_preview_line').hasAttribute('data-se-ephemeral')).toBe(true)
+    tool.pointerDown(ctx, ev(200, 100))
+    tool.pointerMove(ctx, ev(240, 70))
+    expect(overlay.querySelector('#cutter_preview_line')).not.toBeNull()
+    expect(overlay.querySelector('#cutter_preview_handles')).not.toBeNull()
+    expect(svgContent.children).toHaveLength(0)
   })
 
   it('registers as the cutter tool and follows the pointer between clicks', () => {

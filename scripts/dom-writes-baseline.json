@@ -68,7 +68,6 @@
   "src/editor/extensions/ext-corner-radius/ext-corner-radius.ts": 4,
   "src/editor/extensions/ext-corner-tool/ext-corner-tool.ts": 5,
   "src/editor/extensions/ext-curvature/ext-curvature.ts": 22,
-  "src/editor/extensions/ext-cutter/ext-cutter.ts": 13,
   "src/editor/extensions/ext-eyedropper/ext-eyedropper.ts": 4,
   "src/editor/extensions/ext-fonts/ext-fonts.ts": 1,
   "src/editor/extensions/ext-frame-labels/ext-frame-labels.ts": 4,
