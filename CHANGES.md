@@ -1,5 +1,15 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.23
+- UI: frames are click-through: a click inside a frame selects the shape under it; the frame's edge or its label selects the frame.
+- UI: after an undo, the layer that takes clicks is always the current one. An undo could bring back another layer's clickable state, so shapes were edited on one layer while new, pasted and duplicated ones landed on another. The editor's interaction state (which layer takes presses, the dimming while editing inside a group, Layer view's fade) is no longer written into the drawing; run `node scripts/repair-drawings.mjs --write <vault>` once to clear what older versions saved (`editor-pointer-events`).
+- UI: pasting an SVG (an Excalidraw "Copy as SVG") and ungrouping it no longer leaves the file's `<metadata>`, `<defs>`, `<style>` and masks in the layer or selects the `<defs>`; they go to the drawing's `<defs>`, or are dropped when nothing uses them. The repair script's `resource-in-layer` entry cleans drawings saved that way.
+- UI: a shape with no fill takes clicks by its outline only from the start (its interior was clickable until its first click).
+- UI: a drag released outside the canvas keeps its move; Escape, a tool switch, an undo or losing focus in the middle of a drag, resize, rotation or node drag puts the drawing back as it was.
+- UI: a grid-snapped drag, resize and rotation show what they write; a press that is not dragged writes nothing.
+- UI: a feathered mask keeps its feather when saved; a live-effect path keeps its effect after a save and reload; a loaded glow is no longer clipped until the shape is selected.
+- API: `documentChanged` names what changed, and is raised once per real change (hosts mark the drawing dirty on it).
+
 ## 7.4.1-fork.22
 - UI: distorting a group no longer pulls members off when a path in it closes a hair short of its start.
 - UI: a click on a shape above the selected one selects the shape clicked (a drag still moves the selection), so a double-click there opens node edit on that shape; a click on one member of a multi-selection selects just that member.
