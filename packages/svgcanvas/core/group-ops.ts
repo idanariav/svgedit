@@ -344,7 +344,20 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
   /**
  * Converts selected/given `<use>` or child SVG element to a group.
  */
+  /**
+   * Turn an imported `<use>` (or `<svg>`) into a group, as one step. The imported file's own `<defs>`, `<style>`s, masks,
+   * metadata and comments are not shapes: they go to the drawing's `<defs>` (or away), so an ungroup does not put them in the
+   * layer (`hoist-resources.ts`; ids were uniquified, so what the shapes refer to still resolves).
+   */
   const convertToGroup = (elem: Element): void => {
+    svgCanvas.transact('Convert to Group', () => {
+      const g = convertToGroupInDom(elem)
+      if (g?.id) svgCanvas.snapshotHistory.edit('Convert to Group', (root) => hoistResources(root, g.id))
+    })
+  }
+
+  /** The DOM half of `convertToGroup`; returns the group a `<use>` became. */
+  const convertToGroupInDom = (elem: Element): Element | null => {
     const selectedElements = svgCanvas.getSelectedElements()
     if (!elem) {
       elem = selectedElements[0]
@@ -411,7 +424,7 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
       elem = dataStorage.get($elem, 'symbol')
       if (!elem) {
         warn('Unable to convert <use>: missing symbol reference', null, 'selected-elem')
-        return
+        return null
       }
 
       ts = $elem.getAttribute('transform') || ''
@@ -515,12 +528,6 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
         svgCanvas.convertGradients(g)
       }
 
-      // the imported file's own <defs>, <style>s, masks, metadata and comments are not shapes: an ungroup would put them in
-      // the layer (ids are uniquified above, so what the shapes refer to still resolves from the drawing's <defs>)
-      for (const moved of hoistResources(g, svgCanvas.findDefs())) {
-        batchCmd.addSubCommand(new InsertElementCommand(moved))
-      }
-
       // recalculate dimensions on the top-level children so that unnecessary transforms
       // are removed
       walkTreePost(g, n => {
@@ -547,9 +554,11 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
       }
 
       svgCanvas.addCommandToHistory(batchCmd)
+      return g
     } else {
       warn('Unexpected element to ungroup:', elem, 'selected-elem')
     }
+    return null
   }
 
   /**

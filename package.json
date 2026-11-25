@@ -86,7 +86,7 @@
     "svgpath": "2.6.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.65.1",
     "@rollup/plugin-dynamic-import-vars": "2.1.5",
     "@vitest/coverage-istanbul": "^4.1.11",
     "eslint": "^9.39.5",
