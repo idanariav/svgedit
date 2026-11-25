@@ -18,15 +18,6 @@ clipboard even when the user meant the text selected next to the drawing (focus 
 the hotkey copy (or just its `writeText`) when `document.getSelection()` holds text outside the editor's container, which
 needs the hotkey command to know it came from the keyboard. Small; pre-existing, found with the cross-drawing paste fix.
 
-## A press consolidates an element's transform list in every mode, view-only included
-
-`mouseDownEventImpl` (`core/event.ts`) folds an element's multi-entry transform list into one `matrix(…)` on any press that
-lands on it, before the active tool sees the press, so a pan in the mobile shell's view state can rewrite the `transform`
-attribute of what was under the finger. The geometry is identical and no undo step is recorded, so nothing visibly changes,
-but view-only is not strictly read-only at the attribute level. The fix is to consolidate only when a move or edit actually
-starts (the select / resize paths), which touches the drag code every tool shares; not done with the mobile shell to keep
-that change out of it. Small to medium.
-
 ## Model bounds: arcs are approximated, markers and text are not covered
 
 `core/model/bounds.ts` expands an arc into cubics with `svgpath`'s `unarc()`, so an arc's box can be off the browser's `getBBox`

@@ -555,6 +555,26 @@ state; the placement policy decides whether the merge is needed at all.
 **Target.** One placement policy on the model's matrix math (R1's named next step: flip / rotate / scale on the model) and
 one frame-conversion module every tool and gesture uses. Size: L.
 
+**Status (2026-11-25): policy, frames and the press done; resize to follow.**
+- **The policy:** `core/placement.ts`, pulled out of `model-commands.ts`, holds `affineEdit`, `parseAffine`,
+  `strokeForBake` and `translationEdit`, plus `planPlacement` (what `dragPlan` did per element) and `moveEdit` (what
+  `previewDrag` wrote). The drag, its preview and nudge go through it. Nudge used to move only plain shapes on the model;
+  turned shapes, groups and clipped or masked shapes went through `recalculateDimensions` and a consolidation copied from the
+  drag release. They now write what a drag writes, so `tests/e2e/placement.spec.js` compares a drag and a nudge for six
+  kinds of placement. `tests/unit/placement.test.js` is the policy's table.
+- **The press:** `event.ts` no longer folds the pressed shape's transform list into a matrix. A DOM drag and a resize do it
+  where they begin (`consolidateTransformList`), so a click, a pan or a view-only press writes nothing.
+- **The frames:** `core/frames.ts` (`svgCanvas.frames`) replaces the first-layer `getScreenCTM` arithmetic in `event.ts`
+  (five sites), `tool-registry.ts`, `path-actions.ts` and `event-path-edit.ts`. `toolSpace.ts` is now built on it, and the
+  connector's document-to-screen conversion no longer reads `#svgcontent`'s own matrix. `tests/unit/frames.test.js`
+  round-trips known points.
+- **Left:**
+  - `recalculateDimensions` still decides placement for a resize and for a grid-snapped drag, which stays on the DOM path
+    because the grid snaps what a bake writes. Moving it onto the policy needs grid snapping stated on the model.
+  - The three matrix types remain: `Matrix6`, `{a…f}` and `DOMMatrix`. `frames.ts` speaks `DOMMatrix`, and `toolSpace.ts`
+    gives `{a…f}`.
+  - The release DOM path in `event-select.ts` still has its own group consolidation, reached only by a grid-snapped drag.
+
 ### R13. Tests that run the host's conditions
 
 **Today.** Most of the bugs above were found from real Obsidian debug logs, not by the suite: the e2e pages mount one

@@ -476,8 +476,7 @@ describe('selected-elem', () => {
       svgCanvas.moveSelectedElements(2, 0)
     }
 
-    const tlist = rect.transform.baseVal
-    expect(tlist.numberOfItems).toBe(1)
+    // one term (the placement policy states the move on the model: roadmap R12), not one translate per nudge
     expect(rect.getAttribute('transform')).toBe('matrix(1 0 0 1 8 0)')
   })
 

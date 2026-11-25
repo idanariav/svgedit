@@ -267,10 +267,9 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
   }
 
   const refreshRootSctm = (): boolean => {
-    const rootGroup = svgCanvas.$id('svgcontent')?.querySelector('g')
-    const ctm = rootGroup?.getScreenCTM?.()
-    if (ctm) svgCanvas.setRootSctm(ctm.inverse())
-    return Boolean(ctm)
+    const screenToDoc = svgCanvas.frames.screenToDoc()
+    if (screenToDoc) svgCanvas.setRootSctm(screenToDoc)
+    return Boolean(screenToDoc)
   }
 
   // ---- overlays -------------------------------------------------------------

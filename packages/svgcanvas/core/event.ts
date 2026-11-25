@@ -10,7 +10,7 @@ import {
 } from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import {
-  transformPoint, getTransformList, transformListToTransform
+  transformPoint
 } from './math.ts'
 import * as hstry from './history.js'
 import { error as logError, warn as logWarn } from '../common/logger.ts'
@@ -83,7 +83,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     if (!svgCanvas._debugEventSink) return
     try {
       // Read now: the cached root matrix is the previous press's, stale after any scroll or zoom since
-      const matrix = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()?.inverse() ?? svgCanvas.getrootSctm()
+      const matrix = svgCanvas.frames.screenToDoc() ?? svgCanvas.getrootSctm()
       const pt = matrix ? transformPoint(evt.clientX, evt.clientY, matrix) : null
       const detail = {
         mode: svgCanvas.getCurrentMode(),
@@ -125,9 +125,9 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       return
     }
     // The root matrix is only kept fresh by a press; a hover reads it from the document (it may have scrolled or zoomed since).
-    const ctm = svgCanvas.$id('svgcontent')?.querySelector('g')?.getScreenCTM?.()
-    if (!ctm) return
-    const { x, y } = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
+    const at = svgCanvas.frames.docPoint(evt.clientX, evt.clientY)
+    if (!at) return
+    const { x, y } = at
     svgCanvas.drawSnap.hoverDrawSnap(x, y, { tool }) // nothing is being drawn, so nothing is left out (getId() is the last id assigned, not a shape in progress)
   }
 
@@ -752,19 +752,15 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     const zoom = svgCanvas.getZoom()
     const curShape = svgCanvas.getStyle()
     const svgRoot = svgCanvas.getSvgRoot()
-    const { $id } = svgCanvas
 
     if (svgCanvas.gesture.spaceKey || evt.button === 1) { return }
 
     const rightClick = (evt.button === 2)
 
-    // Get screenCTM from the first child group of svgcontent
-    // Note: svgcontent itself has x/y offset attributes, so we use its first child
-    const svgContent = $id('svgcontent')
-    const rootGroup = svgContent?.querySelector('g')
-    const screenCTM = rootGroup?.getScreenCTM?.()
-    if (!screenCTM) { return }
-    svgCanvas.setRootSctm(screenCTM.inverse())
+    // screen → document units, read now (core/frames.ts), and kept for the code that reads the cached one
+    const screenToDoc = svgCanvas.frames.screenToDoc()
+    if (!screenToDoc) { return }
+    svgCanvas.setRootSctm(screenToDoc)
 
     const pt = transformPoint(evt.clientX, evt.clientY, svgCanvas.requireRootSctm())
     const mouseX = pt.x * zoom
@@ -911,24 +907,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
       mouseTarget = selectedElements[0]
     }
 
-    const tlist = getTransformList(mouseTarget)
-
-    // Consolidate transforms for non-group elements to simplify dragging
-    // For elements with multiple transforms (e.g., after ungrouping), consolidate them
-    // into a single matrix so the dummy translate can be properly applied during drag
-    if (tlist && tlist.numberOfItems > 1 && mouseTarget.tagName !== 'g' && mouseTarget.tagName !== 'a') {
-    // Compute the consolidated matrix from all transforms
-      const consolidatedMatrix = transformListToTransform(tlist).matrix
-
-      // Clear the transform list and add a single matrix transform
-      while (tlist.numberOfItems > 0) {
-        tlist.removeItem(0)
-      }
-
-      const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-      newTransform.setMatrix(consolidatedMatrix)
-      tlist.appendItem(newTransform)
-    }
+    // (a press writes nothing on what it lands on: the DOM paths of a drag and a resize fold a shape's transform list into one
+    // matrix where they begin, `consolidateTransformList`; roadmap R12)
     // A registered tool (core/tool-registry.js) may take the press; it can still decline.
     if (!rightClick && svgCanvas.toolPointerDown?.(evt)) return
 
@@ -1006,18 +986,14 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
  */
   const DOMMouseScrollEvent = (e: WheelEvent & { wheelDelta?: number }): void => {
     const zoom = svgCanvas.getZoom()
-    const { $id } = svgCanvas
     if (!e.ctrlKey && !e.metaKey) { return }
 
     e.preventDefault()
 
-    // Get screenCTM from the first child group of svgcontent
-    // Note: svgcontent itself has x/y offset attributes, so we use its first child
-    const svgContent = $id('svgcontent')
-    const rootGroup = svgContent?.querySelector('g')
-    const screenCTM = rootGroup?.getScreenCTM?.()
-    if (!screenCTM) { return }
-    svgCanvas.setRootSctm(screenCTM.inverse())
+    // screen → document units, read now (core/frames.ts), and kept for the code that reads the cached one
+    const screenToDoc = svgCanvas.frames.screenToDoc()
+    if (!screenToDoc) { return }
+    svgCanvas.setRootSctm(screenToDoc)
 
     const workarea = svgCanvas.$id('workarea') as Element
     const scrbar = 15
@@ -1063,15 +1039,11 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
  */
   const zoomAtPoint = (zoomlevel: number, clientX: number, clientY: number): void => {
     const zoom = svgCanvas.getZoom()
-    const { $id } = svgCanvas
 
-    // Get screenCTM from the first child group of svgcontent
-    // Note: svgcontent itself has x/y offset attributes, so we use its first child
-    const svgContent = $id('svgcontent')
-    const rootGroup = svgContent?.querySelector('g')
-    const screenCTM = rootGroup?.getScreenCTM?.()
-    if (!screenCTM) { return }
-    svgCanvas.setRootSctm(screenCTM.inverse())
+    // screen → document units, read now (core/frames.ts), and kept for the code that reads the cached one
+    const screenToDoc = svgCanvas.frames.screenToDoc()
+    if (!screenToDoc) { return }
+    svgCanvas.setRootSctm(screenToDoc)
 
     zoomlevel = Math.min(10, Math.max(0.01, zoomlevel))
     if (zoomlevel === zoom) { return }

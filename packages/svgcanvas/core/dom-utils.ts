@@ -8,7 +8,7 @@
 
 import { NS } from './namespaces.ts'
 import { setUnitAttr, getTypeMap } from './units.ts'
-import { getTransformList } from './math.ts'
+import { getTransformList, transformListToTransform } from './math.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { XY } from './canvas-state.ts'
 
@@ -525,4 +525,20 @@ export const releasePreviewPointer = (el: Element): void => {
   if (!style?.getPropertyValue('pointer-events')) return
   style.removeProperty('pointer-events')
   if (!el.getAttribute('style')?.trim()) el.removeAttribute('style')
+}
+
+/**
+ * Fold a shape's transform list into one `matrix(…)` (a group keeps its list: its terms say where its children are). The
+ * DOM paths of a drag and a resize put their working transforms in front of one matrix, so they do this where they
+ * begin, never at a press: a click, a pan or a view-only press writes nothing (roadmap R12). The geometry is unchanged.
+ */
+export const consolidateTransformList = (el: Element): void => {
+  if (el.tagName === 'g' || el.tagName === 'a') return
+  const tlist = getTransformList(el)
+  const svg = (el as SVGGraphicsElement).ownerSVGElement
+  if (!tlist || tlist.numberOfItems < 2 || !svg) return
+  const merged = svg.createSVGTransform()
+  merged.setMatrix(transformListToTransform(tlist).matrix)
+  while (tlist.numberOfItems > 0) tlist.removeItem(0)
+  tlist.appendItem(merged)
 }

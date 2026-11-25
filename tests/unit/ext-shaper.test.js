@@ -1,3 +1,4 @@
+import { createFrames } from '../../packages/svgcanvas/core/frames.ts'
 import { describe, it, beforeEach, afterEach, vi } from 'vitest'
 import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import extShaper, { describeShape, sampleStroke, strokeTouches } from '../../src/editor/extensions/ext-shaper/ext-shaper.ts'
@@ -190,6 +191,8 @@ describe('ext-shaper', () => {
       addSVGElementsFromJson: addFromJson,
       registerTool: (def) => { tools[def.id] = def },
       getSvgContent: () => svgContent,
+      // the coordinate frames (core/frames.ts) over this mock's content
+      frames: createFrames({ getSvgContent: () => svgContent, getCurrentGroup: () => null, getCurrentDrawing: () => null }),
       getCurrentGroup: () => null,
       getCurrentDrawing: () => ({ getCurrentLayer: () => svgContent }),
       getVisibleElements: (parent) => [...parent.children].reverse(),

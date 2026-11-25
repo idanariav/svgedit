@@ -8,6 +8,7 @@
  *
  */
 import { createInteractionStyle, type InteractionStyle } from './core/interaction-style.ts'
+import { createFrames, type Frames } from './core/frames.ts'
 import './core/path-seg-shim.js' // SVGPathSeg/SVGPathSegList replacement (see core/path-seg-shim.js)
 
 import Paint from './core/paint.ts'
@@ -486,6 +487,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare cursorHintValue: string | null
   declare destroyAbort: AbortController
   declare interactionStyle: InteractionStyle
+  /** the coordinate frames: screen, document units, the drawing space, an element's own (core/frames.ts, roadmap R12) */
+  declare frames: Frames
   declare encodableFonts: Record<string, string>
   declare encodableImages: Record<string, string | false>
   declare extensions: Record<string, unknown>
@@ -686,6 +689,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
     // Created before the core inits so their document/window listeners can use its signal.
     this.destroyAbort = new AbortController()
+    this.frames = createFrames(this)
     // The editor's interaction state on the drawing, as CSS outside it (roadmap R11): only the layers that take presses do
     // (the current one, or every one in All Layers mode); the in-group dimming is marked by `draw.ts`.
     this.interactionStyle = createInteractionStyle(this.svgroot, () => this.svgContent ?? null, this.destroyAbort.signal)

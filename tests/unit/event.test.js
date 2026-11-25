@@ -4,6 +4,7 @@ import { createEvent as initEvent } from '../../packages/svgcanvas/core/event.ts
 import { attachUnits } from './unitsMock.js'
 import { createGestureState } from '../../packages/svgcanvas/core/gesture-state.ts'
 import { createGestureSession } from '../../packages/svgcanvas/core/gesture-session.ts'
+import { createFrames } from '../../packages/svgcanvas/core/frames.ts'
 
 const createSvgElement = (name) => {
   return document.createElementNS(NS.SVG, name)
@@ -39,16 +40,7 @@ describe('event', () => {
     contentGroup = /** @type {SVGGElement} */ (createSvgElement('g'))
     svgcontent.append(contentGroup)
 
-    contentGroup.getScreenCTM = () => ({
-      inverse: () => ({
-        a: 1,
-        b: 0,
-        c: 0,
-        d: 1,
-        e: 0,
-        f: 0
-      })
-    })
+    contentGroup.getScreenCTM = () => new DOMMatrix(1, 0, 0, 1, 0, 0)
 
     Object.defineProperty(contentGroup, 'transform', {
       value: { baseVal: { numberOfItems: 0 } },
@@ -165,6 +157,8 @@ describe('event', () => {
     }
 
     attachUnits(canvas)
+    // the coordinate frames (core/frames.ts), read off this mock's content and its (re-assignable) group and drawing
+    canvas.frames = createFrames({ getSvgContent: () => svgcontent, getCurrentGroup: () => canvas.getCurrentGroup?.() ?? null, getCurrentDrawing: () => canvas.getCurrentDrawing?.() })
     // the gesture session, with a transaction that records nothing (the history is not under test here)
     canvas.beginTransaction = () => ({ commit () {}, cancel () {} })
     Object.assign(canvas, createGestureSession(canvas))

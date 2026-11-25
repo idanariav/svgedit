@@ -325,18 +325,13 @@ export default defineFeature({
     }
 
     /**
-     * Converts svgcontent coordinates (opts.mouse_x/zoom) to screen coordinates
-     * via the svgroot CTM. Used so mouseMove can call findConnectableAt.
+     * Converts document units (opts.mouse_x/zoom) to screen coordinates (`svgCanvas.frames`, through the first layer's
+     * matrix: `#svgcontent`'s own differs across browsers). Used so mouseMove can call findConnectableAt.
      */
     const svgContentToScreen = (svgX: number, svgY: number) => {
-      const svgContent = svgCanvas.getSvgContent()
-      const ctm = svgContent.getScreenCTM()
-      if (!ctm) return { x: svgX, y: svgY }
-      const pt = svgContent.createSVGPoint()
-      pt.x = svgX
-      pt.y = svgY
-      const r = pt.matrixTransform(ctm)
-      return { x: r.x, y: r.y }
+      const m = svgCanvas.frames.docToScreen()
+      if (!m) return { x: svgX, y: svgY }
+      return { x: m.a * svgX + m.c * svgY + m.e, y: m.b * svgX + m.d * svgY + m.f }
     }
 
     // ── Edge-intersection geometry ───────────────────────────────────────────

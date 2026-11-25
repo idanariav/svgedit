@@ -12,7 +12,7 @@
  * @license MIT
  */
 import { assignAttributes } from './dom-utils.ts'
-import { snapToAngle, transformPoint } from './math.ts'
+import { snapToAngle } from './math.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type { Gesture } from './gesture-session.ts'
 
@@ -108,9 +108,8 @@ export const init = (canvas: SvgCanvas): {
   // the selected path) marks the open end a press would carry on or join to. (The root CTM is only cached on a press, so read it here.)
   const hover = (evt: MouseEvent): void => {
     // The space a press draws in: the entered group's, else the layer's.
-    const ctm = ((svgCanvas.getCurrentGroup() ?? svgCanvas.$id('svgcontent')?.querySelector('g')) as SVGGraphicsElement | null)?.getScreenCTM?.()
-    if (!ctm) return
-    const pt = transformPoint(evt.clientX, evt.clientY, ctm.inverse())
+    const pt = svgCanvas.frames.drawingPoint(evt.clientX, evt.clientY)
+    if (!pt) return
     const zoom = svgCanvas.getZoom()
     svgCanvas.pathActions.hover(pt.x * zoom, pt.y * zoom, svgCanvas.getCurrentMode(), evt.shiftKey)
   }

@@ -10,7 +10,7 @@ import * as hstry from './history.js'
 import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
 import { setAttrsById } from './model/edit.ts'
-import { translationEdit } from './model-commands.ts'
+import { planPlacement, moveEdit } from './placement.ts'
 import { getGroupDetachTarget, applyGroupDetachTransform } from './group-detach.ts'
 import { createGroupOps } from './group-ops.ts'
 import { getAlignBox } from './align-box.ts'
@@ -64,8 +64,9 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
     }
 
     const batchCmd = new BatchCommand('position')
-    // Plain shapes without a transform move by editing their own coordinates, which the model states; the rest bake a
-    // transform in through the DOM below.
+    // The move is written as the placement policy says (placement.ts, roadmap R12), as a drag writes it: baked into a
+    // shape's coordinates, a rotation turned about the moved centre, or a matrix in front of the rest; stated on the
+    // model, one step. Only what the policy cannot place goes through the DOM below.
     const shifts: Array<{ id: string, set: Record<string, string | null> }> = []
     const bySelf = new Set<Element>()
     if (undoable || svgCanvas.inTransaction()) {
@@ -75,7 +76,9 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
         if (!undoable && selected.hasAttribute('transform')) return
         const mx = Array.isArray(dx) ? dx[i] : dx
         const my = Array.isArray(dy) ? (dy as number[])[i] : dy as number
-        const set = translationEdit(selected, mx, my)
+        const entry = planPlacement(selected)
+        // a shape with feature data is baked on a copy at the end of a drag; a nudge leaves it to the DOM path
+        const set = entry && !entry.scratch ? moveEdit(selected, entry, mx, my) : null
         if (!set) return
         shifts.push({ id: selected.id, set })
         bySelf.add(selected)

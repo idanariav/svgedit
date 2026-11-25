@@ -534,10 +534,9 @@ export const createPathActions = (canvas: SvgCanvas): PathActionsApi => {
         parentGroup.append(ring)
       }
       // The end is in the space of the layer or entered group the drawing goes into; the ring is in document units.
-      const container = (svgCanvas.getCurrentGroup() || svgCanvas.getCurrentDrawing().getCurrentLayer()) as SVGGraphicsElement | null
-      const root = svgCanvas.getSvgContent().querySelector('g')?.getScreenCTM?.()
-      const own = container?.getScreenCTM?.()
-      const shown = root && own ? new DOMPoint(end.point.x, end.point.y).matrixTransform(root.inverse().multiply(own)) : end.point
+      const container = svgCanvas.frames.drawingSpace()
+      const toDoc = container && svgCanvas.frames.localToDoc(container)
+      const shown = toDoc ? new DOMPoint(end.point.x, end.point.y).matrixTransform(toDoc) : end.point
       assignAttributes(ring, { cx: shown.x * zoom, cy: shown.y * zoom, display: 'inline' })
     }
 

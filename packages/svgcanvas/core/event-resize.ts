@@ -15,7 +15,7 @@
  * @license MIT
  */
 import { requireBBox } from './bbox-utils.ts'
-import { getRotationAngle } from './dom-utils.ts'
+import { consolidateTransformList, getRotationAngle } from './dom-utils.ts'
 import { hasMatrixTransform, getTransformList, transformListToTransform, matrixMultiply } from './math.ts'
 import {
   isAreaText, getAreaBox, getWrapHeight, areaAttrsForBox, writeAreaAttrs, reflowAreaText, TEXT_LINE_HEIGHT
@@ -246,6 +246,8 @@ export const init = (canvas: SvgCanvas): {
     // we track the resize bounding box and translate/scale the selected element
     // while the mouse is down, when mouse goes up, we use this to recalculate
     // the shape's coordinates
+    // where the resize begins, its working transforms go in front of one matrix (not at the press: roadmap R12)
+    if (!state.begun) consolidateTransformList(selected)
     const tlist = getTransformList(selected)
     if (!tlist) { return }
     const hasMatrix = hasMatrixTransform(tlist)

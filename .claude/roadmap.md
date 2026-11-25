@@ -28,6 +28,10 @@ short: details belong in the area files.
   display-only state (what takes presses, what is dimmed or faded) is a mark on the canvas's interaction sheet
   (`svgCanvas.interactionStyle.mark(name, () => elements, declarations)`, `core/interaction-style.ts`), never an attribute
   or inline style on a drawing element, and no reader strips it back off.
+- **Place and convert through the engine** ([R12](roadmap/rearchitecture.md#r12-one-placement-policy-one-set-of-coordinate-frames)):
+  how a move or scale is written is `core/placement.ts` (`planPlacement` / `moveEdit`), not a new transform-list
+  manipulation; a coordinate conversion is `svgCanvas.frames` (`core/frames.ts`; `toolSpace.ts` in the editor), not a
+  site's own `getScreenCTM` arithmetic.
 - **Test under the host's conditions** ([R13](roadmap/rearchitecture.md#r13-tests-that-run-the-hosts-conditions)): behaviour
   that depends on more than one editor, the view lifecycle or the clipboard is tested with the host harness
   (`tests/e2e/host-harness.js`: `mountHost`, `openLeaf`, `window.host`), not with a second editor built by hand.
@@ -102,7 +106,7 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract (done 2026-11-24) | L | — |
 | R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver (done 2026-11-24) | M | — |
 | R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing (done 2026-11-25; previews still to move, see the file) | M | — |
-| R12 | One placement policy and one set of coordinate frames for every gesture and tool | L | R1 (matrix math on the model) |
+| R12 | One placement policy and one set of coordinate frames for every gesture and tool (policy, frames and the press done 2026-11-25; resize and the grid-snapped drag still on `recalculateDimensions`) | L | R1 (matrix math on the model) |
 | R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) (done 2026-11-25) | S–M | — |
 
 **R1 stops at "the model owns state and undo, the DOM is the view and the measurer"** (2026-10-18); what is deliberately not

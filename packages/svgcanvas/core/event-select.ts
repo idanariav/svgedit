@@ -14,7 +14,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
+import { assignAttributes, consolidateTransformList, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
@@ -284,6 +284,7 @@ export const init = (canvas: SvgCanvas): {
       for (const selectedElement of selectedElements) {
         if (!selectedElement) { continue }
         // Capture the transform attribute before we modify it
+        if (!state.plan) consolidateTransformList(selectedElement) // the drag's translate goes in front of one matrix
         state.startTransforms.set(selectedElement, selectedElement.getAttribute('transform') || '')
         if (state.plan) continue // shown through the model: no transform is put on the element
         const slist = getTransformList(selectedElement)

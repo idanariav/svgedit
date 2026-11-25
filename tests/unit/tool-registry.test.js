@@ -397,7 +397,7 @@ describe('tool registry (registerTool)', () => {
       canvas.registerTool(t.tool)
       canvas.setMode('dragrect')
       const group = canvas.getSvgContent().querySelector('g')
-      group.getScreenCTM = () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) })
+      group.getScreenCTM = () => new DOMMatrix(1, 0, 0, 1, 0, 0)
       canvas.toolHover(mouse('mousemove', 7, 8))
       expect(hover).toEqual([7])
       canvas.unregisterTool('dragrect')
@@ -412,7 +412,7 @@ describe('tool registry (registerTool)', () => {
       const hover = []
       canvas.registerTool(makeTool({ wantsHover: true, pointerMove: (ctx, ev) => hover.push([ev.x, ev.y]), ...opts }).tool)
       canvas.setMode('dragrect')
-      canvas.getSvgContent().querySelector('g').getScreenCTM = () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) })
+      canvas.getSvgContent().querySelector('g').getScreenCTM = () => new DOMMatrix(1, 0, 0, 1, 0, 0)
       return hover
     }
 

@@ -67,6 +67,7 @@
 | `event-zoom.ts` | Zoom-mode (rubber-band marquee zoom) mouse handlers, extracted from the `zoom` case of `event.js`'s mouseDown/mouseMove/mouseUp switches |
 | `event.ts` | Pointer and wheel dispatch for the canvas: press, move, release and double-click are routed to the per-mode `event-*` handlers, with the debug log and the creation epilogue |
 | `extension-hooks.ts` | Registry of extension hook names, with the payload each one receives |
+| `frames.ts` | The coordinate frames of the canvas, in one place (roadmap R12): screen (client px), document units (`#svgcontent`'s user space, where layers and the tool overlay live), the space a press draws in (the entered group's,… |
 | `geometry-remap-registry.ts` | Registry for attribute-driven derived-geometry remap hooks |
 | `gesture-session.ts` | The lifecycle every pointer gesture on the canvas shares: a press begins one (and opens its undo transaction), the release commits it, and every other way out rolls it back (roadmap R9,… |
 | `gesture-state.ts` | The state the canvas keeps between mouse events that is not one gesture's (`svgCanvas.gesture`): a key being held, the panel's "keep this style" offer and the deferred selection of a just-created element |
@@ -107,6 +108,7 @@
 | `path-utils.ts` | Path `d`-attribute construction and element-to-path conversion utilities |
 | `path.ts` | Path functionality |
 | `pen-continue.ts` | The Pen's "continue" and "join" gestures: pressing on an end of an existing open path carries that path on (or, while drawing, joins the drawing to it) |
+| `placement.ts` | The placement policy (roadmap R12): where an element's position, size and turn are written, and what a move writes |
 | `pointer-intent.ts` | What a press means, decided in one place (roadmap R10): a press that moves less than `DRAG_PX` screen pixels from where it went down is a click; one that gets that far is a drag, and stays one |
 | `press-target.ts` | What a select-mode press is on, decided by one ranked list of rules (roadmap R10) |
 | `proportions.ts` | Shared definitions for wireframe-mode proportion markers + snapping |
