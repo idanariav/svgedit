@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.24
+- UI: a click on a text with the Text tool keeps editing it when the click falls between two characters (the caret drawn under the pointer took the release, which read as a click off the text and ended the edit).
+
 ## 7.4.1-fork.23
 - UI: frames are click-through: a click inside a frame selects the shape under it; the frame's edge or its label selects the frame.
 - UI: after an undo, the layer that takes clicks is always the current one. An undo could bring back another layer's clickable state, so shapes were edited on one layer while new, pasted and duplicated ones landed on another. The editor's interaction state (which layer takes presses, the dimming while editing inside a group, Layer view's fade) is no longer written into the drawing; run `node scripts/repair-drawings.mjs --write <vault>` once to clear what older versions saved (`editor-pointer-events`).
