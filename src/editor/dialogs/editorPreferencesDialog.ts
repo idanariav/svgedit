@@ -3,6 +3,7 @@ import editorPreferencesDialog from './editorPreferencesDialog.html'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
+import { onNativeClose } from './nativeClose.ts'
 const template = document.createElement('template')
 template.innerHTML = `<style>${dialogSkin('#svg_prefs_container')}</style>${editorPreferencesDialog}`
 /**
@@ -234,7 +235,7 @@ export class SeEditPrefsDialog extends HTMLElement {
     }
     $click(this.$saveBtn, onSaveHandler)
     $click(this.$cancelBtn, onCancelHandler)
-    this.$dialog.addEventListener('close', onCancelHandler)
+    onNativeClose(this.$dialog, onCancelHandler)
   }
 }
 

@@ -4,6 +4,7 @@ import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import imagePropertiesDialogHTML from './imagePropertiesDialog.html'
 import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `<style>${dialogSkin('#svg_docprops_container')}</style>${imagePropertiesDialogHTML}`
@@ -311,7 +312,7 @@ export class SeImgPropDialog extends HTMLElement {
     this.$resolution.addEventListener('change', onChangeHandler)
     $click(this.$saveBtn, onSaveHandler)
     $click(this.$cancelBtn, onCancelHandler)
-    this.$dialog.addEventListener('close', onCancelHandler)
+    onNativeClose(this.$dialog, onCancelHandler)
     this.eventlisten = true
   }
 }

@@ -4,6 +4,7 @@ import { syncDialogTheme } from '../themeUtil.ts'
 import {
   buildRows, planMap, harmonyColors, shiftHue, keyColor, HARMONIES, METHODS, DEFAULT_PRESERVE
 } from '@svgedit/svgcanvas/core/recolor.ts'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -139,7 +140,7 @@ export class SeRecolorDialog extends HTMLElement {
       this.$dialog.close()
     })
     // Escape (and anything else that closes the <dialog>) is a cancel too; its event arrives a task late.
-    this.$dialog.addEventListener('close', () => this.dismiss())
+    onNativeClose(this.$dialog, () => this.dismiss())
   }
 
   get opened () {

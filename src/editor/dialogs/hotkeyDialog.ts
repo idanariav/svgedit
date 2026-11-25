@@ -5,6 +5,7 @@ import hotkeyDialogHTML from './hotkeyDialog.html'
 import { ownerEditor, requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = hotkeyDialogHTML
@@ -93,7 +94,7 @@ export class SeHotkeyDialog extends HTMLElement {
     const close = () => this.setAttribute('dialog', 'close')
     $click(this.$close, close)
     $click(this.$done, close)
-    this.$dialog.addEventListener('close', () => this._cancelRecording())
+    onNativeClose(this.$dialog, () => this._cancelRecording())
     $click(this.$resetAll, () => {
       requireOwnerEditor(this).hotkeys.resetAll()
       this._render()

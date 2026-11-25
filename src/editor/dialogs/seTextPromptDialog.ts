@@ -3,6 +3,7 @@ import seTextPromptDialogHTML from './seTextPromptDialog.html'
 import { closestRoot } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = seTextPromptDialogHTML
@@ -117,7 +118,7 @@ export class SeTextPromptDialog extends HTMLElement {
       }
     })
     // Closing via backdrop / Esc on the dialog itself counts as cancel.
-    this.$dialog.addEventListener('close', () => this._settle(null))
+    onNativeClose(this.$dialog, () => this._settle(null))
   }
 }
 

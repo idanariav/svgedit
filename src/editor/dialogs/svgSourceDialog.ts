@@ -4,6 +4,7 @@ import { requireOwnerEditor } from '../domScope.ts'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
 import { dialogSkin } from './dialogSkin.css.js'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `<style>${dialogSkin('#svg_source_container')}</style>${svgSourceDialogHTML}`
@@ -190,7 +191,10 @@ export class SeSvgSourceEditorDialog extends HTMLElement {
     $click(this.$saveBtn, onSaveHandler)
     $click(this.$cancelBtn, onCancelHandler)
     $click(this.$toggleDynamic, onToggleDynamicHandler)
-    this.$dialog.addEventListener('close', onCancelHandler)
+    // Cancel only a close the browser made (Escape) while the dialog is meant to be open, not the one after Save
+    onNativeClose(this.$dialog, () => {
+      if (this.getAttribute('dialog') === 'open') onCancelHandler()
+    })
   }
 }
 

@@ -1,6 +1,7 @@
 // seParamsDialog.ts — `se-params-dialog`: a small modal form from field descriptors (number / checkbox / select / 9-point `origin` locator); `open({title, fields, onChange, onOk, onCancel})`, knows nothing of the drawing…
 import { dialogSkin } from './dialogSkin.css.js'
 import { syncDialogTheme } from '../themeUtil.ts'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -97,7 +98,7 @@ export class SeParamsDialog extends HTMLElement {
       this._opts?.onOk(this.values())
       this.close()
     })
-    this.$dialog.addEventListener('close', () => this.dismiss())
+    onNativeClose(this.$dialog, () => this.dismiss())
     // Enter in a field confirms
     this.$fields.addEventListener('keydown', (evt) => {
       if (evt.key === 'Enter') { evt.preventDefault(); this.$ok.click() }

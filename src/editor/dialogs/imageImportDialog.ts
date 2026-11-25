@@ -2,6 +2,7 @@
 import imageImportDialogHTML from './imageImportDialog.html'
 import { $click } from '@svgedit/svgcanvas/core/dom-utils.ts'
 import { syncDialogTheme } from '../themeUtil.ts'
+import { onNativeClose } from './nativeClose.ts'
 
 const template = document.createElement('template')
 template.innerHTML = imageImportDialogHTML
@@ -330,7 +331,7 @@ export class SeImageImportDialog extends HTMLElement {
     // Footer + close
     $click(this.$cancelBtn, close)
     $click(this.$closeBtn, close)
-    this.$dialog.addEventListener('close', () => {
+    onNativeClose(this.$dialog, () => {
       if (this._suppressClose) return
       this.reset()
     })
