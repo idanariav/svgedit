@@ -731,6 +731,33 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
     $click(container, handleLinkInCanvas)
     container.addEventListener('dblclick', this.dblClickEvent)
     container.addEventListener('mouseup', this.mouseUpEvent)
+    // A press released outside the canvas (over a panel, another drawing, or after its tab was hidden: roadmap R13) never
+    // reached the canvas's own mouseup, so the gesture stayed open until the next press cancelled it and the move was lost.
+    // The release finishes the press at the last point the canvas saw; a canvas no longer rendered cancels it instead.
+    let lastClient: { x: number, y: number } | null = null
+    container.addEventListener('mousemove', (e) => { lastClient = { x: e.clientX, y: e.clientY } })
+    container.addEventListener('mousedown', (e) => { lastClient = { x: e.clientX, y: e.clientY } })
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 2 || !lastClient || container.contains(e.target as Node | null)) return
+      if (!this.getStarted() && !this.activeGesture?.()) return
+      if (!container.isConnected || container.getClientRects().length === 0) {
+        this.cancelGesture?.('focus lost')
+        this.setStarted(false)
+        return
+      }
+      // on the canvas, as its own release would be (the handlers read the target); it does not come back here
+      container.dispatchEvent(new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: lastClient.x,
+        clientY: lastClient.y,
+        button: e.button,
+        altKey: e.altKey,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey
+      }))
+    }, { signal: this.destroyAbort.signal })
     container.addEventListener('mouseleave', this.mouseOutEvent)
     container.addEventListener('mousewheel', this.DOMMouseScrollEvent)
     container.addEventListener('DOMMouseScroll', this.DOMMouseScrollEvent)

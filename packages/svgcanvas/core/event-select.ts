@@ -179,6 +179,7 @@ export const init = (canvas: SvgCanvas): {
         onCancel: () => {
           clearDragOverlays()
           svgCanvas.setStarted(false)
+          svgCanvas.setJustSelected(null) // the release that reads it is not coming
           svgCanvas.setCurrentMode('select')
           for (const el of svgCanvas.getSelectedElements()) if (el) svgCanvas.selectorManager.requestSelector(el).resize()
           svgCanvas.updateGroupSelector()

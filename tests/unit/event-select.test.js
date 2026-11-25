@@ -274,3 +274,32 @@ describe('event-select up() click without a drag', () => {
     expect(svgCanvas.calls.some((c) => Array.isArray(c) && c[0] === 'selectOnly')).toBe(false)
   })
 })
+
+describe('event-select a move cancelled before its release', () => {
+  // Roadmap R13: a press that selected a shape, then lost its release (the tab hidden mid-drag, the window blurred), left
+  // `justSelected` behind for the next press to read.
+  it('forgets the shape the press selected', () => {
+    let justSelected = null
+    const svgCanvas = withSession({
+      gesture: createGestureState(),
+      setStarted: () => {},
+      setCurrentMode: () => {},
+      setCurrentResizeMode: () => {},
+      clearSelection: () => {},
+      addToSelection: () => {},
+      setJustSelected: (el) => { justSelected = el },
+      getJustSelected: () => justSelected,
+      getSelectedElements: () => [],
+      updateGroupSelector: () => {},
+      pathActions: { clear: () => {} },
+      selectorManager: { requestSelector: () => ({ resize () {} }) },
+      call: () => {}
+    })
+    const { down } = eventSelectInit(svgCanvas)
+    const shape = {}
+    down({ shiftKey: false }, makeCtx({ mouseTarget: shape, svgRoot: {}, selectedElements: [] }))
+    expect(justSelected).toBe(shape)
+    svgCanvas.cancelGesture('focus lost')
+    expect(justSelected).toBeNull()
+  })
+})
