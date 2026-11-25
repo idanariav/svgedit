@@ -23,6 +23,8 @@ const attrs = (page, id) => page.evaluate((id) => {
   const round = (v) => v && v.replace(/-?\d*\.?\d+(e-?\d+)?/g, (n) => String(Number(Number(n).toFixed(2))))
   return Object.fromEntries(['x', 'y', 'width', 'height', 'transform'].map((n) => [n, round(el.getAttribute(n))]))
 }, id)
+/** grid snapping on or off, in the canvas's own config (the editor's setConfig after start-up does not reach it) */
+const grid = (page, on) => page.evaluate((on) => Object.assign(window.host.canvas('a').getCurConfig(), { gridSnapping: on, snappingStep: 10 }), on)
 /** where the element shows, in document units */
 const box = (page, id) => page.evaluate((id) => {
   const c = window.host.canvas('a')
@@ -34,7 +36,7 @@ test.describe('placement', () => {
   test.beforeEach(async ({ page }) => {
     await mountHost(page)
     await page.evaluate((svg) => window.host.load('a', svg), SHAPES)
-    await page.evaluate(() => window.host.editor('a').setConfig({ gridSnapping: false }))
+    await grid(page, false)
   })
 
   for (const id of ['plain', 'shifted', 'turned', 'grp', 'tgrp', 'masked']) {
@@ -76,5 +78,51 @@ test.describe('placement', () => {
       await page.evaluate(() => window.host.canvas('a').setMode('select'))
       expect(await attrs(page, 'listed'), mode).toEqual(before)
     }
+  })
+
+  test('with the grid on, a drag goes through the model and its release lands on the grid, as one step', async ({ page }) => {
+    await grid(page, true)
+    await page.evaluate(() => {
+      const c = window.host.canvas('a')
+      c.getCurConfig().smartSnapping = false
+      const r = c.getElement('plain')
+      r.setAttribute('x', '43')
+      r.setAttribute('y', '47')
+      c.selectOnly([r])
+      c.undoMgr.snapshots.baseline()
+    })
+    const undo0 = await page.evaluate(() => window.host.canvas('a').undoMgr.getUndoStackSize())
+    const at = await page.evaluate(() => {
+      const r = window.host.canvas('a').getElement('plain').getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.mouse.move(at.x, at.y)
+    await page.mouse.down()
+    await page.mouse.move(at.x + 30, at.y + 20, { steps: 6 })
+    // mid-drag the element carries no working transform: the model shows the move
+    expect(await page.evaluate(() => window.host.canvas('a').getElement('plain').getAttribute('transform'))).toBeNull()
+    await page.mouse.up()
+    const placed = await attrs(page, 'plain')
+    expect(Number(placed.x) % 10).toBe(0)
+    expect(Number(placed.y) % 10).toBe(0)
+    expect(placed.transform).toBeNull()
+    expect(await page.evaluate(() => window.host.canvas('a').undoMgr.getUndoStackSize())).toBe(undo0 + 1)
+  })
+
+  test('with the grid on, a resize goes through the model too', async ({ page }) => {
+    await grid(page, true)
+    await page.evaluate(() => { const c = window.host.canvas('a'); c.selectOnly([c.getElement('plain')], true) }) // with its grips
+    const grip = await page.evaluate(() => {
+      const r = window.host.leaves.get('a').container.querySelector('#selectorGrip_resize_se').getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.mouse.move(grip.x, grip.y)
+    await page.mouse.down()
+    await page.mouse.move(grip.x + 40, grip.y + 30, { steps: 6 })
+    expect(await page.evaluate(() => window.host.canvas('a').getElement('plain').getAttribute('transform'))).toBeNull()
+    await page.mouse.up()
+    const placed = await attrs(page, 'plain')
+    expect(placed.transform).toBeNull()
+    expect(Number(placed.width)).toBeGreaterThan(60)
   })
 })

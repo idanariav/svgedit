@@ -1,6 +1,6 @@
 # R12 — One placement policy, one set of coordinate frames
 
-Status: steps 1–3 done (2026-11-25); resize on the policy is the follow-up. Roadmap: `.claude/roadmap/rearchitecture.md` › R12.
+Status: done (2026-11-25). Roadmap: `.claude/roadmap/rearchitecture.md` › R12.
 
 ## Why
 

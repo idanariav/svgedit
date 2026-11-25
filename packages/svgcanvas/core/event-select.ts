@@ -15,7 +15,7 @@
  * @license MIT
  */
 import { assignAttributes, consolidateTransformList, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
-import { getTransformList, transformListToTransform } from './math.ts'
+import { getTransformList } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
 import { getAlignBoxOf } from './align-box.ts'
@@ -540,55 +540,19 @@ export const init = (canvas: SvgCanvas): {
           // Groups keep the drag baked as a single matrix transform on the
           // <g> (recalculateDimensions returns null for them).
           if (isGroup && hasDragTranslate) {
-            const consolidatedMatrix = transformListToTransform(tlist).matrix
-
-            // Clear the transform list
-            while (tlist.numberOfItems > 0) {
-              tlist.removeItem(0)
-            }
-
-            // Add the consolidated matrix
-            const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-            newTransform.setMatrix(consolidatedMatrix)
-            tlist.appendItem(newTransform)
-
+            consolidateTransformList(elem, { groups: true })
             // Record the transform change for undo
             batchCmd.addSubCommand(new ChangeElementCommand(elem, { transform: oldTransform }))
             return
           }
 
-          // A non-group element whose transform list still holds the existing
-          // transform plus the dummy drag translate (2+ items): consolidate
-          // them into one matrix so recalculateDimensions can bake the move
-          // into the geometry below. Without this the translate is left as a
-          // matrix transform on the element — and path-edit then draws node
-          // grips from the un-translated pathSegList, i.e. at the original
-          // location. Skip for resize: that tlist is [translate, scale,
-          // translate] and must reach recalculateDimensions to scale real
-          // attributes (width/height/font-size/…) rather than bake a matrix.
-          // Also skip when a rotation is present: collapsing it into a raw
-          // matrix makes getRotationAngle() blind to it, so recalculateDimensions
-          // falls into its matrix-as-scale branch and treats cos(angle)/sin(angle)
-          // as a scale factor — e.g. font-size *= |cos(90°)| ≈ 0. Leaving the
-          // rotate() transform intact lets recalculateDimensions's own
-          // translate+rotate decomposition (which does not scale anything) handle it.
-          if (
-            operationMode !== 'resize' &&
-            tlist.numberOfItems > 1 &&
-            hasDragTranslate &&
-            !getRotationAngle(elem)
-          ) {
-            const consolidatedMatrix = transformListToTransform(tlist).matrix
-
-            // Clear the transform list
-            while (tlist.numberOfItems > 0) {
-              tlist.removeItem(0)
-            }
-
-            // Add the consolidated matrix
-            const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-            newTransform.setMatrix(consolidatedMatrix)
-            tlist.appendItem(newTransform)
+          // A non-group element whose transform list still holds the existing transform plus the drag translate (2+ items):
+          // one matrix, so recalculateDimensions bakes the move into the geometry below (else path-edit draws the node grips
+          // from the un-translated path). Not for a resize (its [translate, scale, translate] must reach recalculateDimensions
+          // to scale real attributes), nor with a rotation (collapsed into a matrix, recalculateDimensions would read
+          // cos / sin as a scale: a font size × |cos 90°| ≈ 0). Only what the placement policy cannot place gets here.
+          if (operationMode !== 'resize' && tlist.numberOfItems > 1 && hasDragTranslate && !getRotationAngle(elem)) {
+            consolidateTransformList(elem)
           }
 
           // For non-group elements, bake the transform into geometry via recalculateDimensions, with this element's own

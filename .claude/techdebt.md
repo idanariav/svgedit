@@ -226,3 +226,13 @@ Roadmap R11 moved the layers' pointer events, the in-group dimming and Layer mod
 - **Layer mode locks the other layers** through the drawing's own lock state (`setLayerLocked`), restored on exit, so an
   autosave during the mode writes them locked. A lock that is only the mode's would need a second, display-only lock the
   selection code reads. Small to medium.
+
+## The e2e suite runs with grid snapping off (2026-11-25)
+
+`enableGridSnapping` (`tests/e2e/helpers.js`, called by `visitAndApproveStorage`) calls `svgEditor.setConfig({ gridSnapping:
+true })` after start-up, which does not reach the canvas's config, so every e2e test has run with the grid off. Setting
+`svgCanvas.getCurConfig().gridSnapping` as well (tried in R12) fails 14 tests that expect exact coordinates: draw-snap (8),
+measure (2), distort corners in a transformed group (2), the 3 × 3 px drag in entry-points, ruler guides, node snap. None of
+them are placement tests. Either fix the helper and give those tests `gridSnapping: false`, or drop the helper and turn the
+grid on where a test wants it. Small; R12's grid tests (`placement.spec.js`) set the canvas config themselves.
+

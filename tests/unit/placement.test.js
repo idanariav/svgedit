@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { planPlacement, moveEdit } from '../../packages/svgcanvas/core/placement.ts'
+import { planPlacement, moveEdit, snapEdit } from '../../packages/svgcanvas/core/placement.ts'
 
 // Roadmap R12: one placement policy. A drag, its preview and nudge all write a move the way this table says.
 const NS = 'http://www.w3.org/2000/svg'
@@ -38,5 +38,32 @@ describe('placement policy', () => {
 
   it('without rotations allowed, a turned shape has no plan (a resize of it is the rotate-aware path\'s)', () => {
     expect(planPlacement(el('rect', { id: 'r', width: 1, height: 1, transform: 'rotate(30)' }), false)).toBeNull()
+  })
+})
+
+describe('placement on the grid', () => {
+  const grid = { point: (x, y) => ({ x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10 }), value: (v) => Math.round(v / 10) * 10 }
+  const inLayer = (e) => {
+    const svg = el('svg')
+    const layer = el('g', { class: 'layer' })
+    layer.append(e)
+    svg.append(layer)
+    return e
+  }
+
+  it('puts a shape directly in a layer on grid points, its sizes on grid steps', () => {
+    const r = inLayer(el('rect', { id: 'r' }))
+    expect(snapEdit(r, { x: '43', y: '47', width: '58', height: '40' }, grid)).toEqual({ x: '40', y: '50', width: '60', height: '40' })
+    const c = inLayer(el('circle', { id: 'c' }))
+    expect(snapEdit(c, { cx: '12', cy: '18', r: '6' }, grid)).toEqual({ cx: '10', cy: '20', r: '10' })
+  })
+
+  it('leaves a shape inside a group alone (the grid is not the group\'s) and what is not a number', () => {
+    const g = inLayer(el('g'))
+    const r = el('rect', { id: 'r' })
+    g.append(r)
+    expect(snapEdit(r, { x: '43', y: '47' }, grid)).toEqual({ x: '43', y: '47' })
+    const p = inLayer(el('path', { id: 'p' }))
+    expect(snapEdit(p, { d: 'M3 3L7 7', transform: null }, grid)).toEqual({ d: 'M3 3L7 7', transform: null })
   })
 })

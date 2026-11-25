@@ -528,12 +528,13 @@ export const releasePreviewPointer = (el: Element): void => {
 }
 
 /**
- * Fold a shape's transform list into one `matrix(…)` (a group keeps its list: its terms say where its children are). The
- * DOM paths of a drag and a resize put their working transforms in front of one matrix, so they do this where they
- * begin, never at a press: a click, a pan or a view-only press writes nothing (roadmap R12). The geometry is unchanged.
+ * Fold a shape's transform list into one `matrix(…)` (a group keeps its list unless `groups`: its terms say where its
+ * children are). The DOM paths of a drag and a resize put their working transforms in front of one matrix, so they do
+ * this where they begin, never at a press: a click, a pan or a view-only press writes nothing (roadmap R12); what the
+ * placement policy cannot place has its drag or nudge folded here at the end. The geometry is unchanged.
  */
-export const consolidateTransformList = (el: Element): void => {
-  if (el.tagName === 'g' || el.tagName === 'a') return
+export const consolidateTransformList = (el: Element, { groups = false }: { groups?: boolean } = {}): void => {
+  if (!groups && (el.tagName === 'g' || el.tagName === 'a')) return
   const tlist = getTransformList(el)
   const svg = (el as SVGGraphicsElement).ownerSVGElement
   if (!tlist || tlist.numberOfItems < 2 || !svg) return

@@ -106,7 +106,7 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R9 | A gesture owns its state: select / resize / rotate / path edit on the begin → preview → commit contract (done 2026-11-24) | L | — |
 | R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver (done 2026-11-24) | M | — |
 | R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing (done 2026-11-25; previews still to move, see the file) | M | — |
-| R12 | One placement policy and one set of coordinate frames for every gesture and tool (policy, frames and the press done 2026-11-25; resize and the grid-snapped drag still on `recalculateDimensions`) | L | R1 (matrix math on the model) |
+| R12 | One placement policy and one set of coordinate frames for every gesture and tool (done 2026-11-25) | L | R1 (matrix math on the model) |
 | R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) (done 2026-11-25) | S–M | — |
 
 **R1 stops at "the model owns state and undo, the DOM is the view and the measurer"** (2026-10-18); what is deliberately not

@@ -555,7 +555,7 @@ state; the placement policy decides whether the merge is needed at all.
 **Target.** One placement policy on the model's matrix math (R1's named next step: flip / rotate / scale on the model) and
 one frame-conversion module every tool and gesture uses. Size: L.
 
-**Status (2026-11-25): policy, frames and the press done; resize to follow.**
+**Status (2026-11-25): done.**
 - **The policy:** `core/placement.ts`, pulled out of `model-commands.ts`, holds `affineEdit`, `parseAffine`,
   `strokeForBake` and `translationEdit`, plus `planPlacement` (what `dragPlan` did per element) and `moveEdit` (what
   `previewDrag` wrote). The drag, its preview and nudge go through it. Nudge used to move only plain shapes on the model;
@@ -568,12 +568,18 @@ one frame-conversion module every tool and gesture uses. Size: L.
   (five sites), `tool-registry.ts`, `path-actions.ts` and `event-path-edit.ts`. `toolSpace.ts` is now built on it, and the
   connector's document-to-screen conversion no longer reads `#svgcontent`'s own matrix. `tests/unit/frames.test.js`
   round-trips known points.
-- **Left:**
-  - `recalculateDimensions` still decides placement for a resize and for a grid-snapped drag, which stays on the DOM path
-    because the grid snaps what a bake writes. Moving it onto the policy needs grid snapping stated on the model.
-  - The three matrix types remain: `Matrix6`, `{a…f}` and `DOMMatrix`. `frames.ts` speaks `DOMMatrix`, and `toolSpace.ts`
-    gives `{a…f}`.
-  - The release DOM path in `event-select.ts` still has its own group consolidation, reached only by a grid-snapped drag.
+- **The grid:** a grid-snapped drag, resize and rotation used to leave the model for the DOM path, because the grid
+  snapped what the bake wrote (`remapElement`). The policy now has `snapEdit`: the coordinates a move writes, for a shape
+  directly in a layer, land on grid points and its sizes on grid steps, in the preview too, so what the drag shows is what
+  it writes. A turned shape and a matrix-placed one move by the snapped delta only, since their geometry is not in the
+  grid's frame. The gesture already snapped the delta and the resize box.
+- **One merge:** the drag release's two transform-list merges and nudge's are `consolidateTransformList`. They are only
+  reached by what the policy cannot place: no id, a value with units, a group with feature data.
+- **Left on purpose:**
+  - `recalculateDimensions` remains the DOM fallback for what the policy cannot place, and the engine of Transform Each,
+    ungrouping and the other DOM commands.
+  - The three matrix types remain: `Matrix6`, `{a…f}` and `DOMMatrix`. `frames.ts` speaks `DOMMatrix`, `toolSpace.ts` gives
+    `{a…f}`, and the model uses `Matrix6`. Each sits behind one module, so unifying them is a rename, not a design change.
 
 ### R13. Tests that run the host's conditions
 

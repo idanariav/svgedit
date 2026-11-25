@@ -10,8 +10,8 @@
  * @license MIT
  */
 import SvgPath from 'svgpath'
-import { parseAffine, affineEdit, strokeForBake, translationEdit, composeAffine as compose, IDENTITY_AFFINE as IDENTITY, planPlacement, moveEdit } from './placement.ts'
-import type { Affine, DragEntry } from './placement.ts'
+import { parseAffine, affineEdit, strokeForBake, translationEdit, composeAffine as compose, IDENTITY_AFFINE as IDENTITY, planPlacement, moveEdit, snapEdit } from './placement.ts'
+import type { Affine, DragEntry, GridSnap } from './placement.ts'
 import { bakeInScratch } from './scratch-bake.ts'
 import { BatchCommand } from './history.js'
 import { readDom } from './model-render.ts'
@@ -301,8 +301,6 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
       svgCanvas.snapshotHistory.endPreview('position')
       return true
     }
-    // the grid snaps what a bake writes: that is the DOM path's job
-    if (svgCanvas.getGridSnapping?.()) return false
     const plan: Array<{ el: Element, was: string, set: Record<string, string | null> }> = []
     for (const [el, was] of before) {
       const now = parseAffine(el.getAttribute('transform'))
@@ -365,9 +363,9 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     return true
   }
 
-  // the policy (placement.ts) for every element of a drag; the grid snaps what a bake writes, which is the DOM path's job
+  // the policy (placement.ts) for every element of a drag, a resize or a rotation
   const dragPlan = (elems: Element[], allowRotated = false): Map<Element, DragEntry> | null => {
-    if (svgCanvas.getGridSnapping?.() || !elems.length) return null
+    if (!elems.length) return null
     const plan = new Map<Element, DragEntry>()
     for (const el of elems) {
       const entry = planPlacement(el, allowRotated)
@@ -389,13 +387,20 @@ export const createModelCommands = (canvas: SvgCanvas): ModelCommandsApi => {
     })
   }
   let lastPreview: ((root: ModelElement) => ModelElement) | null = null
+  /** The grid, when it is on: a move's written coordinates land on it (the drag's delta is snapped by the gesture). */
+  const grid = (): GridSnap | null => svgCanvas.getGridSnapping?.()
+    ? { point: (x, y) => svgCanvas.snapPointToGrid(x, y), value: (v) => svgCanvas.snapToGrid(v) }
+    : null
   const previewDrag = (plan: Map<Element, DragEntry>, dx: number, dy: number): void => {
+    const snap = grid()
     svgCanvas.snapshotHistory.preview(lastPreview = (root) => {
       let out = root
       for (const [el, entry] of plan) {
         const node = findById(root, el.id)
         const set = node && moveEdit(node, entry, dx, dy)
-        if (set) out = setAttrsById(out, el.id, set)
+        // what the drag shows is what it writes: on the grid, before the release (a turned shape turns about a centre the
+        // grid does not move, and a matrix-placed one keeps its geometry: the snapped drag moves those)
+        if (set) out = setAttrsById(out, el.id, snap && !entry.matrix && !entry.rot ? snapEdit(el, set, snap) : set)
       }
       return out
     })

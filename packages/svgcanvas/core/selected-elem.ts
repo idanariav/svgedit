@@ -7,7 +7,7 @@
  */
 
 import * as hstry from './history.js'
-import { assignAttributes, getUrlFromAttr } from './dom-utils.ts'
+import { assignAttributes, consolidateTransformList, getUrlFromAttr } from './dom-utils.ts'
 import { matrixMultiply, transformListToTransform, getTransformList } from './math.ts'
 import { setAttrsById } from './model/edit.ts'
 import { planPlacement, moveEdit } from './placement.ts'
@@ -131,15 +131,7 @@ export const createSelectedElem = (canvas: SvgCanvas): SelectedElemApi => {
         // so a long nudging session doesn't leave a huge transform-list
         // chain that both svgedit's own per-frame transform math and the
         // renderer have to multiply through on every later interaction.
-          if (tlist.numberOfItems > 1) {
-            const consolidatedMatrix = transformListToTransform(tlist).matrix
-            while (tlist.numberOfItems > 0) {
-              tlist.removeItem(0)
-            }
-            const newTransform = svgCanvas.getSvgRoot().createSVGTransform()
-            newTransform.setMatrix(consolidatedMatrix)
-            tlist.appendItem(newTransform)
-          }
+          consolidateTransformList(selected, { groups: true })
           if ((selected.getAttribute('transform') || '') !== existingTransform) {
             batchCmd.addSubCommand(
               new ChangeElementCommand(selected, { transform: existingTransform })

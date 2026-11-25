@@ -288,3 +288,35 @@ export const moveEdit = (node: Element | ModelElement, entry: DragEntry, dx: num
 }
 
 export type { Matrix6 }
+
+/** How the grid snaps (`svgCanvas.snapPointToGrid` / `snapToGrid`). */
+export interface GridSnap { point(x: number, y: number): { x: number, y: number }, value(v: number): number }
+
+/** The coordinate pairs a placement writes, snapped together (a non-square grid's nodes are points, not two axes). */
+const SNAP_PAIRS: Array<[string, string]> = [['x', 'y'], ['cx', 'cy'], ['x1', 'y1'], ['x2', 'y2'], ['fx', 'fy']]
+/** The sizes it writes, snapped on their own. */
+const SNAP_SIZES = ['width', 'height', 'r', 'rx', 'ry']
+
+/**
+ * A placement's attributes put on the grid: the coordinates it writes land on grid points and its sizes on grid steps, as the
+ * DOM bake did (`remapElement`). Only for a shape directly in a layer (inside a group the grid is not the group's), and only
+ * plain numbers (a path's `d` and a polyline's `points` move by the snapped drag, as before).
+ */
+export const snapEdit = (el: Element, set: Record<string, string | null>, grid: GridSnap): Record<string, string | null> => {
+  if ((el.parentNode?.parentNode as Element | null)?.localName !== 'svg') return set
+  const out = { ...set }
+  const num = (v: string | null | undefined): number | null => (v != null && Number.isFinite(Number(v)) ? Number(v) : null)
+  for (const [xa, ya] of SNAP_PAIRS) {
+    const x = num(out[xa])
+    const y = num(out[ya])
+    if (x === null || y === null) continue
+    const p = grid.point(x, y)
+    out[xa] = String(round6(p.x))
+    out[ya] = String(round6(p.y))
+  }
+  for (const n of SNAP_SIZES) {
+    const v = num(out[n])
+    if (v !== null) out[n] = String(round6(grid.value(v)))
+  }
+  return out
+}
