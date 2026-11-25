@@ -46,9 +46,10 @@ export const test = base.extend({
       // page whose checker is missing or throws must fail, not pass silently.
       const result = await page
         .evaluate(() => {
-          const canvas = window.svgEditor?.svgCanvas
-          if (!canvas) return { editor: false, findings: [] }
-          return { editor: true, findings: canvas.checkDrawing() }
+          // every mounted editor: the page's, or each leaf's under the host harness (host-harness.js, roadmap R13)
+          const canvases = window.host?.leaves?.size ? window.host.editors().map((e) => e.svgCanvas) : [window.svgEditor?.svgCanvas]
+          if (!canvases[0]) return { editor: false, findings: [] }
+          return { editor: true, findings: canvases.flatMap((c) => c.checkDrawing()) }
         })
         .catch((err) => (page.isClosed() ? { editor: false, findings: [] } : { editor: true, findings: [{ code: 'check-failed', message: String(err) }] }))
       const findings = result.findings
@@ -60,7 +61,8 @@ export const test = base.extend({
     //   test.info().annotations.push({ type: 'allow-gesture-in-progress', description: 'why' })
     if (testInfo.status === 'passed' && !testInfo.annotations.some((a) => a.type === 'allow-gesture-in-progress')) {
       const leftovers = await page
-        .evaluate(() => window.svgEditor?.svgCanvas?.gestureLeftovers?.() ?? [])
+        .evaluate(() => (window.host?.leaves?.size ? window.host.editors() : [window.svgEditor])
+          .flatMap((e) => e?.svgCanvas?.gestureLeftovers?.() ?? []))
         .catch((err) => (page.isClosed() ? [] : [`check failed: ${err}`]))
       expect(leftovers, `gesture state left behind after "${testInfo.title}"`).toEqual([])
     }

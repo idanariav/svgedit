@@ -279,6 +279,10 @@ Every test also runs `svgCanvas.checkDrawing()` in an automatic `afterEach`
 It also asserts `svgCanvas.gestureLeftovers()` is empty, which fails a test that leaves gesture state behind (roadmap R9:
 a gesture's state lives on the gesture, `core/gesture-session.ts`). A test that ends mid-gesture on purpose opts out with
 `{ type: 'allow-gesture-in-progress', description }`.
+Behaviour that depends on the host (two editors in one document, a leaf switch with no click, the view lifecycle, a
+clipboard that drops writes or never delivers a paste) is tested with the **host harness** (`tests/e2e/host-harness.js`:
+`mountHost(page, { clipboard })`, `openLeaf`, and `window.host` in the page, roadmap R13); the rest checks then run on every
+leaf's editor.
 `tests/e2e/command-sweep.spec.js` runs every non-interactive command against
 every round-trip fixture (`SWEEP=full` for the larger matrix), and fails a command that changes the drawing
 without announcing it (`documentChanges.pending()`: a host would never mark the drawing dirty).

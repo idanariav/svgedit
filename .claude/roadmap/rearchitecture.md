@@ -535,3 +535,20 @@ menu roles are not simulated (the `window.svgEditor` problems, the 2026-11-24 pa
 
 **Target.** A host-harness e2e page: two editors plus a fake plugin view lifecycle (open / switch / close firing as Obsidian
 does) and a clipboard double that can drop or replace writes the way a host can. Size: S–M.
+
+**Status (2026-11-25): done.** `tests/e2e/host-harness.js` (`mountHost`, `openLeaf`, …) with its page half
+`tests/e2e/harness/host-page.js`: `window.host` mounts one editor per leaf as the plugin's `SvgView` does (its config, a
+shared user-data store, `documentChanged` → the leaf's dirty flag, `activate()` on a leaf switch), and fires its lifecycle
+as Obsidian does (`load` = `clear` + `setViewData`, `hide` / `show` a background tab, `close` = `onClose` + `onunload` in
+one tick). `window.host.clipboard` is an opt-in double (the browser's clipboard otherwise) that rejects or drops writes,
+rejects reads, takes another app's copy and withholds the native paste (Electron). The fixture's rest checks
+(`checkDrawing`, `gestureLeftovers`) run on every leaf. `tests/e2e/host-conditions.spec.js` covers shortcuts and paste
+after a leaf switch with no click, each clipboard failure, a double teardown, dirty per leaf, a drawing loaded in a hidden
+tab, a debug log per leaf and another leaf's tool switch during Curvature.
+- **It found a bug in one editor too:** a drag released outside the canvas (over the toolbar, another drawing, or after its
+  tab was hidden) never reached the canvas's mouseup, so the move stayed open and the next press cancelled it. The shape
+  went back. The canvas now finishes such a press at the last point it saw, or cancels it when the canvas is no longer
+  rendered (`svgcanvas.ts`, `tests/unit/release-outside-canvas.test.js`). The move gesture's cancel also forgets the shape
+  its press selected (`justSelected` was left for the next press).
+- **Not moved:** the older two-editor specs (`clipboard-cross-editor`, `multi-editor-owner`, `editor-teardown`) build their
+  second editor by hand; new host-condition tests use the harness.

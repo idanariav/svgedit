@@ -24,6 +24,9 @@ short: details belong in the area files.
   (`isDrag`, `DRAG_PX`; tools read `ev.dragging`), not a threshold of the site's own. A path's close tolerance is
   `CLOSE_TOL`. What a select-mode press is on is a rule in `core/press-target.ts` `PRESS_RULES`, added to its combination
   table.
+- **Test under the host's conditions** ([R13](roadmap/rearchitecture.md#r13-tests-that-run-the-hosts-conditions)): behaviour
+  that depends on more than one editor, the view lifecycle or the clipboard is tested with the host harness
+  (`tests/e2e/host-harness.js`: `mountHost`, `openLeaf`, `window.host`), not with a second editor built by hand.
 - **A gesture owns its state** ([R9](roadmap/rearchitecture.md#r9-a-gesture-owns-its-state)): a press-to-release gesture runs
   on the gesture session (`svgCanvas.beginGesture(kind, { state, label, onCancel })`, `core/gesture-session.ts`). Its state
   lives on the gesture, not on a new `GestureState` field, canvas slot or module `let`. Its undo step is the session's
@@ -96,7 +99,7 @@ self-contained **`dist/editor/Editor.ts`**. Full write-up, evidence and migratio
 | R10 | One entry point per user intent: clipboard as commands, one pointer-intent classifier, shared tolerances, one target resolver (done 2026-11-24) | M | — |
 | R11 | The editor's own state (dimming, pointer-events, previews) stays out of the drawing | M | — |
 | R12 | One placement policy and one set of coordinate frames for every gesture and tool | L | R1 (matrix math on the model) |
-| R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) | S–M | — |
+| R13 | Tests that run the host's conditions (two editors, view lifecycle, clipboard quirks) (done 2026-11-25) | S–M | — |
 
 **R1 stops at "the model owns state and undo, the DOM is the view and the measurer"** (2026-10-18); what is deliberately not
 being done is listed in [`roadmap/rearchitecture.md`](roadmap/rearchitecture.md#not-worth-doing-decided-2026-10-18).
