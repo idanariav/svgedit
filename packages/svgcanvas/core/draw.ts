@@ -10,7 +10,6 @@ import { createLayerOps } from './layer-ops.ts'
 
 import { NS } from './namespaces.ts'
 import { copyElem as utilCopyElem } from './copy-elem.ts'
-import { getParentsUntil } from '../common/util.ts'
 import type SvgCanvas from '../svgcanvas.ts'
 import type HistoryRecordingService from './historyrecording.js'
 
@@ -18,6 +17,9 @@ const visElems =
   'a,circle,ellipse,foreignObject,g,image,line,path,polygon,polyline,rect,svg,text,tspan,use'.split(
     ','
   )
+
+/** Raised (bubbling) on the content root when which layers take presses changes (`Drawing.refreshLayerPointerEvents`). */
+export const LAYER_ACTIVATION_EVENT = 'svgedit:layeractivation'
 
 export const RandomizeModes = {
   LET_DOCUMENT_DECIDE: 0,
@@ -550,6 +552,13 @@ export class Drawing {
         layer.deactivate()
       }
     })
+    // the canvas's interaction sheet shows it (interaction-style.ts); no node moved, so its observer does not see this
+    this.svgElem_.dispatchEvent(new Event(LAYER_ACTIVATION_EVENT, { bubbles: true }))
+  }
+
+  /** The layer groups that take presses. */
+  getActiveLayerGroups (): SVGGElement[] {
+    return this.all_layers.filter((layer) => layer.isActive()).map((layer) => layer.getGroup())
   }
 
   /**
@@ -988,23 +997,40 @@ export const randomizeIds = (enableRandomization: boolean, currentDrawing: Drawi
 export interface DrawContextApi {
   leaveContext(): void
   setContext(elem: Element | string): void
-  withContextUndimmed<T>(fn: () => T): T
-  /** Undo the in-group dimming; call the returned function to re-apply it. */
+  /** Show the drawing undimmed while the user stays inside the group; call the returned function to dim it again. */
   suspendContextDimming(): () => void
   getDisabledElems(): Element[]
 }
 
+/** How the interaction sheet dims what lies outside the group being edited (`interaction-style.ts`). */
+export const CONTEXT_DIM = 'opacity: 0.33 !important; pointer-events: none !important'
+
+/**
+ * What the in-group dimming covers: the siblings of `group` and of each of its ancestors, up to the content root (other
+ * layers included).
+ */
+export const contextSiblings = (group: Element | null, content: Element | null): Element[] => {
+  const out: Element[] = []
+  if (!group || !content || group === content || !content.contains(group)) return out
+  for (let node: Element = group; node !== content && node.parentElement; node = node.parentElement) {
+    for (const child of node.parentElement.children) if (child !== node) out.push(child)
+  }
+  return out
+}
+
 /**
  * Reentrant init: the layer/context operations below are created per SvgCanvas
- * instance (closed over `svgCanvas` and a per-instance `disabledElems`) and
- * attached to the canvas, so several editors coexist in one realm. The Drawing
+ * instance (closed over `svgCanvas`) and attached to the canvas, so several editors coexist in one realm. The Drawing
  * and Layer classes above are stateless w.r.t. the canvas and stay shared.
+ *
+ * The in-group dimming is a mark on the canvas's interaction sheet (roadmap R11): the dimmed elements carry nothing, so a
+ * save, an undo snapshot or a colour read sees the drawing as it is.
  */
 export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
   const svgCanvas = canvas
   Object.assign(canvas, createLayerOps(canvas))
-  // Disabled elements during in-group editing (per instance).
-  let disabledElems: Element[] = []
+  const dimmed = (): Element[] => contextSiblings(svgCanvas.getCurrentGroup(), svgCanvas.getSvgContent?.() ?? null)
+  svgCanvas.interactionStyle?.mark('context-dim', dimmed, CONTEXT_DIM)
 
   /**
  * Return from a group context to the regular kind, make any previously
@@ -1012,34 +1038,11 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
  * @fires module:svgcanvas.SvgCanvas#event:contextset
  */
   const leaveContext = (): void => {
-    const len = disabledElems.length
-    const dataStorage = svgCanvas.getDataStorage()
-    if (len) {
-      for (let i = 0; i < len; i++) {
-        const elem = disabledElems[i]
-        const orig = dataStorage.get(elem, 'orig_opac')
-        if (orig === null || orig === undefined) {
-          elem.removeAttribute('opacity')
-        } else {
-          elem.setAttribute('opacity', orig)
-        }
-        // the element's own style comes back (dimming replaced it with `pointer-events: none`)
-        const origStyle = dataStorage.get(elem, 'orig_style')
-        if (origStyle === null || origStyle === undefined) {
-          elem.removeAttribute('style')
-        } else {
-          elem.setAttribute('style', origStyle)
-        }
-        dataStorage.remove(elem, 'orig_opac')
-        dataStorage.remove(elem, 'orig_style')
-      }
-      disabledElems = []
-    }
     // Gate on whether we were actually in a context, not on whether there
-    // happened to be any siblings to re-enable above: a group that is the only
-    // element on its layer (nothing else to dim on entry) leaves disabledElems
-    // empty, but the selection made inside it still needs clearing here. Tying
-    // this to `len` instead left the previously-selected child's selector box
+    // happened to be any siblings to re-enable: a group that is the only
+    // element on its layer (nothing else to dim on entry) has nothing dimmed,
+    // but the selection made inside it still needs clearing here. Tying
+    // this to the dimmed count instead left the previously-selected child's selector box
     // (and its stale entry in selectedElements) stuck on-screen after clicking
     // away, since it was never released.
     if (svgCanvas.getCurrentGroup()) {
@@ -1050,65 +1053,19 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
   }
 
   /**
- * Undo the in-group dimming (see setContext: the synthetic opacity and
- * `pointer-events: none` style) and hand back a function that re-applies it, leaving the current group, selection and `disabledElems`
- * untouched. For anything that must see the drawing's true colours while the
- * user stays inside the group, including work that spans async gaps (the colour
- * dialog's screen eyedropper). The returned function is idempotent and skips
- * elements that have since left the context.
+ * Show the drawing undimmed and hand back a function that dims it again, leaving the current group and selection
+ * untouched. For work that must see the drawing's true colours on screen while the user stays inside the group, across
+ * async gaps (the colour dialog's screen eyedropper). The returned function is idempotent.
  * @returns resume
  */
-  const suspendContextDimming = (): () => void => {
-    if (!disabledElems.length) { return () => {} }
-    const dataStorage = svgCanvas.getDataStorage()
-    const setOrRemove = (elem: Element, name: string, value: string | null | undefined): void => {
-      if (value === null || value === undefined) {
-        elem.removeAttribute(name)
-      } else {
-        elem.setAttribute(name, value)
-      }
-    }
-    const dimmed = disabledElems.map(elem => ({ elem, opacity: elem.getAttribute('opacity'), style: elem.getAttribute('style') }))
-    for (const { elem } of dimmed) {
-      setOrRemove(elem, 'opacity', dataStorage.get(elem, 'orig_opac'))
-      setOrRemove(elem, 'style', dataStorage.get(elem, 'orig_style'))
-    }
-    let resumed = false
-    return () => {
-      if (resumed) { return }
-      resumed = true
-      for (const { elem, opacity, style } of dimmed) {
-        if (!disabledElems.includes(elem)) { continue }
-        setOrRemove(elem, 'opacity', opacity)
-        setOrRemove(elem, 'style', style)
-      }
-    }
-  }
-
-  /**
- * Run `fn` with the in-group dimming (see setContext) temporarily undone, then
- * re-apply it, leaving the current group, selection and `disabledElems`
- * untouched. For serialization while the user must stay inside the group
- * (e.g. node-editing a path) and undo snapshots: dimmed siblings carry a
- * synthetic `opacity="0.33"` and style that must never reach the output, but leaveContext() would
- * also exit the group and clear the selection.
- * @returns Whatever `fn` returns
- */
-  const withContextUndimmed = <T>(fn: () => T): T => {
-    const resume = suspendContextDimming()
-    try {
-      return fn()
-    } finally {
-      resume()
-    }
-  }
+  const suspendContextDimming = (): () => void =>
+    svgCanvas.interactionStyle?.suspend('context-dim') ?? (() => {})
 
   /**
  * Set the current context (for in-group editing).
  * @fires module:svgcanvas.SvgCanvas#event:contextset
  */
   const setContext = (elemOrId: Element | string | null): void => {
-    const dataStorage = svgCanvas.getDataStorage()
     leaveContext()
     let elem: Element | null | undefined = typeof elemOrId === 'string' ? undefined : elemOrId
     if (typeof elemOrId === 'string') {
@@ -1130,54 +1087,18 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
       return
     }
 
-    // `elem` must actually live inside the drawing content: the ancestor walk
-    // below is bounded by '#svgcontent', so entering context on anything
+    // `elem` must actually live inside the drawing content: entering context on anything
     // outside it (most notably the svg root itself, which sits *above*
-    // '#svgcontent' in the DOM, never below it) means that boundary is never
-    // found — the walk climbs straight out of the drawing into the editor's
-    // own DOM, dimming arbitrary UI chrome (toolbars, dialogs, rulers) instead
-    // of drawing siblings. See a real repro from a mis-resolved double-click
+    // '#svgcontent' in the DOM, never below it) would dim arbitrary editor UI (toolbars, dialogs, rulers) instead of
+    // drawing siblings. See a real repro from a mis-resolved double-click
     // in event.js's dblClickEvent.
     const svgContent = svgCanvas.getSvgContent?.()
     if (!svgContent || svgContent === elem || !svgContent.contains(elem)) {
       return
     }
 
-    // Edit inside this group
+    // Edit inside this group; the sheet dims the rest (the canvas refreshes it when the current group changes)
     svgCanvas.setCurrentGroup(elem)
-
-    // Disable other elements
-    const parentsUntil = getParentsUntil((elem as Element), '#svgcontent')
-    if (!parentsUntil) {
-      return
-    }
-    const siblings: Element[] = []
-    parentsUntil.forEach(function (parent) {
-      if (!parent?.parentNode) {
-        return
-      }
-      const elements = Array.prototype.filter.call(
-        parent.parentNode.children,
-        function (child) {
-          return child !== parent
-        }
-      )
-      elements.forEach(function (element) {
-        siblings.push(element)
-      })
-    })
-
-    siblings.forEach(function (curthis) {
-    // Store the original's opacity
-      const origOpacity = curthis.getAttribute('opacity')
-      dataStorage.put(curthis, 'orig_opac', origOpacity)
-      dataStorage.put(curthis, 'orig_style', curthis.getAttribute('style'))
-      const parsedOpacity = Number.parseFloat(origOpacity ?? '')
-      const opac = Number.isFinite(parsedOpacity) ? parsedOpacity : 1
-      curthis.setAttribute('opacity', String(opac * 0.33))
-      curthis.setAttribute('style', 'pointer-events: none')
-      disabledElems.push(curthis)
-    })
     svgCanvas.clearSelection()
     svgCanvas.call('contextset', svgCanvas.getCurrentGroup())
   }
@@ -1186,11 +1107,8 @@ export const createDrawContext = (canvas: SvgCanvas): DrawContextApi => {
     // Attach the per-instance layer/context operations to the canvas.
     leaveContext,
     setContext,
-    withContextUndimmed,
     suspendContextDimming,
-    // Read-only accessor for debug tooling (see svgCanvas.getDebugSnapshot()) —
-    // exposes the per-instance `disabledElems` closure var without letting
-    // callers mutate it directly.
-    getDisabledElems: () => disabledElems.slice()
+    // what the dimming covers, for debug tooling (see svgCanvas.getDebugSnapshot())
+    getDisabledElems: dimmed
   }
 }

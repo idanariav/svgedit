@@ -121,8 +121,7 @@ export const createJson = (canvas: SvgCanvas): JsonApi => {
         // Paint the stroke beneath the fill so it grows outward instead of
         // eating into the fill (keeps text/shape interiors fully visible).
         'paint-order': 'stroke',
-        opacity,
-        style: 'pointer-events:inherit'
+        opacity
       }, 100)
     }
     assignAttributes(shape, attrs, 100)
@@ -166,8 +165,7 @@ export const createJson = (canvas: SvgCanvas): JsonApi => {
         'stroke-opacity': curShape.stroke_opacity,
         'fill-opacity': curShape.fill_opacity,
         'paint-order': 'stroke',
-        opacity,
-        style: 'pointer-events:inherit'
+        opacity
       }, 100)
     }
     assignAttributes(shape, data.attr || {}, 100)

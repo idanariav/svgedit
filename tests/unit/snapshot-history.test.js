@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { SnapshotHistory, readSnapshot, share, withoutEditorState } from '../../packages/svgcanvas/core/snapshot-history.ts'
+import { SnapshotHistory, readSnapshot, share } from '../../packages/svgcanvas/core/snapshot-history.ts'
 import { parseSvg, element, setAttr, updateAt } from '../../packages/svgcanvas/core/model/index.ts'
 import { pathOfId } from '../../packages/svgcanvas/core/model/edit.ts'
 
@@ -27,25 +27,15 @@ describe('share: snapshots keep what an edit did not touch', () => {
   })
 })
 
-describe('withoutEditorState: the editor\'s pointer-events state is not the drawing', () => {
-  it('drops the leading pointer-events declaration and keeps what follows it', () => {
-    expect(withoutEditorState('pointer-events:inherit')).toBe('')
-    expect(withoutEditorState('pointer-events: none')).toBe('')
-    expect(withoutEditorState('pointer-events: inherit; fill: #fff !important; filter: blur(8px);')).toBe('fill: #fff !important; filter: blur(8px);')
-    expect(withoutEditorState('fill: red; pointer-events: none')).toBe('fill: red; pointer-events: none')
-    expect(withoutEditorState('#ff0000')).toBe('#ff0000')
-  })
-
-  it('a snapshot keeps a mask silhouette\'s paint that follows the editor\'s state in the same style', () => {
+describe('a snapshot is the drawing as written', () => {
+  // Roadmap R11: the editor keeps its interaction state off the drawing (`interaction-style.ts`), so a snapshot strips
+  // nothing from a style; a stray editor declaration in an old file is the repair script's (`editor-pointer-events`).
+  it('keeps a style whole', () => {
     const svg = document.createElementNS(SVG, 'svg')
     const r = document.createElementNS(SVG, 'rect')
-    r.setAttribute('style', 'pointer-events: inherit; filter: blur(8px);')
-    const q = document.createElementNS(SVG, 'rect')
-    q.setAttribute('style', 'pointer-events:inherit')
-    svg.append(r, q)
-    const [a, b] = readSnapshot(svg).children
-    expect(a.attrs).toEqual([{ name: 'style', value: 'filter: blur(8px);' }])
-    expect(b.attrs).toEqual([])
+    r.setAttribute('style', 'fill: #fff !important; filter: blur(8px);')
+    svg.append(r)
+    expect(readSnapshot(svg).children[0].attrs).toEqual([{ name: 'style', value: 'fill: #fff !important; filter: blur(8px);' }])
   })
 })
 

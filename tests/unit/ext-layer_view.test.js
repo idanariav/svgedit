@@ -8,6 +8,7 @@ describe('ext-layer_view', () => {
   let extInstance
   let editorPanel
   let svgEditorRoot
+  let marks
   let layers
   let currentIndex
 
@@ -27,6 +28,7 @@ describe('ext-layer_view', () => {
     svgEditorRoot = document.createElement('div')
     document.body.append(svgEditorRoot)
 
+    marks = {}
     layers = [
       { name: 'Layer 1', locked: false, comment: false },
       { name: 'Layer 2', locked: false, comment: false }
@@ -65,7 +67,9 @@ describe('ext-layer_view', () => {
       getSelectedElements: () => [],
       moveSelectedToLayer: vi.fn(),
       selectOnly: vi.fn(),
-      bind: vi.fn()
+      bind: vi.fn(),
+      // the canvas's interaction sheet (roadmap R11): the dim is a mark on it, never a style on the layer groups
+      interactionStyle: { mark: (name, targets) => { marks[name] = targets }, refresh: vi.fn() }
     }
 
     svgEditor = {
@@ -80,6 +84,13 @@ describe('ext-layer_view', () => {
     extInstance = await extLayerView.init(svgEditor)
     extInstance.callback()
   })
+
+  /** Layer mode fades layer `i` (its group is in the mark), with nothing written on the group */
+  const dimmed = (i) => {
+    const group = svgCanvas.getCurrentDrawing().getLayerByName(layers[i].name)
+    expect(group.hasAttribute('style')).toBe(false)
+    return marks['layer-view-dim']().includes(group)
+  }
 
   afterEach(() => {
     // Exit layer mode (if a test left it on) so its document-level keydown
@@ -98,8 +109,8 @@ describe('ext-layer_view', () => {
     expect(badgeText()).toBe('layer_view:focus.badge')
     expect(svgCanvas.setAllLayersMode).toHaveBeenLastCalledWith(false)
     // Focus dims/locks every layer but the current one ("Layer 2").
-    expect(layers[0].el.style.opacity).toBe('0.35')
-    expect(layers[1].el.style.opacity).toBe('')
+    expect(dimmed(0)).toBe(true)
+    expect(dimmed(1)).toBe(false)
     expect(layers[0].locked).toBe(true)
     expect(layers[1].locked).toBe(false)
   })
@@ -127,8 +138,8 @@ describe('ext-layer_view', () => {
     expect(badgeText()).toBe('layer_view:all.badge')
     expect(svgCanvas.setAllLayersMode).toHaveBeenLastCalledWith(true)
     // No forced dim/lock in All Layers mode.
-    expect(layers[0].el.style.opacity).toBe('')
-    expect(layers[1].el.style.opacity).toBe('')
+    expect(dimmed(0)).toBe(false)
+    expect(dimmed(1)).toBe(false)
     expect(layers[0].locked).toBe(false)
     expect(layers[1].locked).toBe(false)
   })
@@ -141,7 +152,7 @@ describe('ext-layer_view', () => {
     expect(activeSegment()).toBe('current')
     expect(badgeText()).toBe('layer_view:focus.badge')
     expect(svgCanvas.setAllLayersMode).toHaveBeenLastCalledWith(false)
-    expect(layers[0].el.style.opacity).toBe('0.35')
+    expect(dimmed(0)).toBe(true)
     expect(layers[1].locked).toBe(false)
   })
 
@@ -169,8 +180,8 @@ describe('ext-layer_view', () => {
 
     expect(badgeVisible()).toBe(false)
     expect(svgCanvas.setAllLayersMode).toHaveBeenLastCalledWith(false)
-    expect(layers[0].el.style.opacity).toBe('')
-    expect(layers[1].el.style.opacity).toBe('')
+    expect(dimmed(0)).toBe(false)
+    expect(dimmed(1)).toBe(false)
 
     btn.click() // re-enter
     expect(activeSegment()).toBe('current')

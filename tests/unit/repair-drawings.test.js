@@ -12,7 +12,7 @@ const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
   it('ships only the current repairs (they are deleted once run)', () => {
-    expect(REPAIRS.map((r) => r.name)).toEqual(['dimmed-leak', 'retraced-path', 'mask-feather-lost', 'fx-rounding-drift'])
+    expect(REPAIRS.map((r) => r.name)).toEqual(['editor-pointer-events', 'dimmed-leak', 'retraced-path', 'mask-feather-lost', 'fx-rounding-drift'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -65,7 +65,7 @@ describe('repair-drawings: plugin notes', () => {
 })
 
 describe('repair-drawings: dimmed-leak', () => {
-  const [dimmed] = REPAIRS
+  const dimmed = REPAIRS.find((r) => r.name === 'dimmed-leak')
 
   it('drops the leaked dimming and nothing else', () => {
     const bad = '<svg xmlns="http://www.w3.org/2000/svg"><defs opacity="0.33"/><title opacity="0.33">D</title>' +
@@ -80,7 +80,7 @@ describe('repair-drawings: dimmed-leak', () => {
 })
 
 describe('repair-drawings: retraced-path', () => {
-  const [, retraced] = REPAIRS
+  const retraced = REPAIRS.find((r) => r.name === 'retraced-path')
 
   it('opens a closed line that runs out and back over itself, relative or absolute', () => {
     const bad = doc('<path d="m449,472.9l-31.14,15.97l31.14,-15.97z" fill="none" id="p" stroke="#000"/><path d="M0 0 L10 5 Z" id="q"/>')
@@ -97,7 +97,7 @@ describe('repair-drawings: retraced-path', () => {
 })
 
 describe('repair-drawings: mask-feather-lost', () => {
-  const [, , feather] = REPAIRS
+  const feather = REPAIRS.find((r) => r.name === 'mask-feather-lost')
 
   it('gives a feathered mask\'s direct children back the feather style, from the masked element\'s data-feather', () => {
     const bad = doc('<defs><mask id="m"><rect fill="#ffffff" id="s"/><g id="g" style="fill: red"><rect id="t"/></g></mask>' +
@@ -141,5 +141,27 @@ describe('repair-drawings: fx-rounding-drift', () => {
     expect(repairSvg(edited, [drift])).toEqual({ source: edited, applied: [] })
     const stacked = doc(`<path d="M80,40 L180.12,60.05 Z" id="t" se:fx="${fx}" se:fx-d="${src}" se:taper-d="M0,0 L1,1"/>`)
     expect(repairSvg(stacked, [drift])).toEqual({ source: stacked, applied: [] })
+  })
+})
+
+describe('repair-drawings: editor-pointer-events', () => {
+  const repair = REPAIRS.find((r) => r.name === 'editor-pointer-events')
+
+  it('drops the editor\'s pointer-events state and keeps the drawing\'s own style', () => {
+    const bad = '<svg xmlns="http://www.w3.org/2000/svg"><g class="layer" style="pointer-events: all;"><title>L</title>' +
+      '<rect style="fill: #fff !important; filter: blur(8px); pointer-events: inherit;"/><rect style="pointer-events:inherit"/>' +
+      '<rect style="pointer-events: none"/><path style="stroke: red; pointer-events: none"/></g>' +
+      '<g class="layer other" style="opacity: 0.5; pointer-events: none"><circle r="1"/></g></svg>'
+    const { source, applied } = repairSvg(bad, [repair])
+    expect(applied).toEqual(['editor-pointer-events'])
+    expect(source).toBe('<svg xmlns="http://www.w3.org/2000/svg"><g class="layer"><title>L</title>' +
+      '<rect style="fill: #fff !important; filter: blur(8px);"/><rect/>' +
+      '<rect/><path style="stroke: red; pointer-events: none"/></g>' +
+      '<g class="layer other" style="opacity: 0.5;"><circle r="1"/></g></svg>')
+  })
+
+  it('leaves a clean drawing byte-for-byte', () => {
+    const clean = '<svg xmlns="http://www.w3.org/2000/svg"><g class="layer"><rect style="fill: red"/></g></svg>'
+    expect(repairSvg(clean, [repair])).toEqual({ source: clean, applied: [] })
   })
 })

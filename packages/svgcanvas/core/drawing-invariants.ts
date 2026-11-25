@@ -108,8 +108,13 @@ const NUMERIC_ATTRS = [
 ]
 /** Elements that are never rendered, so nothing but the in-group dimming (see `setContext`) ever gives them an `opacity`. */
 const NON_RENDERED = new Set(['title', 'desc', 'metadata', 'defs', 'style'])
-/** The inline style `setContext` puts on the siblings it dims while the user is inside a group. */
-const DIMMED_RE = /pointer-events:\s*none/
+/**
+ * The `pointer-events` the editor once wrote on the drawing (roadmap R11 moved it to the canvas's interaction sheet): an
+ * `inherit` on every element it created or loaded, `all` / `none` on the layers, the whole style of a dimmed sibling.
+ */
+const EDITOR_POINTER_RE = /(?:^|;)\s*pointer-events\s*:\s*inherit\b/
+const LAYER_POINTER_RE = /(?:^|;)\s*pointer-events\s*:/
+const DIMMED_STYLE_RE = /^\s*pointer-events\s*:\s*none\s*;?\s*$/
 /** Children allowed directly under `<svg id="svgcontent">` besides layers. */
 const ROOT_CHILDREN = new Set(['defs', 'title', 'metadata', 'desc', 'style'])
 
@@ -208,11 +213,20 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
       add('empty-path', '<path> has no d attribute', el)
     }
 
-    // dimmed-leak: the in-group dimming (`opacity="0.33"` on the siblings of the group being edited) outlived the group
+    // dimmed-leak: the in-group dimming (once `opacity="0.33"` on the siblings of the group being edited) outlived the group
     // context: an undo once restored it from a snapshot taken inside the group. It shows on the never-rendered siblings
-    // (a layer's <title>, the root's <defs>); while the user is still inside the group they carry the dimming's style.
-    if (NON_RENDERED.has(tag) && el.hasAttribute('opacity') && !DIMMED_RE.test(el.getAttribute('style') ?? '')) {
+    // (a layer's <title>, the root's <defs>). The dimming is now a rule in the interaction sheet, never on the drawing.
+    if (NON_RENDERED.has(tag) && el.hasAttribute('opacity')) {
       add('dimmed-leak', `<${tag}> has opacity="${el.getAttribute('opacity')}" (the in-group dimming outlived the group)`, el)
+    }
+
+    // editor-pointer-events: the editor's interaction state saved as the drawing's (roadmap R11: it is in the canvas's
+    // interaction sheet now). The `inherit` it put on what it created or loaded, a layer's `all` / `none`, and the
+    // `pointer-events: none` that replaced a dimmed sibling's whole style.
+    const inline = el.getAttribute('style') ?? ''
+    if (inline && (EDITOR_POINTER_RE.test(inline) || DIMMED_STYLE_RE.test(inline) ||
+        (tag === 'g' && el.classList.contains('layer') && LAYER_POINTER_RE.test(inline)))) {
+      add('editor-pointer-events', `<${tag}> style="${inline.length > 60 ? inline.slice(0, 60) + '…' : inline}" holds the editor's pointer-events state`, el)
     }
 
     // retraced-path: a closed two-point line (the Pen once closed a path finished on its last point)

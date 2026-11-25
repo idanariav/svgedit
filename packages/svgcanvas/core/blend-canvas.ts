@@ -274,7 +274,7 @@ const sameSteps = (container: Element, steps: Step[]): boolean => {
     const wanted = parseAnchors(want.d, CLOSE_TOL)
     const count = wanted.reduce((n, sp) => n + sp.anchors.length, 0)
     if (!sameAnchorGeometry(have, wanted, 0.1 + 0.01 * Math.sqrt(count))) return false
-    // Only the interpolated attributes count: the loader adds others (`style="pointer-events: inherit;"`).
+    // Only the interpolated attributes count: a step may carry others.
     return BLEND_STYLE_ATTRS.every((n) => (el.getAttribute(n) ?? null) === (want.attrs[n] ?? null))
   })
 }

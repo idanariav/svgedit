@@ -5,7 +5,8 @@
  * @copyright 2011 Jeff Schiller
  */
 import {
-  cleanupElement
+  cleanupElement,
+  releasePreviewPointer
 } from './dom-utils.ts'
 import { getUnits } from './units.ts'
 import {
@@ -317,6 +318,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
     if (!parent || !at) return null
     const loose = preview.cloneNode(true) as Element
     loose.removeAttribute(EPHEMERAL_ATTR)
+    releasePreviewPointer(loose)
     const model = readDom(loose) as ModelElement
     const { id } = preview
     preview.remove()
@@ -539,7 +541,7 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
         if (svgCanvas.getCurrentMode() !== 'brush') {
           created.setAttribute('opacity', String(curShape.opacity))
         }
-        created.setAttribute('style', 'pointer-events:inherit')
+        releasePreviewPointer(created)
         cleanupElement(created)
         // This callback is scheduled aniDur (up to 200ms) in the future. A fast
         // double-click-to-finish workflow routinely starts and finishes the

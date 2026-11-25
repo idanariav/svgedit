@@ -19,9 +19,10 @@
  * The two sub-modes are mutually exclusive.
  *
  * All of this is a transient view state: the mode snapshots each layer's lock
- * state on entry and restores it on exit, and the dim is applied as an inline
- * style (never touching the persisted `opacity` attribute), so nothing here is
- * saved into the document.
+ * state on entry and restores it on exit, and the dim is a mark on the canvas's
+ * interaction sheet (`core/interaction-style.ts`, roadmap R11), never on the
+ * layer groups, so it is not saved into the document. (It was an inline style
+ * on each layer, which a save during Layer mode wrote into the drawing.)
  *
  * @license MIT
  */
@@ -30,7 +31,7 @@ import { isActiveEditor } from '../../domScope.ts'
 import { defineFeature, addFeatureLocale } from '../defineFeature.ts'
 
 const name = 'layer_view'
-// How much to fade the non-focused layers (inline style, so it survives the
+// How much to fade the non-focused layers (`!important`, so it wins over the
 // attribute-based hover highlight in the layers panel).
 const DIM_OPACITY = 0.35
 
@@ -117,6 +118,13 @@ export default defineFeature({
     // Switch the badge's sub-mode ('current' Focus vs. 'all' All Layers).
     // applyFocus() below is the single place that reflects whichever
     // sub-mode is active, so switching just re-runs it.
+    // the layers Layer mode fades, by name (the groups are looked up on each refresh: a load or an undo replaces them)
+    let dimmed: string[] = []
+    svgCanvas.interactionStyle.mark('layer-view-dim', () => {
+      const drawing = svgCanvas.getCurrentDrawing()
+      return dimmed.map((n) => drawing.getLayerByName(n)).filter((g): g is SVGGElement => !!g)
+    }, `opacity: ${DIM_OPACITY} !important`)
+
     const setSubMode = (mode: string) => {
       if (subMode === mode) return
       subMode = mode
@@ -132,24 +140,25 @@ export default defineFeature({
     //     and every layer becomes selectable via setAllLayersMode.
     const applyFocus = () => {
       if (subMode === 'all') {
-        eachLayer((lname, drawing) => {
-          const group = drawing.getLayerByName(lname)
-          if (group) group.style.opacity = ''
+        dimmed = []
+        eachLayer((lname) => {
           svgCanvas.setLayerLocked(lname, savedLocks?.[lname] ?? false)
         })
+        svgCanvas.interactionStyle.refresh()
         svgCanvas.setAllLayersMode(true)
         updateBadge()
         return
       }
       svgCanvas.setAllLayersMode(false)
       const cur = svgCanvas.getCurrentDrawing().getCurrentLayerName()
-      eachLayer((lname, drawing) => {
+      dimmed = []
+      eachLayer((lname) => {
         const isCur = lname === cur
-        const group = drawing.getLayerByName(lname)
-        if (group) group.style.opacity = isCur ? '' : String(DIM_OPACITY)
+        if (!isCur) dimmed.push(lname)
         // Focused layer stays unlocked so new objects land on it; others locked.
         svgCanvas.setLayerLocked(lname, !isCur)
       })
+      svgCanvas.interactionStyle.refresh()
       updateBadge()
     }
 
@@ -163,11 +172,11 @@ export default defineFeature({
     }
 
     const exitFocus = () => {
-      eachLayer((lname, drawing) => {
-        const group = drawing.getLayerByName(lname)
-        if (group) group.style.opacity = ''
+      dimmed = []
+      eachLayer((lname) => {
         svgCanvas.setLayerLocked(lname, savedLocks?.[lname] ?? false)
       })
+      svgCanvas.interactionStyle.refresh()
       svgCanvas.setAllLayersMode(false)
       savedLocks = null
       subMode = 'current'

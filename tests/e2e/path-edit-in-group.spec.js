@@ -51,7 +51,10 @@ test.describe('Node-editing a path inside a group', () => {
         group: canv.getCurrentGroup()?.id ?? null,
         dimmed: canv.getDisabledElems().length,
         selected: canv.getSelectedElements().filter(Boolean).map(e => e.id),
-        sibOpacity: document.querySelector('#svgcontent #sib').getAttribute('opacity'),
+        // dimmed by the interaction sheet (roadmap R11), not by an attribute on the shape
+        sibOpacity: getComputedStyle(document.querySelector('#svgcontent #sib')).opacity,
+        sibAttr: document.querySelector('#svgcontent #sib').getAttribute('opacity'),
+        sibPointer: getComputedStyle(document.querySelector('#svgcontent #sib')).pointerEvents,
         serializations: window.__serialized.length,
         leaked: window.__serialized.some(s => s.includes('0.33')),
         d: document.querySelector('#svgcontent #p1').getAttribute('d')
@@ -64,6 +67,8 @@ test.describe('Node-editing a path inside a group', () => {
     expect(state.group).toBe('grp')
     expect(state.dimmed).toBeGreaterThan(0)
     expect(state.sibOpacity).toBe('0.33')
+    expect(state.sibAttr).toBeNull()
+    expect(state.sibPointer).toBe('none')
     expect(state.selected).not.toContain('grp')
     expect(state.leaked).toBe(false)
   })

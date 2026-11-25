@@ -14,7 +14,7 @@
  * @module event-select
  * @license MIT
  */
-import { assignAttributes, walkTree, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
+import { assignAttributes, getRotationAngle, restoreTransformAttr } from './dom-utils.ts'
 import { getTransformList, transformListToTransform } from './math.ts'
 import { proportionLines } from './proportions.ts'
 import { collectSnapTargets, snapMovingBBox, findEqualSpacing } from './smart-guides.ts'
@@ -645,24 +645,6 @@ export const init = (canvas: SvgCanvas): {
           svgCanvas.pathActions.select(selectedElements[0])
         }
       } // no change in mouse position
-
-      // Remove non-scaling stroke
-      const elem = selectedElements[0]
-      if (elem) {
-        elem.removeAttribute('style')
-
-        // we don't remove the style elements for contents of foreignObjects
-        // because that is a valid way to style them
-        if (elem.localName === 'foreignObject') {
-          walkTree(elem, (el) => {
-            el.style.removeProperty('pointer-events')
-          })
-        } else {
-          walkTree(elem, (el) => {
-            el.removeAttribute('style')
-          })
-        }
-      }
     }
   }
 

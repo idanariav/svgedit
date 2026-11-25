@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as draw from '../../packages/svgcanvas/core/draw.ts'
 import dataStorage from '../../packages/svgcanvas/core/dataStorage.ts'
+import { createInteractionStyle } from '../../packages/svgcanvas/core/interaction-style.ts'
 
 const NS_SVG = 'http://www.w3.org/2000/svg'
 
@@ -25,18 +26,15 @@ describe('draw context', () => {
     getCurrentGroup: () => currentGroup,
     setCurrentGroup: (group) => {
       currentGroup = group
+      canvas.interactionStyle?.refresh() // as the canvas does
     }
   }
 
   beforeEach(() => {
-    Object.assign(canvas, draw.createDrawContext(canvas))
-    canvas.leaveContext()
-
     currentGroup = null
-    calls.length = 0
-    clearSelectionCalls = []
     document.body.innerHTML = ''
 
+    const svgroot = document.createElementNS(NS_SVG, 'svg')
     svgContent = document.createElementNS(NS_SVG, 'svg')
     svgContent.id = 'svgcontent'
     editGroup = document.createElementNS(NS_SVG, 'g')
@@ -45,8 +43,17 @@ describe('draw context', () => {
     sibling.id = 'sib'
     sibling.setAttribute('opacity', 'inherit')
     svgContent.append(editGroup, sibling)
-    document.body.append(svgContent)
+    svgroot.append(svgContent)
+    document.body.append(svgroot)
+
+    canvas.interactionStyle = createInteractionStyle(svgroot, () => svgContent)
+    Object.assign(canvas, draw.createDrawContext(canvas))
+    calls.length = 0
+    clearSelectionCalls = []
   })
+
+  /** the sheet dims the sibling (the content's second child) */
+  const siblingDimmed = () => /context-dim \*\/ [^{]*#svgcontent > :nth-child\(2\) \{ opacity: 0\.33 !important; pointer-events: none !important \}/.test(canvas.interactionStyle.text())
 
   afterEach(() => {
     canvas.leaveContext()
@@ -85,31 +92,40 @@ describe('draw context', () => {
     expect(calls.length).toBe(0)
   })
 
-  it('handles non-numeric opacity and restores it', () => {
+  it('dims what lies outside the group in the interaction sheet, writing nothing on the drawing (roadmap R11)', () => {
     canvas.setContext(editGroup)
 
     expect(currentGroup).toBe(editGroup)
     expect(calls[0]).toStrictEqual({ event: 'contextset', arg: editGroup })
-    expect(sibling.getAttribute('opacity')).toBe('0.33')
-    expect(sibling.getAttribute('style')).toBe('pointer-events: none')
-    expect(dataStorage.get(sibling, 'orig_opac')).toBe('inherit')
+    expect(siblingDimmed()).toBe(true)
+    expect(canvas.getDisabledElems()).toStrictEqual([sibling])
+    expect(sibling.getAttribute('opacity')).toBe('inherit')
+    expect(sibling.hasAttribute('style')).toBe(false)
+    expect(dataStorage.has(sibling, 'orig_opac')).toBe(false)
 
     canvas.leaveContext()
 
     expect(currentGroup).toBe(null)
     expect(calls[1]).toStrictEqual({ event: 'contextset', arg: null })
-    expect(sibling.getAttribute('opacity')).toBe('inherit')
-    expect(sibling.hasAttribute('style')).toBe(false) // it had none before the dimming
-    expect(dataStorage.has(sibling, 'orig_opac')).toBe(false)
-    expect(dataStorage.has(sibling, 'orig_style')).toBe(false)
+    expect(siblingDimmed()).toBe(false)
+    expect(canvas.getDisabledElems()).toStrictEqual([])
   })
 
-  it('gives a dimmed sibling its own inline style back on leaveContext', () => {
-    sibling.setAttribute('style', 'stroke: red; pointer-events: inherit;')
+  it('leaves a dimmed sibling\'s own style alone', () => {
+    sibling.setAttribute('style', 'stroke: red')
     canvas.setContext(editGroup)
-    expect(sibling.getAttribute('style')).toBe('pointer-events: none')
+    expect(sibling.getAttribute('style')).toBe('stroke: red')
     canvas.leaveContext()
-    expect(sibling.getAttribute('style')).toBe('stroke: red; pointer-events: inherit;')
+    expect(sibling.getAttribute('style')).toBe('stroke: red')
+  })
+
+  it('dims a sibling the history re-rendered (a new node in the same place)', () => {
+    canvas.setContext(editGroup)
+    const fresh = sibling.cloneNode(true)
+    sibling.replaceWith(fresh)
+    canvas.interactionStyle.refresh() // the observer does this in a browser
+    expect(canvas.getDisabledElems()).toStrictEqual([fresh])
+    expect(siblingDimmed()).toBe(true)
   })
 
   it('still clears the selection on leaveContext when the group has no siblings to re-enable', () => {
@@ -137,23 +153,15 @@ describe('draw context', () => {
     it('undims until resumed, across async gaps, and resume is idempotent', () => {
       canvas.setContext(editGroup)
       const resume = canvas.suspendContextDimming()
-      expect(sibling.getAttribute('opacity')).toBe('inherit')
+      expect(siblingDimmed()).toBe(false)
       expect(currentGroup).toBe(editGroup)
       resume()
-      expect(sibling.getAttribute('opacity')).toBe('0.33')
-      sibling.setAttribute('opacity', '0.5')
-      resume() // second call must not touch anything
-      expect(sibling.getAttribute('opacity')).toBe('0.5')
-    })
-
-    it('takes the dimming style off too, back to what the sibling had', () => {
-      sibling.setAttribute('style', 'stroke: red')
-      canvas.setContext(editGroup)
-      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
-      const resume = canvas.suspendContextDimming()
-      expect(sibling.getAttribute('style')).toBe('stroke: red')
-      resume()
-      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
+      expect(siblingDimmed()).toBe(true)
+      const other = canvas.suspendContextDimming()
+      resume() // a second call must not resume the other suspension
+      expect(siblingDimmed()).toBe(false)
+      other()
+      expect(siblingDimmed()).toBe(true)
     })
 
     it('does not re-dim siblings once the context was left meanwhile', () => {
@@ -161,64 +169,13 @@ describe('draw context', () => {
       const resume = canvas.suspendContextDimming()
       canvas.leaveContext()
       resume()
-      expect(sibling.getAttribute('opacity')).toBe('inherit')
+      expect(siblingDimmed()).toBe(false)
     })
 
     it('is a no-op outside a group context', () => {
       const resume = canvas.suspendContextDimming()
-      expect(sibling.getAttribute('opacity')).toBe('inherit')
       resume()
-      expect(sibling.getAttribute('opacity')).toBe('inherit')
-    })
-  })
-
-  describe('withContextUndimmed', () => {
-    it('un-dims siblings only for the duration of fn, staying inside the group', () => {
-      canvas.setContext(editGroup)
-      clearSelectionCalls.length = 0
-      calls.length = 0
-      let seenInside = 'unset'
-
-      const result = canvas.withContextUndimmed(() => {
-        seenInside = sibling.getAttribute('opacity')
-        return 'out'
-      })
-
-      expect(result).toBe('out')
-      expect(seenInside).toBe('inherit')
-      // Back to dimmed, still inside the group, nothing cleared/announced.
-      expect(sibling.getAttribute('opacity')).toBe('0.33')
-      expect(sibling.getAttribute('style')).toBe('pointer-events: none')
-      expect(currentGroup).toBe(editGroup)
-      expect(clearSelectionCalls).toStrictEqual([])
-      expect(calls).toStrictEqual([])
-      // ...and a later real leaveContext() still restores the true original.
-      canvas.leaveContext()
-      expect(sibling.getAttribute('opacity')).toBe('inherit')
-    })
-
-    it('removes the synthetic opacity for siblings that had none, then re-dims', () => {
-      sibling.removeAttribute('opacity')
-      canvas.setContext(editGroup)
-      let seenInside = 'unset'
-
-      canvas.withContextUndimmed(() => { seenInside = sibling.getAttribute('opacity') })
-
-      expect(seenInside).toBe(null)
-      expect(sibling.getAttribute('opacity')).toBe('0.33')
-    })
-
-    it('re-dims even when fn throws', () => {
-      canvas.setContext(editGroup)
-
-      expect(() => canvas.withContextUndimmed(() => { throw new Error('boom') })).toThrow('boom')
-
-      expect(sibling.getAttribute('opacity')).toBe('0.33')
-      expect(currentGroup).toBe(editGroup)
-    })
-
-    it('just runs fn when no context is active', () => {
-      expect(canvas.withContextUndimmed(() => 42)).toBe(42)
+      expect(siblingDimmed()).toBe(false)
       expect(sibling.getAttribute('opacity')).toBe('inherit')
     })
   })

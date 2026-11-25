@@ -298,7 +298,8 @@ describe('tool registry (registerTool)', () => {
       const el = layer.querySelector('rect')
       // opacity 1 is the default, which cleanupElement() strips -- same as a drawn shape
       expect(el.hasAttribute('opacity')).toBe(false)
-      expect(el.getAttribute('style')).toBe('pointer-events:inherit')
+      // the editor's interaction state is not written on it (roadmap R11: the layer's pointer events are in the canvas's sheet)
+      expect(el.hasAttribute('style')).toBe(false)
       expect(inserted).toHaveBeenCalledTimes(1)
       expect(canvas.getSelectedElements().filter(Boolean)).toEqual([el])
       expect(canvas.getMode()).toBe('select')

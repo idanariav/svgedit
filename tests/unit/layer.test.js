@@ -3,34 +3,25 @@ import { NS } from '../../packages/svgcanvas/core/namespaces.ts'
 import Layer from '../../packages/svgcanvas/core/layer.ts'
 
 describe('Layer', function () {
-  it('preserves inline styles while applying pointer-events', function () {
+  it('takes presses or not without writing on the drawing (roadmap R11: the canvas\'s interaction sheet shows it)', function () {
     const svg = document.createElementNS(NS.SVG, 'svg')
     const group = document.createElementNS(NS.SVG, 'g')
-    group.setAttribute('style', 'fill: red; opacity: 0.5; pointer-events: none;')
+    group.setAttribute('style', 'fill: red; opacity: 0.5;')
 
     const child = document.createElementNS(NS.SVG, 'rect')
-    child.setAttribute('style', 'stroke: blue; opacity: 0.25; pointer-events: none;')
+    child.setAttribute('style', 'stroke: blue; opacity: 0.25;')
     group.append(child)
     svg.append(group)
 
     const layer = new Layer('Layer 1', group)
-
-    assert.equal(group.style.getPropertyValue('fill'), 'red')
-    assert.equal(group.style.getPropertyValue('opacity'), '0.5')
-    assert.equal(group.style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(child.style.getPropertyValue('stroke'), 'blue')
-    assert.equal(child.style.getPropertyValue('opacity'), '0.25')
-    assert.equal(child.style.getPropertyValue('pointer-events'), 'inherit')
-
+    assert.equal(layer.isActive(), false)
     layer.activate()
-    assert.equal(group.style.getPropertyValue('fill'), 'red')
-    assert.equal(group.style.getPropertyValue('opacity'), '0.5')
-    assert.equal(group.style.getPropertyValue('pointer-events'), 'all')
-
+    assert.equal(layer.isActive(), true)
     layer.deactivate()
-    assert.equal(group.style.getPropertyValue('fill'), 'red')
-    assert.equal(group.style.getPropertyValue('opacity'), '0.5')
-    assert.equal(group.style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(layer.isActive(), false)
+
+    assert.equal(group.getAttribute('style'), 'fill: red; opacity: 0.5;')
+    assert.equal(child.getAttribute('style'), 'stroke: blue; opacity: 0.25;')
   })
 
   it('manages layer metadata and lifecycle helpers', function () {
@@ -45,7 +36,8 @@ describe('Layer', function () {
     assert.equal(layer.getName(), 'Layer 1')
     assert.equal(group.previousSibling, anchor)
     assert.ok(group.classList.contains('layer'))
-    assert.equal(group.style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(layer.isActive(), true) // a new layer takes presses
+    assert.equal(group.hasAttribute('style'), false)
 
     const title = layer.getTitleElement()
     assert.ok(title)

@@ -5,7 +5,6 @@
  * @copyright 2011 Jeff Schiller
  */
 
-import { withoutEditorState } from './snapshot-history.ts'
 import * as history from './history.js'
 import { error, warn as logWarn } from '../common/logger.ts'
 import { text2xml, toXml, hashCode } from './encoding-utils.ts'
@@ -111,12 +110,8 @@ export const createSvgExec = (canvas: SvgCanvas): SvgExecApi => {
 
       // Serializing must not disturb in-group editing: a host that saves on
       // every change (or an autosave timer) would otherwise drop the user out
-      // of the group, clear the dimming and swap the selection to the group
-      // mid-edit, so the *next* edit/nudge/undo targets the wrong level. The
-      // dimmed siblings' synthetic `opacity="0.33"` is the only part of the
-      // context that must not reach the output; it is un-dimmed just for the
-      // svgToString() call below (see withContextUndimmed()).
-      const keepContext = !!svgCanvas.getCurrentGroup()
+      // of the group mid-edit, so the *next* edit/nudge/undo targets the wrong level. The
+      // dimming is not on the drawing (interaction-style.ts), so there is nothing to take off first.
 
       const nakedSvgs: Element[] = []
 
@@ -144,7 +139,7 @@ export const createSvgExec = (canvas: SvgCanvas): SvgExecApi => {
         : null
 
       const serialize = () => svgCanvas.svgToString(svgCanvas.getSvgContent(), 0)
-      const output = keepContext ? svgCanvas.withContextUndimmed(serialize) : serialize()
+      const output = serialize()
 
       // Remove the temporary <style> so the live document is left untouched
       if (fontStyleElem) {
@@ -373,11 +368,6 @@ export const createSvgExec = (canvas: SvgCanvas): SvgExecApi => {
             }
           }
           if (attrVal !== '') {
-            // the editor's pointer-events state goes; the rest of the value is the drawing's
-            attrVal = withoutEditorState(attrVal)
-            if (attrVal === '') {
-              continue
-            }
             if (attr.localName === 'class' && attrVal.startsWith('se_')) {
               continue
             }

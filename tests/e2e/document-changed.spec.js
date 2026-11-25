@@ -94,13 +94,14 @@ test.describe('documentChanged', () => {
     expect(causes).toEqual([])
   })
 
-  test('the editor\'s pointer-events bookkeeping on the drawing is not a change', async ({ page }) => {
+  test('the editor\'s interaction state (what takes presses, the dimming in a group) is not a change', async ({ page }) => {
+    // roadmap R11: it is a sheet outside the drawing, so the drawing does not differ
     const causes = await announced(page, () => {
       const c = window.svgEditor.svgCanvas
-      const r = c.getElement('r')
-      r.removeAttribute('style')
-      c.getCurrentDrawing().getCurrentLayer().style.pointerEvents = 'none'
-      c.call('changed', [r])
+      c.getCurrentDrawing().setAllLayersMode(true)
+      c.setCurrentLayer('Layer 1')
+      c.getCurrentDrawing().setAllLayersMode(false)
+      c.call('changed', [c.getElement('r')])
     })
     expect(causes).toEqual([])
   })

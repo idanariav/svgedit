@@ -115,15 +115,13 @@ describe('SvgCanvas#getDebugSnapshot', () => {
       )
       svgCanvas.setContext(svgCanvas.getSvgContent().querySelector('#grp2'))
 
-      // Simulate the leak this overlay targets: leaveContext() failed to run
-      // (or was skipped) so `disabledElems` still holds dimmed siblings after
-      // the current-group has already been cleared elsewhere.
+      // Simulate the leak this overlay targets: the current group was cleared without the interaction sheet being
+      // refreshed, so it still dims the siblings (roadmap R11: the dimming is a rule in that sheet, not attributes).
       const getCurrentGroup = vi.spyOn(svgCanvas, 'getCurrentGroup').mockReturnValue(null)
 
       const snapshot = svgCanvas.getDebugSnapshot()
 
       expect(snapshot.groupContext.currentGroupId).toBeNull()
-      expect(snapshot.groupContext.disabledElems.length).toBeGreaterThan(0)
       expect(snapshot.groupContext.stale).toBe(true)
 
       getCurrentGroup.mockRestore()

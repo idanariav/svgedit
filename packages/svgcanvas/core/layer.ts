@@ -8,7 +8,6 @@
 
 import { NS } from './namespaces.ts'
 import { toXml } from './encoding-utils.ts'
-import { walkTree } from './dom-utils.ts'
 
 /**
  * This class encapsulates the concept of a layer in the drawing. It can be constructed with
@@ -28,6 +27,8 @@ class Layer {
 
   name_: string
   group_: SVGGElement
+  /** it takes presses (the drawing's interaction sheet says so, `interaction-style.ts`: nothing is written on the group) */
+  active_: boolean
 
   /**
    * @param name - Layer name
@@ -55,11 +56,7 @@ class Layer {
     }
 
     addLayerClass(this.group_)
-    walkTree(this.group_, function (e) {
-      e.style.pointerEvents = 'inherit'
-    })
-
-    this.group_.style.pointerEvents = svgElem ? 'all' : 'none'
+    this.active_ = !!svgElem
   }
 
   /** Get the layer's name. */
@@ -74,12 +71,17 @@ class Layer {
 
   /** Active this layer so it takes pointer events. */
   activate (): void {
-    this.group_.style.pointerEvents = 'all'
+    this.active_ = true
   }
 
   /** Deactive this layer so it does NOT take pointer events. */
   deactivate (): void {
-    this.group_.style.pointerEvents = 'none'
+    this.active_ = false
+  }
+
+  /** Whether this layer takes pointer events. */
+  isActive (): boolean {
+    return this.active_
   }
 
   /**

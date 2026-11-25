@@ -69,8 +69,7 @@ export const insertImageFromHref = (editor: EditorInstance, href: string, opts: 
         y: 0,
         width: imageWidth,
         height: imageHeight,
-        id: svgCanvas.getNextId(),
-        style: 'pointer-events:inherit'
+        id: svgCanvas.getNextId()
       }
     })
     svgCanvas.setHref(newImage, href)

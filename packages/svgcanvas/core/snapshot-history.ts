@@ -26,32 +26,12 @@ import { changedPaths, sameAttrs } from './model/diff.ts'
 /** Content-root attributes that follow the view (scroll, zoom), not the drawing. */
 const VIEW_ATTRS = new Set(['x', 'y', 'width', 'height'])
 
-/** The editor's own `pointer-events` declaration at the head of a value, with the separator after it. */
-const EDITOR_STATE_RE = /^pointer-events\s*:[^;]*;?\s*/
-
-/**
- * An attribute value without the editor's interaction state: the `pointer-events` style the editor puts first on layers (the
- * current one takes presses) and on the elements it creates. Only that declaration goes; what follows it is the drawing's
- * (a mask silhouette's paint and feather blur are appended to that same `style`). Empty when nothing else is left. Saving
- * writes this (`svgToString` in `svg-exec.ts`), and the history's model holds it too: setting or clearing the state is not a
- * change.
- */
-export const withoutEditorState = (value: string): string =>
-  value.startsWith('pointer-events') ? value.replace(EDITOR_STATE_RE, '') : value
-
 const strip = (node: ModelNode, isRoot: boolean): ModelNode | null => {
   if (node.kind !== 'element') return node
   if (node.attrs.some((a) => a.name === EPHEMERAL_ATTR)) return null
   const children = node.children.map((c) => strip(c, false)).filter((c): c is ModelNode => c !== null)
-  let changed = false
-  const attrs = node.attrs.flatMap((a) => {
-    if (isRoot && VIEW_ATTRS.has(a.name)) { changed = true; return [] }
-    const value = withoutEditorState(a.value)
-    if (value === a.value) return [a]
-    changed = true
-    return value ? [{ ...a, value }] : []
-  })
-  return { ...node, attrs: changed ? attrs : node.attrs, children }
+  const attrs = isRoot && node.attrs.some((a) => VIEW_ATTRS.has(a.name)) ? node.attrs.filter((a) => !VIEW_ATTRS.has(a.name)) : node.attrs
+  return { ...node, attrs, children }
 }
 
 /** The drawing as a snapshot holds it. */
@@ -96,12 +76,6 @@ export interface SnapshotTarget {
   before: () => void
   /** called with the elements the step changed, after the DOM shows the snapshot */
   patched: (touched: Element[]) => void
-  /**
-   * runs `fn` with the editor's display-only changes to the drawing taken off (the in-group dimming: siblings of the group
-   * being edited carry a synthetic `opacity="0.33"` and `pointer-events: none`), so a snapshot never records them, an undo
-   * never brings them back, and a step patched while inside the group leaves them on
-   */
-  undimmed?: <T>(fn: () => T) => T
 }
 
 export class SnapshotHistory {
@@ -157,14 +131,9 @@ export class SnapshotHistory {
     if (shown) measureTexts(this.target.content(), shown, this.textMetrics)
   }
 
-  /** The drawing as it is now, without the editor's display-only changes (see `SnapshotTarget.undimmed`). */
+  /** The drawing as it is now (the editor's interaction state is not on it: `interaction-style.ts`). */
   private snapshot (): ModelElement {
-    const content = this.target.content()
-    if (!this.target.undimmed) return readSnapshot(content)
-    const model = this.target.undimmed(() => readSnapshot(content))
-    // taking the dimming off and putting it back is not a change to the drawing
-    this.take()
-    return model
+    return readSnapshot(this.target.content())
   }
 
   /** The drawing as it is now, sharing what it has in common with `like`. */
@@ -344,10 +313,7 @@ export class SnapshotHistory {
       .map((el) => ({ el, parent: el.parentNode as Node, next: el.nextSibling }))
     parked.forEach((p) => p.el.remove())
     const touched = new Set<Element>()
-    // the models hold the drawing without the in-group dimming, so the DOM is patched without it too, and the dimming goes back on after
-    const patch = (): void => { reconcile(content, shown, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) }) }
-    if (this.target.undimmed) this.target.undimmed(patch)
-    else patch()
+    reconcile(content, shown, want, { '': 'http://www.w3.org/2000/svg' }, { pool: this.pool, touched: (el) => touched.add(el) })
     for (const { el, parent, next } of parked) parent.insertBefore(el, next && next.parentNode === parent ? next : null)
     this.take()
     this.dirty = false

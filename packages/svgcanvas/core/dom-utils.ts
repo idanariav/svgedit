@@ -515,3 +515,14 @@ export const $click = (element: EventTarget, handler: EventListener): void => {
   element.addEventListener('click', handler)
   element.addEventListener('touchend', handler)
 }
+
+/**
+ * A shape being drawn takes no presses (`pointer-events: none` on its style, so the drag is not over it). When it becomes
+ * part of the drawing that goes, and only that: the shape's own style stays.
+ */
+export const releasePreviewPointer = (el: Element): void => {
+  const style = (el as SVGElement).style
+  if (!style?.getPropertyValue('pointer-events')) return
+  style.removeProperty('pointer-events')
+  if (!el.getAttribute('style')?.trim()) el.removeAttribute('style')
+}

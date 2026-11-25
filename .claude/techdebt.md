@@ -221,3 +221,17 @@ shadows and outlines, so a loaded glow came back clipped. The composer now re-de
 `sourcechanged`, which makes the result right when the effect extensions are loaded; the core copy is left as the
 fallback (and for its legacy `objectBoundingBox` migration). The proper fix is one pure region function in the core that
 reads the filter's primitives (by `result` name, as `readEffects` does) and both callers use.
+
+## Editor state still on the drawing after R11 (2026-11-25)
+
+Roadmap R11 moved the layers' pointer events, the in-group dimming and Layer mode's fade onto the canvas's interaction sheet
+(`core/interaction-style.ts`). Three pieces of editor state still live on drawing elements:
+
+- **Previews are nodes inside the layers** (`data-se-ephemeral`): the snapshot, the serializer, `checkDrawing` and the
+  history's patching filter them out or lift them away. Moving them into an overlay outside `#svgcontent` needs their
+  coordinates mapped into the layer's frame (R12 territory). Medium.
+- **A live-effect session hides its source** with `visibility="hidden"` on the shape (`live-effects.ts`), restored on exit; a
+  save mid-session writes it. A `visibility: hidden !important` mark would do. Small.
+- **Layer mode locks the other layers** through the drawing's own lock state (`setLayerLocked`), restored on exit, so an
+  autosave during the mode writes them locked. A lock that is only the mode's would need a second, display-only lock the
+  selection code reads. Small to medium.

@@ -511,6 +511,34 @@ interaction state on the same nodes, so readers compensate (`withContextUndimmed
 overlay, never attributes on drawing elements. Comes with a `repair-drawings` entry for the stray `pointer-events` style
 in saved drawings and a `checkDrawing` rule. Size: M.
 
+**Status (2026-11-25): done, except previews.** `core/interaction-style.ts`: one `<style>` per canvas in the svg root,
+scoped by `data-se-canvas`, holding **marks** (a name, a function giving the elements, declarations), each element
+selected by its `:nth-child` path from `#svgcontent`; rebuilt by a `MutationObserver`, on a load, on `setCurrentGroup` and
+on `svgedit:layeractivation` (`Drawing.refreshLayerPointerEvents`, which now only sets `Layer.isActive()`).
+- **Moved onto it:** which layers take presses (`layers-active` / `layers-inactive`), the in-group dimming (`context-dim`;
+  `suspendContextDimming` suspends the mark) and ext-layer_view's fade (`layer-view-dim`, an inline style on each layer
+  that a save in Layer mode wrote into the drawing).
+- **Gone:** the `pointer-events:inherit` stamp (`json.ts`, `event.ts`, `tool-registry.ts`, `event-shape-draw.ts`, the
+  layer constructor's walk, the insert-image dialog), the release of a select press wiping `style` off the selected element
+  and every descendant, `withContextUndimmed` and the snapshot target's `undimmed` hook, `withoutEditorState` in the
+  serializer and the model, the dimming's `orig_opac` / `orig_style` bookkeeping, the marker's `pointer-events:none`.
+  A shape being drawn still has `pointer-events: none`; `releasePreviewPointer` takes only that declaration off when it
+  becomes the drawing's.
+- **Corruption check and repair:** checkDrawing's `editor-pointer-events` (an `inherit`, a layer's `all` / `none`, a style
+  that is only `pointer-events: none`) and the `editor-pointer-events` entry in `scripts/repair-drawings.mjs`. Saving now
+  keeps a stray declaration an old drawing carries, so the vault needs the repair once.
+- **Behaviour changes:**
+  - A dimmed sibling shows at 33% opacity, not 33% of its own opacity (CSS cannot multiply an attribute).
+  - A shape with no fill now always takes presses by its outline only, as `svgedit.css` says. Before, the inline
+    `pointer-events:inherit` stamp outranked that rule until a click's release wiped the style, so its interior was
+    pressable until its first click.
+- **Not done:**
+  - previews are still `data-se-ephemeral` nodes inside the layers, filtered by the snapshot and the serializer;
+  - a live-effect session hides the source shape with `visibility="hidden"` (`live-effects.ts`);
+  - Layer mode locks the other layers through the drawing's own lock state, which an autosave during the mode writes.
+
+  These are listed in `techdebt.md`.
+
 ### R12. One placement policy, one set of coordinate frames
 
 **Today.** Where an element's placement lives (its attributes or its `transform`; a group only in its transform; a

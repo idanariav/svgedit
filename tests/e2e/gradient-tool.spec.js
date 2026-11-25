@@ -301,7 +301,7 @@ test.describe('Gradient tool: creating a gradient', () => {
     await tool(page)
     await click(page, 400, 150)
     expect(await stops(page, await gradOf(page, 'light'))).toEqual([[0, '#ffeeaa'], [1, '#000000']])
-    await click(page, 200, 300)
+    await click(page, 200, 260) // on its outline: a shape with no fill takes presses by its outline only (svgedit.css)
     expect(await stops(page, await gradOf(page, 'bare'))).toEqual([[0, '#ffffff'], [1, '#000000']])
   })
 

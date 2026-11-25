@@ -61,7 +61,8 @@ describe('svgCanvasToString while editing inside a group', () => {
     expect(svgCanvas.getCurrentMode()).toBe('pathedit')
     expect(svgCanvas.getCurrentGroup()).toBe(group)
     expect(svgCanvas.getDisabledElems()).toContain(sibling)
-    expect(sibling.getAttribute('opacity')).toBe('0.33')
+    expect(sibling.hasAttribute('opacity')).toBe(false) // the dimming is the interaction sheet's (roadmap R11)
+    expect(svgCanvas.interactionStyle.text()).toContain('/* context-dim */')
     expect(svgCanvas.getSelectedElements().filter(Boolean)).not.toContain(group)
   })
 
@@ -85,7 +86,8 @@ describe('svgCanvasToString while editing inside a group', () => {
     expect(svgCanvas.getCurrentGroup()).toBe(group)
     expect(svgCanvas.getSelectedElements().filter(Boolean)).toStrictEqual([path])
     expect(svgCanvas.getDisabledElems()).toContain(sibling)
-    expect(sibling.getAttribute('opacity')).toBe('0.33')
+    expect(sibling.hasAttribute('opacity')).toBe(false) // the dimming is the interaction sheet's (roadmap R11)
+    expect(svgCanvas.interactionStyle.text()).toContain('/* context-dim */')
     expect(out).not.toContain('0.33')
   })
 

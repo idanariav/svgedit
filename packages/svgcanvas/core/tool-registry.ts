@@ -41,7 +41,7 @@ import type { Gesture, GestureEndReason } from './gesture-session.ts'
 import { createDragIntent } from './pointer-intent.ts'
 import type { DragIntent } from './pointer-intent.ts'
 import type { SVGElementJSON } from '../svgcanvas.ts'
-import { cleanupElement } from './dom-utils.ts'
+import { cleanupElement, releasePreviewPointer } from './dom-utils.ts'
 import { transformPoint } from './math.ts'
 import { NS } from './namespaces.ts'
 import { isCreateInCurrentGroup, toCurrentGroupLocalPoint } from './event-group-context.ts'
@@ -309,7 +309,7 @@ export const createToolRegistry = (canvas: SvgCanvas): ToolRegistryApi => {
     svgCanvas.gesture.addedNew = true
     svgCanvas.gesture.pendingNewElement = el
     if (!opts?.keepOpacity) el.setAttribute('opacity', String(style.opacity))
-    el.setAttribute('style', 'pointer-events:inherit')
+    releasePreviewPointer(el)
     cleanupElement(el)
     if (svgCanvas.getCurConfig().selectNew) {
       // A tool that creates an element hands control back to Select, like every drawing tool.

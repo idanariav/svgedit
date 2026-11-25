@@ -141,7 +141,6 @@ export default defineFeature({
           id,
           markerUnits: 'strokeWidth',
           orient: 'auto',
-          style: 'pointer-events:none',
           se_type: seType
         }
       })

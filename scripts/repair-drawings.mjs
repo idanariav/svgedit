@@ -36,6 +36,24 @@ for (const init of [liveEffectsDistortInit, warpInit, distortInit, rotate3dInit]
  */
 export const REPAIRS = [
   {
+    // The editor kept its interaction state on the drawing until roadmap R11 (it is a sheet outside the drawing now), and
+    // saving stripped it only at the head of a `style`: a `pointer-events: inherit` it appended after a shape's own
+    // declarations was saved, as was a layer's `pointer-events: all / none` and the `pointer-events: none` that replaced a
+    // dimmed sibling's style (checkDrawing's `editor-pointer-events`). Drops those declarations and a `style` left empty.
+    // A drawing that set `pointer-events: none` as its whole style on purpose would lose it too: read the dry run.
+    name: 'editor-pointer-events',
+    run: (source) => source.replace(/<([a-zA-Z][\w:-]*)\b[^>]*\sstyle="[^"]*"[^>]*>/g, (tag, name) => {
+      const layer = name === 'g' && /\sclass="(?:[^"]*\s)?layer(?:\s[^"]*)?"/.test(tag)
+      return tag.replace(/\sstyle="([^"]*)"/, (attr, value) => {
+        const decls = value.split(';').map((d) => d.trim()).filter(Boolean)
+        const whole = decls.length === 1 && /^pointer-events\s*:\s*none$/i.test(decls[0])
+        const kept = whole ? [] : decls.filter((d) => !(/^pointer-events\s*:\s*inherit$/i.test(d) || (layer && /^pointer-events\s*:/i.test(d))))
+        if (kept.length === decls.length) return attr
+        return kept.length ? ` style="${kept.join('; ')};"` : ''
+      })
+    })
+  },
+  {
     // An undo after editing inside a group brought back the dimming of the group's siblings (setContext's synthetic
     // `opacity="0.33"`), and it was saved: whole layers, groups and texts at 33% (checkDrawing's `dimmed-leak`). Drops an
     // `opacity` of exactly 0.33 from any element, and any `opacity` from a never-rendered one. A 33% opacity set on purpose

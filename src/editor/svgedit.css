@@ -1557,7 +1557,10 @@ hr {
 
 /* No-fill shapes are selectable by their outline only; clicks pass through the
    empty interior to whatever lies behind. Overrides the pointer-events:all that
-   shapes inherit from the layer <g> (see layer.js). */
+   shapes inherit from the current layer <g> (the canvas's interaction sheet,
+   core/interaction-style.ts). Until roadmap R11 an inline pointer-events:inherit
+   on every created or loaded shape outranked this rule, so it held only after a
+   click's release had wiped that style. */
 #svgcontent [fill="none"] {
   pointer-events: stroke;
 }

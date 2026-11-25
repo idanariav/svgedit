@@ -88,9 +88,18 @@ describe('checkDrawing', () => {
   it('dimmed-leak (the in-group dimming left on a never-rendered element)', () => {
     expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33">'))).toEqual(['dimmed-leak'])
     expect(codes(wrap('<rect id="a"/>', '<defs opacity="0.33"/>'))).toEqual(['dimmed-leak'])
-    // still inside the group: the dimming is live, not leaked
-    expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33" style="pointer-events: none">'))).toEqual([])
+    // the live dimming is in the interaction sheet (roadmap R11), so a never-rendered element is never dimmed on the drawing
+    expect(codes(wrap('<rect id="a"/>').replace('<title>', '<title opacity="0.33" style="fill: red">'))).toEqual(['dimmed-leak'])
     expect(codes(wrap('<rect id="a" opacity="0.33"/>'))).toEqual([])
+  })
+
+  it('editor-pointer-events (the editor\'s interaction state saved as the drawing\'s, roadmap R11)', () => {
+    expect(codes(wrap('<rect id="a" style="fill: red; pointer-events: inherit;"/>'))).toEqual(['editor-pointer-events'])
+    expect(codes(wrap('<rect id="a" style="pointer-events:none"/>'))).toEqual(['editor-pointer-events'])
+    expect(codes(wrap('<rect id="a"/>').replace('class="layer"', 'class="layer" style="pointer-events: all"'))).toEqual(['editor-pointer-events'])
+    // the drawing's own: a pointer-events among other declarations, on a shape
+    expect(codes(wrap('<rect id="a" style="stroke: red; pointer-events: none"/>'))).toEqual([])
+    expect(codes(wrap('<rect id="a" style="fill: red"/>'))).toEqual([])
   })
 
   it('bad-number in geometry', () => {

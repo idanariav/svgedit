@@ -818,46 +818,49 @@ describe('draw.Drawing', function () {
 
   it('Test setAllLayersMode() / getAllLayersMode()', function () {
     const drawing = new draw.Drawing(svg)
+    // which layers take presses (roadmap R11: the canvas's interaction sheet shows it, nothing is written on the group)
+    const active = (g) => drawing.getActiveLayerGroups().includes(g)
     const layers = setupSVGWith3Layers(svg)
     drawing.identifyLayers()
 
     // Baseline: only the current (top) layer is selectable.
     assert.equal(drawing.getAllLayersMode(), false)
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layers[0]), false)
+    assert.equal(active(layers[1]), false)
+    assert.equal(active(layers[2]), true)
 
     // Turning on All Layers mode makes every layer selectable.
     drawing.setAllLayersMode(true)
     assert.equal(drawing.getAllLayersMode(), true)
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layers[0]), true)
+    assert.equal(active(layers[1]), true)
+    assert.equal(active(layers[2]), true)
 
     // A layer created while All Layers mode is on stays selectable too, and
     // pre-existing layers are unaffected by the switch.
     const layerG = drawing.createLayer('Layer A')
-    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layerG), true)
+    assert.equal(active(layers[0]), true)
 
     // Switching the current layer while on doesn't narrow selectability.
     drawing.setCurrentLayer(LAYER1)
-    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layers[1]), true)
+    assert.equal(active(layerG), true)
 
     // Turning it off restores single-current-layer isolation.
     drawing.setAllLayersMode(false)
     assert.equal(drawing.getAllLayersMode(), false)
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(layerG.style.getPropertyValue('pointer-events'), 'none')
+    assert.equal(active(layers[0]), true)
+    assert.equal(active(layers[1]), false)
+    assert.equal(active(layers[2]), false)
+    assert.equal(active(layerG), false)
 
     cleanupSVG(svg)
   })
 
   it('Test setAllLayersMode() excludes comment layers', function () {
     const drawing = new draw.Drawing(svg)
+    const active = (g) => drawing.getActiveLayerGroups().includes(g)
     const layers = setupSVGWith3Layers(svg)
     drawing.identifyLayers()
     drawing.setLayerComment(LAYER1, true)
@@ -866,13 +869,13 @@ describe('draw.Drawing', function () {
     // stays excluded unless it's the current layer — its selectability is
     // managed separately from the bulk "all layers" behavior.
     drawing.setAllLayersMode(true)
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'none')
-    assert.equal(layers[1].style.getPropertyValue('pointer-events'), 'all')
-    assert.equal(layers[2].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layers[0]), false)
+    assert.equal(active(layers[1]), true)
+    assert.equal(active(layers[2]), true)
 
     // Making it the current layer still activates it like any current layer.
     drawing.setCurrentLayer(LAYER1)
-    assert.equal(layers[0].style.getPropertyValue('pointer-events'), 'all')
+    assert.equal(active(layers[0]), true)
 
     cleanupSVG(svg)
   })

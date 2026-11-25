@@ -7,6 +7,7 @@
  * @copyright 2010 Alexis Deveria, 2010 Pavol Rusnak, 2010 Jeff Schiller, 2021 OptimistikSAS
  *
  */
+import { createInteractionStyle, type InteractionStyle } from './core/interaction-style.ts'
 import './core/path-seg-shim.js' // SVGPathSeg/SVGPathSegList replacement (see core/path-seg-shim.js)
 
 import Paint from './core/paint.ts'
@@ -484,6 +485,7 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
   declare current_drawing_: Drawing
   declare cursorHintValue: string | null
   declare destroyAbort: AbortController
+  declare interactionStyle: InteractionStyle
   declare encodableFonts: Record<string, string>
   declare encodableImages: Record<string, string | false>
   declare extensions: Record<string, unknown>
@@ -684,6 +686,14 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
     // Created before the core inits so their document/window listeners can use its signal.
     this.destroyAbort = new AbortController()
+    // The editor's interaction state on the drawing, as CSS outside it (roadmap R11): only the layers that take presses do
+    // (the current one, or every one in All Layers mode); the in-group dimming is marked by `draw.ts`.
+    this.interactionStyle = createInteractionStyle(this.svgroot, () => this.svgContent ?? null, this.destroyAbort.signal)
+    const layerGroups = (active: boolean): SVGGElement[] =>
+      (this.current_drawing_?.all_layers ?? []).filter((l) => l.isActive() === active).map((l) => l.getGroup())
+    this.interactionStyle.mark('layers-inactive', () => layerGroups(false), 'pointer-events: none')
+    this.interactionStyle.mark('layers-active', () => layerGroups(true), 'pointer-events: all')
+    this.svgroot.addEventListener(draw.LAYER_ACTIVATION_EVENT, () => this.interactionStyle.refresh(), { signal: this.destroyAbort.signal })
 
     attachApi(this, 'json', createJson(this), initGuardRegistry)
     attachApi(this, 'domUtils', createDomUtils(this), initGuardRegistry)
@@ -1025,7 +1035,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
       groupContext: {
         currentGroupId: currentGroup?.id ?? null,
         disabledElems,
-        stale: !currentGroup && disabledElems.length > 0
+        // the interaction sheet still dims, but no group is being edited (it was not refreshed)
+        stale: !currentGroup && this.interactionStyle.text().includes('/* context-dim */')
       },
       pathEditing: { mode, pathElemId, segCount, grips },
       masking: { refs: maskRefs, stale: maskRefs.some((r) => !r.refExists) }
@@ -1170,6 +1181,8 @@ class SvgCanvas extends (EventTarget as new () => EventTarget & ModuleApis) {
 
   setCurrentGroup (cg: Element | null) {
     this.state.selection.currentGroup = cg
+    // the in-group dimming follows the current group, whoever changes it (draw.ts marks it)
+    this.interactionStyle?.refresh()
   }
 
   changeSvgContent () {
