@@ -1560,8 +1560,11 @@ hr {
    shapes inherit from the current layer <g> (the canvas's interaction sheet,
    core/interaction-style.ts). Until roadmap R11 an inline pointer-events:inherit
    on every created or loaded shape outranked this rule, so it held only after a
-   click's release had wiped that style. */
-#svgcontent [fill="none"] {
+   click's release had wiped that style. A frame (an export region, a
+   transparent-filled rect[data-frame]) is the same: a click inside it reaches
+   the shapes it frames, its edge (or its label) selects it. */
+#svgcontent [fill="none"],
+#svgcontent [data-frame] {
   pointer-events: stroke;
 }
 

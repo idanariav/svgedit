@@ -80,3 +80,14 @@ Done: fill / stroke / fill & stroke / stroke weight / opacity / type, a colour t
 - **The X / Y fields read the full painted box**, not the alignment box (decided so position entry and resize grips agree). An option to type the alignment box's position is open.
 - **A mark that leaves its group by a route other than Ungroup** (Layers-panel drag, move to layer, release from a group) stays on the element; it is ignored outside a group and the first mark in a group wins, so a later Group with it can pick it up. Clear those routes too if it surprises anyone. Children without an id cannot be marked (model edits go by id).
 - **A turned group** is measured by the axis-aligned box of its turned alignment box, like every other align box.
+
+## Ungroup and imported resources (`core/group-ops.ts`, `core/hoist-resources.ts`): follow-ups (2026-11-25)
+
+- Done: converting an imported `<use>` to a group moves the file's `<defs>` / `<style>` / referenced masks, clips, filters,
+  gradients into the drawing's `<defs>` and drops metadata, comments and id-less masks (checkDrawing `resource-in-layer`,
+  repair entry of the same name).
+- **A plain group that holds a `<defs>` or a mask** (a loaded file's own group, not an import) still releases it into the layer
+  on Ungroup: run `hoistResources` in `ungroupSelectedElement` too (both its model path and its DOM path).
+- **Ungroup drops the group's `mask` / `clip-path`**: an Excalidraw label group masked out of an arrow loses the cut-out when it
+  is ungrouped (`pushGroupProperty` pushes opacity and filters down, not masks). Push the mask to each child, or keep the
+  group masked and refuse to ungroup it.

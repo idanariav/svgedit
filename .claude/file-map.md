@@ -77,6 +77,7 @@
 | `guides.ts` | Ruler guides: horizontal and vertical lines the user drags out of the rulers to align things by |
 | `history.js` | The undo stack and the entries on it |
 | `historyrecording.js` | HistoryRecordingService component of history |
+| `hoist-resources.ts` | Takes the resources of an imported document out of the group it became, into the drawing's `<defs>` |
 | `image-crop.ts` | Destructive crop for imported raster `<image>` elements |
 | `interaction-style.ts` | The editor's interaction state on the drawing, as CSS rather than attributes on its elements (roadmap R11): which layers take presses, and the dimming of what lies outside the group being edited |
 | `json.ts` | Tools for SVG handle on JSON format |

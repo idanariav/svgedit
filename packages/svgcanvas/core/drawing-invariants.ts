@@ -115,6 +115,13 @@ const NON_RENDERED = new Set(['title', 'desc', 'metadata', 'defs', 'style'])
 const EDITOR_POINTER_RE = /(?:^|;)\s*pointer-events\s*:\s*inherit\b/
 const LAYER_POINTER_RE = /(?:^|;)\s*pointer-events\s*:/
 const DIMMED_STYLE_RE = /^\s*pointer-events\s*:\s*none\s*;?\s*$/
+/**
+ * What never belongs directly in a layer: a resource (it lives in the drawing's `<defs>`) or metadata. Ungrouping an imported
+ * file once put its `<defs>`, `<style>`, masks and `<metadata>` there (`hoist-resources.ts`).
+ */
+const LAYER_RESOURCES = new Set([
+  'defs', 'style', 'metadata', 'mask', 'clipPath', 'filter', 'linearGradient', 'radialGradient', 'pattern', 'marker', 'symbol'
+])
 /** Children allowed directly under `<svg id="svgcontent">` besides layers. */
 const ROOT_CHILDREN = new Set(['defs', 'title', 'metadata', 'desc', 'style'])
 
@@ -278,6 +285,11 @@ export const checkDrawing = (svgContent: Element): Finding[] => {
     if (ROOT_CHILDREN.has(tag)) continue
     if (tag !== 'g' || !child.classList.contains('layer')) {
       add('layer-shape', `<${tag}> sits directly under the drawing root instead of inside a layer`, child)
+      continue
+    }
+    // resource-in-layer
+    for (const kid of Array.from(child.children)) {
+      if (LAYER_RESOURCES.has(kid.localName)) add('resource-in-layer', `<${kid.localName}> sits in a layer as if it were a shape (it belongs in <defs>)`, kid)
     }
   }
 

@@ -8,6 +8,7 @@
 
 import { NS } from './namespaces.ts'
 import { clearAlignBoxMarks } from './align-box.ts'
+import { hoistResources } from './hoist-resources.ts'
 import { element } from './model/node.ts'
 import { wrapIds, unwrapId } from './model/edit.ts'
 import * as hstry from './history.js'
@@ -512,6 +513,12 @@ export const createGroupOps = (canvas: SvgCanvas): GroupOpsApi => {
         svgCanvas.convertGradients(svgCanvas.findDefs())
       } else {
         svgCanvas.convertGradients(g)
+      }
+
+      // the imported file's own <defs>, <style>s, masks, metadata and comments are not shapes: an ungroup would put them in
+      // the layer (ids are uniquified above, so what the shapes refer to still resolves from the drawing's <defs>)
+      for (const moved of hoistResources(g, svgCanvas.findDefs())) {
+        batchCmd.addSubCommand(new InsertElementCommand(moved))
       }
 
       // recalculate dimensions on the top-level children so that unnecessary transforms

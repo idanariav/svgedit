@@ -12,7 +12,7 @@ const repairs = [{ name: 'NaN tspan coordinates', run: dropNaNTspanCoords }]
 
 describe('repair-drawings: machinery', () => {
   it('ships only the current repairs (they are deleted once run)', () => {
-    expect(REPAIRS.map((r) => r.name)).toEqual(['editor-pointer-events', 'dimmed-leak', 'retraced-path', 'mask-feather-lost', 'fx-rounding-drift'])
+    expect(REPAIRS.map((r) => r.name)).toEqual(['editor-pointer-events', 'dimmed-leak', 'retraced-path', 'mask-feather-lost', 'fx-rounding-drift', 'resource-in-layer'])
     const any = doc('<rect/>')
     expect(repairSvg(any)).toEqual({ source: any, applied: [] })
   })
@@ -163,5 +163,25 @@ describe('repair-drawings: editor-pointer-events', () => {
   it('leaves a clean drawing byte-for-byte', () => {
     const clean = '<svg xmlns="http://www.w3.org/2000/svg"><g class="layer"><rect style="fill: red"/></g></svg>'
     expect(repairSvg(clean, [repair])).toEqual({ source: clean, applied: [] })
+  })
+})
+
+describe('repair-drawings: resource-in-layer', () => {
+  const repair = REPAIRS.find((r) => r.name === 'resource-in-layer')
+
+  it('drops the leftovers of an ungrouped Excalidraw paste from the layers', () => {
+    const bad = '<svg xmlns="http://www.w3.org/2000/svg"><defs/><g class="layer"><title>L</title>\n  <!-- svg-source:excalidraw -->' +
+      '\n  <path id="a" d="M0 0L1 1"/>\n  <metadata/>\n  <defs>\n   <style class="style-fonts"/>\n  </defs>\n  <mask/>\n  <mask></mask>' +
+      '\n  <path id="b" d="M0 0L2 2"/>\n</g></svg>'
+    const { source, applied } = repairSvg(bad, [repair])
+    expect(applied).toEqual(['resource-in-layer'])
+    expect(source).toBe('<svg xmlns="http://www.w3.org/2000/svg"><defs/><g class="layer"><title>L</title>\n  <!-- svg-source:excalidraw -->' +
+      '\n  <path id="a" d="M0 0L1 1"/>\n  <path id="b" d="M0 0L2 2"/>\n</g></svg>')
+  })
+
+  it('leaves the root <defs>, and resources that something can use, alone', () => {
+    const kept = '<svg xmlns="http://www.w3.org/2000/svg"><defs></defs><metadata/><g class="layer"><title>L</title>' +
+      '<mask id="m"><rect width="1" height="1"/></mask><defs><style>.a{fill:red}</style></defs><metadata><rdf/></metadata></g></svg>'
+    expect(repairSvg(kept, [repair])).toEqual({ source: kept, applied: [] })
   })
 })

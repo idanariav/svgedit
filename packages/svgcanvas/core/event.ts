@@ -653,6 +653,8 @@ export const createEvent = (canvas: SvgCanvas): EventApi => {
  */
   const isStrokeOnlyElement = (el: Element): boolean => {
     if (!el || !(el instanceof SVGGraphicsElement)) { return false }
+    // a frame's transparent fill is not an interior: it takes presses by its edge only (svgedit.css)
+    if (el.hasAttribute('data-frame')) { return true }
     const cs = getComputedStyle(el)
     if (cs.fill !== 'none') { return false }
     return cs.stroke !== 'none' && parseFloat(cs.strokeWidth) > 0

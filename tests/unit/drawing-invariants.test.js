@@ -114,6 +114,12 @@ describe('checkDrawing', () => {
     expect(codes('<svg xmlns="http://www.w3.org/2000/svg"><g class="layer"><rect id="a"/></g></svg>')).toEqual([])
   })
 
+  it('resource-in-layer', () => {
+    expect(codes(wrap('<metadata/><defs><style/></defs><mask/><rect id="r"/>'))).toEqual(['resource-in-layer', 'resource-in-layer', 'resource-in-layer'])
+    // in a group, or in the root's <defs>, a resource is where it belongs
+    expect(codes(wrap('<g id="g"><defs><clipPath id="c"/></defs><rect id="r" clip-path="url(#c)"/></g>', '<defs><mask id="m"/></defs>'))).toEqual([])
+  })
+
   it('se-attr-parse: validates attributes through their owning module', () => {
     expect(codes(wrap('<path id="p" d="M 0 0 L 1 1" se:taper="x,y"/>'))).toEqual(['se-attr-parse'])
     expect(codes(wrap('<path id="p" d="M 0 0 L 1 1" se:fx="bogusEffect()" se:fx-d="M 0 0 L 1 1"/>'))).toEqual(['se-attr-parse'])

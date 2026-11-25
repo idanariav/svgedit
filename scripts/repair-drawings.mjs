@@ -124,6 +124,22 @@ export const REPAIRS = [
       const d = out.replace(/-?\d*\.?\d+(?:e-?\d+)?/g, (n) => String(Number(Number(n).toFixed(2))))
       return tag.replace(/(\sd=")[^"]*(")/, `$1${d}$2`)
     })
+  },
+  {
+    // Ungrouping a pasted SVG (an Excalidraw export) put the file's `<metadata>`, `<defs><style/></defs>` and id-less `<mask/>`s
+    // in the layer as if they were shapes (checkDrawing's `resource-in-layer`; `hoist-resources.ts` keeps them out now). Drops
+    // those that nothing can use, in the layers only: an empty `<metadata>`, a `<defs>` holding at most an empty `<style>`,
+    // a `<mask>` with no attributes and no content. A resource with an id or content is left for checkDrawing to report.
+    name: 'resource-in-layer',
+    run: (source) => {
+      const start = source.search(/<g\b[^>]*\sclass="(?:[^"]*\s)?layer(?:\s[^"]*)?"[^>]*>/)
+      if (start < 0) return source
+      const layers = source.slice(start)
+        .replace(/\s*<metadata\b[^>]*?(?:\/>|>\s*<\/metadata>)/g, '')
+        .replace(/\s*<mask\s*(?:\/>|>\s*<\/mask>)/g, '')
+        .replace(/\s*<defs\b[^>]*?(?:\/>|>\s*(?:<style\b[^>]*?(?:\/>|>\s*<\/style>)\s*)?<\/defs>)/g, '')
+      return source.slice(0, start) + layers
+    }
   }
 ]
 
