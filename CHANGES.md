@@ -1,5 +1,9 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.25
+- UI: the cutter draws curves, pen-tool style: in multi-point mode, press and drag while placing a vertex to pull symmetric handles (curving both sides), drag back onto the vertex for a corner, Shift snaps the handle to 15 degrees. The last vertex's handles show while you draw.
+- UI: a dialog reopened right after it closed no longer cancels itself (the source editor's second open shut at once; Transform Each could drop its rotate).
+
 ## 7.4.1-fork.24
 - UI: a click on a text with the Text tool keeps editing it when the click falls between two characters (the caret drawn under the pointer took the release, which read as a click off the text and ended the edit).
 
