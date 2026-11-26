@@ -696,8 +696,10 @@ class EditorStartup {
       // for Cmd/Ctrl+V) must stand down — otherwise it would fire again ~80ms
       // later and double-paste.
       this.pasteFallbackArmer?.disarm()
-      // Let editable fields (inputs, text areas) keep their native paste.
-      const t = e.target as HTMLElement | null
+      // Let editable fields (inputs, text areas) keep their native paste. `e.target` is retargeted to the shadow host at
+      // `document` (a dialog's field, e.g. the image dialog's URL input, would read as `se-image-import-dialog`), so take
+      // the event's real origin.
+      const t = e.composedPath()[0] as HTMLElement | null
       if (t && (t.isContentEditable || t.nodeName === 'INPUT' || t.nodeName === 'TEXTAREA')) return
       const text = e.clipboardData?.getData('image/svg+xml') || e.clipboardData?.getData('text/plain') || undefined
       // The system clipboard's text when the drawing can take it, else what this editor copied (a host's own copy can have

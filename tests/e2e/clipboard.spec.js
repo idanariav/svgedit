@@ -73,4 +73,27 @@ test.describe('Clipboard', () => {
     await expect(page.locator(`#svgcontent #${firstPasteId}`)).toHaveCount(0)
     await expect(page.locator(`#svgcontent #${secondPasteId}`)).toHaveCount(0)
   })
+
+  test('a paste into a dialog field inside a shadow root stays in the field, not the drawing', async ({ page }) => {
+    // copy a shape, so there is a stored copy the paste handler could fall back to
+    await page.locator('#testCircle').click()
+    await page.evaluate(() => window.svgEditor.commands.run('copy'))
+    const initialIds = await contentIds(page)
+
+    const prevented = await page.evaluate(() => {
+      const dialog = document.getElementById('se-image-import-dialog')
+      dialog.setAttribute('dialog', 'open')
+      const input = dialog.shadowRoot.querySelector('#image_url_input')
+      input.focus()
+      const clipboardData = new DataTransfer()
+      clipboardData.setData('text/plain', 'https://example.com/picture.png')
+      // a real paste is composed: at `document` its target reads as the dialog host, not the input
+      const e = new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true, composed: true })
+      input.dispatchEvent(e)
+      dialog.setAttribute('dialog', 'close')
+      return e.defaultPrevented
+    })
+    expect(prevented).toBe(false)
+    expect(await contentIds(page)).toEqual(initialIds)
+  })
 })
