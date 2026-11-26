@@ -1,5 +1,8 @@
 # SVG-Edit CHANGES
 
+## 7.4.1-fork.26
+- UI: pasting into a dialog's text field (such as the image dialog's URL) pastes the text there, instead of pasting the last copied drawing onto the canvas.
+
 ## 7.4.1-fork.25
 - UI: the cutter draws curves, pen-tool style: in multi-point mode, press and drag while placing a vertex to pull symmetric handles (curving both sides), drag back onto the vertex for a corner, Shift snaps the handle to 15 degrees. The last vertex's handles show while you draw.
 - UI: a dialog reopened right after it closed no longer cancels itself (the source editor's second open shut at once; Transform Each could drop its rotate).
